@@ -1,5 +1,9 @@
 ## Custom Cards
 
+> **💡 Tipp:** Nach dem Hinzufügen der Karten zu den Resources kannst du sie im Dashboard-Editor (Vorschau-Teil) finden, indem du z.B. "prism" in die Suche eingibst. Alle Prism-Karten werden dann angezeigt.
+
+---
+
 ### prism-heat
 
 Eine benutzerdefinierte Thermostat-Knob-Karte mit Glassmorphism-Design.
@@ -12,6 +16,21 @@ Eine benutzerdefinierte Thermostat-Knob-Karte mit Glassmorphism-Design.
   entity: climate.living_room
   name: Wohnzimmer
   color: "#fb923c"
+```
+
+---
+
+### prism-heat-small
+
+Eine kompakte Heizungs-Karte mit Inlet-Styling und einfachen Temperatur-Controls.
+
+<img width="400" alt="prism-heat-small" src="[BILD_URL_HIER_EINFÜGEN]" />
+
+**Verwendung:**
+```yaml
+- type: custom:prism-heat-small
+  entity: climate.living_room
+  name: Wohnzimmer
 ```
 
 ---

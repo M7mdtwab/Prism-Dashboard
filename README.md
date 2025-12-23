@@ -95,7 +95,27 @@ Damit dieses Dashboard funktioniert, müssen folgende Frontend-Integrationen üb
 
 ## Installation
 
-### 1. Dateien vorbereiten
+### Option 1: Installation über HACS (Empfohlen)
+
+1. Stelle sicher, dass [HACS](https://hacs.xyz) installiert ist.
+2. Gehe zu **HACS → Frontend → Custom Repositories**
+3. Füge dieses Repository hinzu:
+   - **Repository:** `https://github.com/BangerTech/Prism-Dashboard`
+   - **Kategorie:** `Lovelace`
+4. Klicke auf **"Installieren"**
+5. Nach der Installation gehe zu **Einstellungen → Geräte & Dienste → Lovelace Dashboards → Ressourcen**
+6. Klicke auf **"Ressource hinzufügen"** und füge alle Custom Cards hinzu:
+   - `/hacsfiles/prism-dashboard/custom-components/prism-heat.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-heat-small.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-button.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-media.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-calendar.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-shutter.js`
+   - `/hacsfiles/prism-dashboard/custom-components/prism-shutter-vertical.js`
+7. Wähle für alle den Typ **"JavaScript-Modul"**
+8. Starte Home Assistant neu
+
+### Option 2: Manuelle Installation
 
 1. Dieses Repository herunterladen oder clonen.  
 2. Den Inhalt des Ordners `www` in deinen Home Assistant Konfigurationsordner unter  
@@ -123,21 +143,31 @@ Damit dieses Dashboard funktioniert, müssen folgende Frontend-Integrationen üb
 6. **WICHTIG:** Entitäten an deine eigene Hardware anpassen (siehe Abschnitt „Configuration").  
 7. Auf **„Speichern"** klicken.
 
-### 4. Custom Cards registrieren
+### 4. Custom Cards registrieren (nur bei manueller Installation)
 
-Das Dashboard nutzt zwei benutzerdefinierte Karten (`prism-heat` und `prism-button`), die als JavaScript-Module registriert werden müssen:
+Falls du Option 2 (manuelle Installation) gewählt hast, müssen die Custom Cards manuell registriert werden:
 
 1. In Home Assistant zu **Einstellungen → Geräte & Dienste** navigieren.  
 2. Im Tab **„Lovelace Dashboards"** auf **„Ressourcen"** klicken.  
 3. Auf **„Ressource hinzufügen"** klicken.  
 4. Folgende Ressourcen hinzufügen:
-   - **URL:** `/local/prism-heat.js`  
+   - **URL:** `/local/custom-components/prism-heat.js`  
      **Typ:** `JavaScript-Modul`
-   - **URL:** `/local/prism-button.js`  
+   - **URL:** `/local/custom-components/prism-heat-small.js`  
+     **Typ:** `JavaScript-Modul`
+   - **URL:** `/local/custom-components/prism-button.js`  
+     **Typ:** `JavaScript-Modul`
+   - **URL:** `/local/custom-components/prism-media.js`  
+     **Typ:** `JavaScript-Modul`
+   - **URL:** `/local/custom-components/prism-calendar.js`  
+     **Typ:** `JavaScript-Modul`
+   - **URL:** `/local/custom-components/prism-shutter.js`  
+     **Typ:** `JavaScript-Modul`
+   - **URL:** `/local/custom-components/prism-shutter-vertical.js`  
      **Typ:** `JavaScript-Modul`
 5. Home Assistant neu starten, damit die Custom Cards geladen werden.
 
-> **Hinweis:** Die Custom Cards befinden sich im Ordner `custom-components/` dieses Repositories und müssen in `/config/www/` kopiert werden.
+> **Hinweis:** Bei Installation über HACS werden die Ressourcen automatisch unter `/hacsfiles/` bereitgestellt (siehe Option 1).
 
 ---
 
