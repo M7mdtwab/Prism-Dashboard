@@ -1,0 +1,71 @@
+# ------------------------------------------------------------------------------
+# PRISM DASHBOARD - NAVIGATION BAR
+# ------------------------------------------------------------------------------
+# Diese Datei enthält die Navigationsleiste im Glassmorphism-Stil.
+# Sie nutzt 'mushroom-chips-card' mit speziellen CSS-Styles.
+# 
+# HINWEIS: 
+# Ersetze 'navigation_path' mit den Pfaden deiner Dashboard-Views.
+# ------------------------------------------------------------------------------
+
+type: custom:mushroom-chips-card
+alignment: center
+card_mod:
+  style: |
+    ha-card {
+      background: rgba(0, 0, 0, 0.2) !important;
+      box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.1) !important;
+      border: none !important;
+      border-radius: 50px !important;
+      margin: 0px auto 0px auto !important;
+      padding: 4px 10px !important;
+      width: fit-content;
+      backdrop-filter: blur(10px);
+      --chip-height: 32px;
+    }
+chips:
+  - type: template
+    content: ERDGESCHOSS
+    tap_action:
+      action: navigate
+      navigation_path: erdgeschoss
+    card_mod:
+      style: |
+        ha-card {
+          background: none !important; border: none !important; box-shadow: none !important;
+          /* Automatische Erkennung des aktiven Pfads */
+          --primary-text-color: {{ '#2196f3' if navigation_path == 'erdgeschoss' else 'rgba(255, 255, 255, 0.5)' }};
+          --chip-font-weight: {{ '500' if navigation_path == 'erdgeschoss' else '300' }}; 
+          --chip-font-size: 13px; letter-spacing: 3px; margin: 0 15px !important;
+        }
+        ha-card:hover { --primary-text-color: rgba(255, 255, 255, 0.9); }
+
+  - type: template
+    content: OBERGESCHOSS
+    tap_action:
+      action: navigate
+      navigation_path: obergeschoss
+    card_mod:
+      style: |
+        ha-card {
+          background: none !important; border: none !important; box-shadow: none !important;
+          --primary-text-color: {{ '#2196f3' if navigation_path == 'obergeschoss' else 'rgba(255, 255, 255, 0.5)' }};
+          --chip-font-weight: {{ '500' if navigation_path == 'obergeschoss' else '300' }};
+          --chip-font-size: 13px; letter-spacing: 3px; margin: 0 15px !important;
+        }
+        ha-card:hover { --primary-text-color: rgba(255, 255, 255, 0.9); }
+
+  - type: template
+    content: BÜRO
+    tap_action:
+      action: navigate
+      navigation_path: buro
+    card_mod:
+      style: |
+        ha-card {
+          background: none !important; border: none !important; box-shadow: none !important;
+          --primary-text-color: {{ '#2196f3' if navigation_path == 'buro' else 'rgba(255, 255, 255, 0.5)' }};
+          --chip-font-weight: {{ '500' if navigation_path == 'buro' else '300' }};
+          --chip-font-size: 13px; letter-spacing: 3px; margin: 0 15px !important;
+        }
+        ha-card:hover { --primary-text-color: rgba(255, 255, 255, 0.9); }

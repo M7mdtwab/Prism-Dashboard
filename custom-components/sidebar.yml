@@ -1,0 +1,248 @@
+# ------------------------------------------------------------------------------
+# PRISM DASHBOARD - SIDEBAR COMPONENT
+# ------------------------------------------------------------------------------
+# Diese Datei enthält den kompletten Code für die linke Seitenleiste.
+# Sie beinhaltet:
+# - Kamerabild
+# - Datum & Uhrzeit
+# - Kalender (nächste Termine)
+# - Wetter & Graph
+# - Stromverbrauchsanzeige
+# ------------------------------------------------------------------------------
+
+type: vertical-stack
+view_layout:
+  grid_area: sidebar
+cards:
+  # 1. Kamera
+  - type: picture-entity
+    entity: camera.garden_main
+    show_state: false
+    show_name: false
+    camera_view: live
+    aspect_ratio: '16:9'
+    tap_action:
+      action: more-info
+    card_mod:
+      style: |
+        ha-card {
+          border-radius: 20px !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+          padding: 0px !important;
+          background: none !important;
+          margin-bottom: 0px;
+          overflow: hidden !important;
+          cursor: pointer;
+        }
+
+  # 2. Uhrzeit & Datum
+  - type: markdown
+    content: |
+      # {{ now().strftime('%H:%M') }}
+      {{ now().strftime('%A') }}, {{ now().strftime('%d. %b') }}
+    card_mod:
+      style:
+        ha-markdown:
+          $: |
+            ha-markdown-element { overflow: hidden !important; }
+            h1 {
+              font-size: 50px !important;
+              line-height: 0.9 !important;
+              font-weight: 400 !important;
+              text-align: center !important;
+              letter-spacing: -2px !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              color: #e0e0e0 !important;
+              font-family: Roboto, sans-serif !important;
+            }
+            p {
+              font-size: 15px !important;
+              text-align: center !important;
+              margin: 2px 0 0 0 !important;
+              color: #ccc !important;
+              opacity: 0.8 !important;
+            }
+        .: |
+          ha-card {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin-top: -10px !important; 
+            margin-bottom: -10px !important;
+            overflow: hidden !important;
+          }
+
+  # 3. Trennlinie
+  - type: markdown
+    content: |
+      <hr style="opacity: 0.1; border-color: #fff; margin: 0;">
+    card_mod:
+      style: >
+        ha-card { background: none; border: none; box-shadow: none;
+        margin: 5px 0 -5px 0 !important; padding: 0 !important; }
+
+  # 4. Kalender (benötigt browser_mod für Popup)
+  - type: custom:mushroom-template-card
+    entity: calendar.family_shared
+    primary: >
+      {{ state_attr('calendar.family_shared', 'message') if
+      state_attr('calendar.family_shared', 'message') else 'Keine Termine' }}
+    secondary: >
+      {% set start_time = state_attr('calendar.family_shared', 'start_time')
+      %} {% if start_time %}
+        {{ as_timestamp(start_time) | timestamp_custom('%d.%m. %H:%M') }}
+      {% else %}
+          
+      {% endif %}
+    icon: mdi:calendar-check
+    icon_color: grey
+    layout: horizontal
+    multiline_secondary: false
+    tap_action:
+      action: fire-dom-event
+      browser_mod:
+        service: browser_mod.popup
+        data:
+          title: Kommende Termine
+          style: |
+            --popup-background-color: rgba(30, 30, 30, 0.9);
+            --popup-border-radius: 20px;
+          content:
+            type: calendar
+            entities:
+              - calendar.family_shared
+            initial_view: list
+            card_mod:
+              style: |
+                ha-card {
+                  box-shadow: none !important;
+                  background: none !important;
+                }
+    card_mod:
+      style: |
+        ha-card {
+          background: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding-top: 0px !important;
+          padding-bottom: 0px !important;
+          margin-top: -5px !important;
+          margin-bottom: -5px !important;
+          --primary-text-color: #e0e0e0;
+          --secondary-text-color: rgba(255,255,255,0.6);
+          justify-content: center !important;
+        }
+        :host {
+          --mush-icon-size: 20px;
+        }
+
+  # 5. Trennlinie
+  - type: markdown
+    content: |
+      <hr style="opacity: 0.1; border-color: #fff; margin: 0;">
+    card_mod:
+      style: >
+        ha-card { background: none; border: none; box-shadow: none;
+        margin: -5px 0 0px 0 !important; padding: 0 !important; }
+
+  # 6. Mini Graph (Outdoor)
+  - type: custom:mini-graph-card
+    entities:
+      - sensor.outdoor_temperature
+    name: Outdoor
+    hours_to_show: 168
+    points_per_hour: 1
+    line_width: 2
+    height: 75
+    align_state: center
+    show:
+      fill: true
+      icon: false
+      name: true
+      state: true
+    color_thresholds:
+      - value: 0
+        color: '#3498db'
+      - value: 20
+        color: '#f39c12'
+    card_mod:
+      style: >
+        ha-card { background: none; border: none; box-shadow: none;
+        margin-top: 0px !important; padding-top: 0px !important;
+        margin-bottom: 0px; overflow: hidden !important; } .name {
+        text-align: center !important; opacity: 0.7; color: #ccc;
+        font-size: 0.8em !important; }  .states { justify-content:
+        center !important; color: #fff; padding-bottom: 0px !important;}
+        .header { padding-bottom: 0px !important; }
+
+  # 7. Wetter
+  - type: weather-forecast
+    entity: weather.home
+    show_current: false
+    show_forecast: true
+    forecast_type: daily
+    card_mod:
+      style: >
+        ha-card { background: none; border: none; box-shadow: none;
+        color: #ccc !important; margin-bottom: -15px; overflow: hidden
+        !important; } ha-card .weather__icon { width: 40px !important;
+        height: 40px !important; } ha-card .temp { font-size: 24px
+        !important; }
+
+  # 8. Trennlinie
+  - type: markdown
+    content: |
+      <hr style="opacity: 0.1; border-color: #fff; margin: 5px 0 0 0;">
+    card_mod:
+      style: >
+        ha-card { background: none; border: none; box-shadow: none;
+        margin: 0 !important; padding: 0 !important; }
+
+  # 9. Energie (3 Spalten)
+  - type: horizontal-stack
+    cards:
+      - type: custom:mushroom-template-card
+        primary: '{{ states(''sensor.power_total_consumption'') | int }}W'
+        icon: mdi:power-plug
+        icon_color: grey
+        layout: vertical
+        tap_action:
+          action: none
+        card_mod:
+          style: |
+            ha-card {
+              background: none !important; border: none !important; box-shadow: none !important; padding: 5px 0 !important;
+              --primary-text-color: #ccc; --card-primary-font-size: 12px; --icon-size: 20px;
+            }
+            ha-state-icon { color: #ccc !important; }
+      - type: custom:mushroom-template-card
+        primary: '{{ states(''sensor.power_grid_feed'') | int }}W'
+        icon: mdi:weather-sunny
+        icon_color: yellow
+        layout: vertical
+        tap_action:
+          action: none
+        card_mod:
+          style: |
+            ha-card {
+              background: none !important; border: none !important; box-shadow: none !important; padding: 5px 0 !important;
+              --primary-text-color: #ccc; --card-primary-font-size: 12px; --icon-size: 20px;
+            }
+            ha-state-icon { color: #ccc !important; }
+      - type: custom:mushroom-template-card
+        primary: '{{ states(''sensor.power_current_usage'') | int }}W'
+        icon: mdi:home
+        icon_color: white
+        layout: vertical
+        tap_action:
+          action: none
+        card_mod:
+          style: |
+            ha-card {
+              background: none !important; border: none !important; box-shadow: none !important; padding: 5px 0 !important;
+              --primary-text-color: white; --card-primary-font-size: 12px; --card-primary-font-weight: bold; --icon-size: 20px;
+            }
+            ha-state-icon { color: white !important; }
