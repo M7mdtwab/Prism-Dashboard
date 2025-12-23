@@ -40,6 +40,13 @@ Es kombiniert halbtransparente „frosted glass“-Oberflächen mit Neumorphismu
 
 Prism ist optimiert für Wandtablets und Smartphones und eignet sich ideal als zentraler Smart-Home-Hub im Alltag.
 
+
+<p align="center">
+  <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FD26FHKRWS3US" target="_blank" rel="noopener noreferrer">
+    <img src="https://pics.paypal.com/00/s/N2EwMzk4NzUtOTQ4Yy00Yjc4LWIwYmUtMTA3MWExNWIzYzMz/file.PNG" alt="SUPPORT PRISM" height="51">
+  </a>
+</p>
+
 ---
 
 ## Features
