@@ -17,6 +17,13 @@
 
 ![prism-heat](https://github.com/user-attachments/assets/5a3a4adb-b228-4696-8dff-768e417fc38f)
 
+
+## prism-media
+
+<img width="388" height="214" alt="prism-media" src="https://github.com/user-attachments/assets/5429e0f0-268f-496e-8ccb-2485fbc9bd30" />
+
+
+
 Eine benutzerdefinierte Thermostat-Knob-Karte mit Glassmorphism-Design.
 
 **Verwendung:**
