@@ -117,6 +117,7 @@ Damit dieses Dashboard funktioniert, müssen folgende Frontend-Integrationen üb
    - `/hacsfiles/Prism-Dashboard/prism-shutter-vertical.js`
    - `/hacsfiles/Prism-Dashboard/prism-vacuum.js`
    - `/hacsfiles/Prism-Dashboard/prism-led.js`
+   - `/hacsfiles/Prism-Dashboard/prism-3dprinter.js`
    - `/hacsfiles/Prism-Dashboard/prism-sidebar.js`
    
    **Light Theme Karten (optional):**

@@ -145,6 +145,23 @@ Eine LED-Licht-Karte mit interaktivem Farbrad, Weiß-Temperatur-Steuerung und He
 
 ---
 
+### prism-3dprinter
+
+Eine 3D-Drucker-Karte mit Glassmorphism-Design zur Anzeige von Fortschritt, Temperaturen, Lüfter und Layer-Infos.
+
+<img width="400" alt="prism-3dprinter" src="images/prism-3dprinter.png" />
+
+**Verwendung:**
+```yaml
+- type: custom:prism-3dprinter
+  entity: sensor.3d_printer_state        # Sensor/Entität mit Druckerstatus & Attributen
+  name: 3D Printer
+  camera_entity: camera.3d_printer       # Optional: Drucker-Kamera
+  image: /local/custom-components/images/prism-3dprinter.png
+```
+
+---
+
 ### prism-sidebar
 
 Eine vollflächige Sidebar-Karte mit Kamera, Uhr, Kalender, Wetter-Forecast und Energie-Übersicht – ideal für Grid-Layouts mit eigener `sidebar`-Spalte.
