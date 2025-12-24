@@ -103,7 +103,16 @@ class PrismLedLightCard extends HTMLElement {
     }
   
     connectedCallback() {
-      if (this.config && !this.hasRendered) {
+      // Always render if config exists, even without hass (for preview)
+      if (this.config) {
+        if (!this.hasRendered) {
+          this.render();
+          this.hasRendered = true;
+          this.setupListeners();
+        }
+      } else if (this.shadowRoot && !this.shadowRoot.innerHTML) {
+        // Render stub config for preview
+        this.config = PrismLedLightCard.getStubConfig();
         this.render();
         this.hasRendered = true;
         this.setupListeners();
