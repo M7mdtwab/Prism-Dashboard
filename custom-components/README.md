@@ -155,12 +155,17 @@ Eine vollflächige Sidebar-Karte mit Kamera, Uhr, Kalender, Wetter-Forecast und 
 ```yaml
 type: custom:prism-sidebar
 camera_entity: camera.garden_main
+camera_entity_2: camera.front_door  # Optional: Zweite Kamera
+camera_entity_3: camera.backyard    # Optional: Dritte Kamera
+rotation_interval: 10               # Optional: Rotationsintervall in Sekunden (3-60, Standard: 10)
 weather_entity: weather.home
 grid_entity: sensor.power_grid
 solar_entity: sensor.power_solar
 home_entity: sensor.power_home
 calendar_entity: calendar.termine
 ```
+
+**Hinweis:** Wenn mehrere Kameras konfiguriert sind, rotieren sie automatisch durch. Das Rotationsintervall kann zwischen 3 und 60 Sekunden eingestellt werden.
 
 ---
 
@@ -174,12 +179,17 @@ Light Theme Version der Sidebar-Karte mit hellem Glassmorphism-Design.
 ```yaml
 type: custom:prism-sidebar-light
 camera_entity: camera.garden_main
+camera_entity_2: camera.front_door  # Optional: Zweite Kamera
+camera_entity_3: camera.backyard    # Optional: Dritte Kamera
+rotation_interval: 10               # Optional: Rotationsintervall in Sekunden (3-60, Standard: 10)
 weather_entity: weather.home
 grid_entity: sensor.power_grid
 solar_entity: sensor.power_solar
 home_entity: sensor.power_home
 calendar_entity: calendar.termine
 ```
+
+**Hinweis:** Wenn mehrere Kameras konfiguriert sind, rotieren sie automatisch durch. Das Rotationsintervall kann zwischen 3 und 60 Sekunden eingestellt werden.
 
 ---
 
