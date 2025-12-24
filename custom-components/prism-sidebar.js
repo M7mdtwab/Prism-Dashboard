@@ -762,12 +762,13 @@ class PrismSidebarCard extends HTMLElement {
             return [x, y];
         });
 
-        // Start path from bottom-left corner
+        // Start path from bottom-left (like mini-graph-card: no vertical sides)
         let path = `M 0,${height} `;
         
-        // Move to first data point
+        // Horizontal line to first data point's x position, then up to first point
         if (points.length > 0) {
-            path += `L ${points[0][0]},${points[0][1]} `;
+            const [firstX, firstY] = points[0];
+            path += `L ${firstX},${height} L ${firstX},${firstY} `;
         }
         
         // Draw smooth lines through all points (similar to mini-graph-card)
@@ -776,8 +777,12 @@ class PrismSidebarCard extends HTMLElement {
             path += `L ${x},${y} `;
         }
 
-        // Close shape: line to bottom-right, then back to start
-        path += `L ${width},${height} Z`;
+        // Close shape: down to bottom at last point's x, then horizontal line back to start
+        if (points.length > 0) {
+            const [lastX, lastY] = points[points.length - 1];
+            path += `L ${lastX},${height} `; // Down from last point
+        }
+        path += `L 0,${height} Z`; // Horizontal line back to start (no vertical line on left)
         
         return path;
     }
