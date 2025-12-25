@@ -434,8 +434,22 @@ class PrismBambuCard extends HTMLElement {
   }
   
   openCameraPopup() {
-    if (!this._hass || !this._deviceEntities['camera']) return;
-    const entityId = this._deviceEntities['camera'].entity_id;
+    if (!this._hass) return;
+    
+    // Get camera entity - prefer config, then auto-detected
+    let entityId = this.config.camera_entity;
+    if (!entityId) {
+      // Find camera entity from device entities (must be camera domain)
+      for (const key in this._deviceEntities) {
+        const info = this._deviceEntities[key];
+        if (info?.entity_id?.startsWith('camera.')) {
+          entityId = info.entity_id;
+          break;
+        }
+      }
+    }
+    
+    if (!entityId) return;
     
     // Fire the more-info event to open the camera popup
     const event = new CustomEvent('hass-more-info', {
@@ -545,9 +559,28 @@ class PrismBambuCard extends HTMLElement {
     const name = this.config.name || device?.name || 'Bambu Lab Printer';
     
     // Camera - auto-detect from device entities or use config
+    // IMPORTANT: Only use entities from the 'camera' domain, not switches!
     let cameraEntity = this.config.camera_entity;
-    if (!cameraEntity && this._deviceEntities['camera']) {
-      cameraEntity = this._deviceEntities['camera'].entity_id;
+    if (!cameraEntity) {
+      // Try to find camera entity from device entities
+      const cameraEntityInfo = this._deviceEntities['camera'];
+      if (cameraEntityInfo?.entity_id?.startsWith('camera.')) {
+        cameraEntity = cameraEntityInfo.entity_id;
+      } else {
+        // Fallback: Search all device entities for one starting with 'camera.'
+        for (const key in this._deviceEntities) {
+          const info = this._deviceEntities[key];
+          if (info?.entity_id?.startsWith('camera.')) {
+            cameraEntity = info.entity_id;
+            break;
+          }
+        }
+      }
+    }
+    // Verify the camera entity is actually from camera domain
+    if (cameraEntity && !cameraEntity.startsWith('camera.')) {
+      console.warn('Prism Bambu: Configured camera_entity is not from camera domain:', cameraEntity);
+      cameraEntity = null;
     }
     const cameraState = cameraEntity ? this._hass.states[cameraEntity] : null;
     const cameraImage = cameraState?.attributes?.entity_picture || null;
