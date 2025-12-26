@@ -27,7 +27,8 @@ const ENTITY_KEYS = [
   'cooling_fan_speed', 'cover_image', 'current_layer', 'door_open', 'humidity',
   'nozzle_temp', 'power', 'print_progress', 'print_status', 'remaining_time',
   'speed_profile', 'stage', 'target_bed_temp', 'target_bed_temperature',
-  'target_nozzle_temp', 'target_nozzle_temperature', 'total_layers', 'camera'
+  'target_nozzle_temp', 'target_nozzle_temperature', 'total_layers', 'camera',
+  'titelbild' // German translation key for cover image
 ];
 
 class PrismBambuCard extends HTMLElement {
@@ -89,6 +90,16 @@ class PrismBambuCard extends HTMLElement {
           name: 'image',
           label: 'Printer image path (optional, supports .png and .jpg)',
           selector: { text: {} }
+        },
+        {
+          name: 'show_cover_image',
+          label: 'Show 3D model preview (Titelbild) with print progress',
+          selector: { boolean: {} }
+        },
+        {
+          name: 'cover_image_entity',
+          label: 'Cover image entity (optional - auto-detected if not set)',
+          selector: { entity: { domain: 'image' } }
         },
         {
           name: 'custom_humidity',
@@ -276,6 +287,47 @@ class PrismBambuCard extends HTMLElement {
         }
       }
     }
+    
+    // Update power button state from actual HA state
+    if (data.powerSwitch) {
+      const powerBtn = this.shadowRoot.querySelector('.btn-power');
+      if (powerBtn) {
+        if (data.isPowerOn) {
+          powerBtn.classList.remove('off');
+          powerBtn.classList.add('on');
+          powerBtn.title = 'Power Off';
+        } else {
+          powerBtn.classList.remove('on');
+          powerBtn.classList.add('off');
+          powerBtn.title = 'Power On';
+        }
+      }
+    }
+    
+    // Update cover image progress
+    const coverProgress = this.shadowRoot.querySelector('.cover-image-progress');
+    if (coverProgress) {
+      coverProgress.style.setProperty('--progress-height', `${data.progress}%`);
+    }
+    
+    const coverBadge = this.shadowRoot.querySelector('.cover-progress-badge');
+    if (coverBadge) {
+      coverBadge.textContent = `${Math.round(data.progress)}%`;
+    }
+    
+    // Update cover image wrapper classes for state changes
+    const coverWrapper = this.shadowRoot.querySelector('.cover-image-wrapper');
+    if (coverWrapper) {
+      coverWrapper.classList.toggle('printing', data.isPrinting);
+      coverWrapper.classList.toggle('paused', data.isPaused);
+      coverWrapper.classList.toggle('idle', data.isIdle);
+    }
+    
+    // Update cover image URL if it changed
+    const coverImage = this.shadowRoot.querySelector('.cover-image');
+    if (coverImage && data.coverImageUrl && coverImage.src !== data.coverImageUrl) {
+      coverImage.src = data.coverImageUrl;
+    }
   }
 
   connectedCallback() {
@@ -369,7 +421,26 @@ class PrismBambuCard extends HTMLElement {
   handlePowerToggle() {
     if (!this._hass || !this.config.power_switch) return;
     const entityId = this.config.power_switch;
+    
+    // Call the service
     this._hass.callService('switch', 'toggle', { entity_id: entityId });
+    
+    // Optimistically update UI immediately (don't wait for HA state update)
+    const powerBtn = this.shadowRoot?.querySelector('.btn-power');
+    const currentState = this._hass.states[entityId]?.state;
+    const newState = currentState === 'on' ? 'off' : 'on';
+    
+    if (powerBtn) {
+      if (newState === 'on') {
+        powerBtn.classList.remove('off');
+        powerBtn.classList.add('on');
+        powerBtn.title = 'Power Off';
+      } else {
+        powerBtn.classList.remove('on');
+        powerBtn.classList.add('off');
+        powerBtn.title = 'Power On';
+      }
+    }
   }
 
   toggleView() {
@@ -597,14 +668,56 @@ class PrismBambuCard extends HTMLElement {
     // Debug: Log camera entity
     console.log('Prism Bambu: Camera entity:', cameraEntity, 'Has image:', !!cameraImage);
     
+    // Cover image (Titelbild / 3D model preview) - auto-detect or use config
+    let coverImageEntity = this.config.cover_image_entity;
+    if (!coverImageEntity) {
+      // Try to find cover_image entity from device entities
+      const coverImageInfo = this._deviceEntities['cover_image'] || this._deviceEntities['titelbild'];
+      if (coverImageInfo?.entity_id?.startsWith('image.')) {
+        coverImageEntity = coverImageInfo.entity_id;
+      } else {
+        // Fallback: Search all device entities for one starting with 'image.' and containing titelbild/cover
+        for (const key in this._deviceEntities) {
+          const info = this._deviceEntities[key];
+          if (info?.entity_id?.startsWith('image.') && 
+              (info.entity_id.toLowerCase().includes('titelbild') || 
+               info.entity_id.toLowerCase().includes('cover'))) {
+            coverImageEntity = info.entity_id;
+            break;
+          }
+        }
+      }
+    }
+    // Verify the cover image entity is from image domain
+    if (coverImageEntity && !coverImageEntity.startsWith('image.')) {
+      console.warn('Prism Bambu: Cover image entity is not from image domain:', coverImageEntity);
+      coverImageEntity = null;
+    }
+    
+    // Get cover image URL from entity state
+    let coverImageUrl = null;
+    if (coverImageEntity && this.config.show_cover_image) {
+      const coverState = this._hass.states[coverImageEntity];
+      // Image entities have entity_picture attribute with the actual image URL
+      coverImageUrl = coverState?.attributes?.entity_picture || null;
+      // Sometimes the URL needs the HA base URL prepended
+      if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
+        coverImageUrl = '/' + coverImageUrl;
+      }
+    }
+    
+    // Debug: Log cover image entity
+    console.log('Prism Bambu: Cover image entity:', coverImageEntity, 'URL:', coverImageUrl);
+    
     // Image path - use configured image or default
     // Supports both .png and .jpg formats
     const printerImg = this.config.image || '/local/custom-components/images/prism-bambu-pic.png';
 
-    // AMS Data - Use configured AMS device or find connected devices
+    // AMS Data - ONLY use manually configured AMS device (no auto-detect)
     let amsData = [];
     let foundAnyAms = false;
     const trayEntities = [];
+    let isExternalSpool = false;
     
     // Helper function to check if entity is a tray/slot entity
     const isTrayEntity = (entityInfo, entityId) => {
@@ -619,31 +732,49 @@ class PrismBambuCard extends HTMLElement {
       return false;
     };
     
-    // Method 1: Use manually configured AMS device
+    // ONLY look for AMS if explicitly configured
     if (this.config.ams_device) {
       const amsDeviceId = this.config.ams_device;
-      for (const entityId in this._hass.entities) {
-        const entityInfo = this._hass.entities[entityId];
-        if (entityInfo.device_id === amsDeviceId && isTrayEntity(entityInfo, entityId)) {
-          trayEntities.push({
-            entityId,
-            translationKey: entityInfo.translation_key || entityId,
-            ...entityInfo
-          });
-        }
-      }
-    }
-    
-    // Method 2: Auto-detect AMS by looking at devices connected via this printer
-    if (trayEntities.length === 0) {
-      const printerDeviceId = this.config.printer;
-      const connectedDevices = Object.values(this._hass.devices || {})
-        .filter(d => d.via_device_id === printerDeviceId);
+      const amsDevice = this._hass.devices?.[amsDeviceId];
+      const amsModel = amsDevice?.model || '';
+      const amsName = amsDevice?.name || '';
       
-      for (const connectedDevice of connectedDevices) {
+      // Check if this is an External Spool device
+      isExternalSpool = amsModel.toLowerCase().includes('external spool') || 
+                        amsName.toLowerCase().includes('externalspool');
+      
+      console.log('Prism Bambu: AMS device:', amsName, 'model:', amsModel, 'isExternalSpool:', isExternalSpool);
+      
+      if (isExternalSpool) {
+        // External Spool: The device itself contains filament info
+        // Look for sensor entities on this device that have filament attributes
         for (const entityId in this._hass.entities) {
           const entityInfo = this._hass.entities[entityId];
-          if (entityInfo.device_id === connectedDevice.id && isTrayEntity(entityInfo, entityId)) {
+          if (entityInfo.device_id === amsDeviceId) {
+            // Check if this entity has filament-related attributes
+            const state = this._hass.states[entityId];
+            const attr = state?.attributes || {};
+            
+            // External Spool sensor typically has color, type, name attributes
+            if (attr.color || attr.type || attr.name || entityId.includes('sensor.')) {
+              // This looks like a filament entity
+              if (!trayEntities.find(e => e.entityId === entityId)) {
+                trayEntities.push({
+                  entityId,
+                  translationKey: entityInfo.translation_key || 'external_spool',
+                  ...entityInfo
+                });
+                console.log('Prism Bambu: Found External Spool entity:', entityId);
+                break; // External spool has only one sensor per device
+              }
+            }
+          }
+        }
+      } else {
+        // Regular AMS: Look for tray entities
+        for (const entityId in this._hass.entities) {
+          const entityInfo = this._hass.entities[entityId];
+          if (entityInfo.device_id === amsDeviceId && isTrayEntity(entityInfo, entityId)) {
             trayEntities.push({
               entityId,
               translationKey: entityInfo.translation_key || entityId,
@@ -652,31 +783,35 @@ class PrismBambuCard extends HTMLElement {
           }
         }
       }
+      
+      // Sort tray entities by their slot/tray number
+      trayEntities.sort((a, b) => {
+        const getNum = (e) => {
+          const tkMatch = e.translationKey?.match(/(\d+)$/);
+          if (tkMatch) return parseInt(tkMatch[1]);
+          const idMatch = e.entityId?.match(/slot_(\d+)|tray_(\d+)|spool(\d*)/i);
+          if (idMatch) return parseInt(idMatch[1] || idMatch[2] || idMatch[3] || 1);
+          return 1;
+        };
+        return getNum(a) - getNum(b);
+      });
     }
     
-    // Sort tray entities by their slot/tray number
-    trayEntities.sort((a, b) => {
-      // Extract number from translation_key (tray_1) or entity_id (ams_1_slot_1)
-      const getNum = (e) => {
-        const tkMatch = e.translationKey?.match(/(\d+)$/);
-        if (tkMatch) return parseInt(tkMatch[1]);
-        const idMatch = e.entityId?.match(/slot_(\d+)|tray_(\d+)/);
-        if (idMatch) return parseInt(idMatch[1] || idMatch[2]);
-        return 0;
-      };
-      return getNum(a) - getNum(b);
-    });
-    
-    // Debug: Log found AMS tray entities
+    // Debug: Log found entities
     if (trayEntities.length > 0) {
-      console.log('Prism Bambu: Found AMS tray entities:', trayEntities.map(e => e.entityId));
-      // Log first entity's full state for debugging
+      console.log('Prism Bambu: Found tray/spool entities:', trayEntities.map(e => e.entityId));
       const firstState = this._hass.states[trayEntities[0].entityId];
-      console.log('Prism Bambu: First tray full state:', firstState);
+      console.log('Prism Bambu: First entity full state:', firstState);
+    } else if (this.config.ams_device) {
+      console.log('Prism Bambu: No tray entities found for AMS device');
     }
     
     // Build AMS data from found tray entities
-    for (let i = 0; i < Math.max(4, trayEntities.length); i++) {
+    // For External Spool: only show actual slots found (1 or 2)
+    // For full AMS: show 4 slots (fill with empty if needed)
+    const targetSlots = isExternalSpool ? Math.max(1, trayEntities.length) : (trayEntities.length > 0 ? Math.max(4, trayEntities.length) : 0);
+    
+    for (let i = 0; i < targetSlots; i++) {
       const trayEntity = trayEntities[i];
       
       if (trayEntity) {
@@ -757,8 +892,8 @@ class PrismBambuCard extends HTMLElement {
           active,
           empty: isEmpty
         });
-      } else if (i < 4) {
-        // Fill empty slots up to 4
+      } else if (!isExternalSpool && i < 4) {
+        // Fill empty slots up to 4 only for full AMS (not external spool)
         amsData.push({
           id: i + 1,
           type: '',
@@ -771,17 +906,12 @@ class PrismBambuCard extends HTMLElement {
     }
     
     // Debug: Log final AMS data
-    console.log('Prism Bambu: Final AMS data:', amsData);
+    console.log('Prism Bambu: Final AMS data:', amsData, 'isExternalSpool:', isExternalSpool, 'ams_device configured:', !!this.config.ams_device);
     
-    // If no AMS data found at all, show placeholder (not preview data!)
-    if (!foundAnyAms) {
-      console.log('Prism Bambu: No AMS found, showing empty slots');
-      amsData = [
-        { id: 1, type: '', color: '#666666', remaining: 0, active: false, empty: true },
-        { id: 2, type: '', color: '#666666', remaining: 0, active: false, empty: true },
-        { id: 3, type: '', color: '#666666', remaining: 0, active: false, empty: true },
-        { id: 4, type: '', color: '#666666', remaining: 0, active: false, empty: true }
-      ];
+    // If no AMS device configured OR no entities found, hide section
+    if (!this.config.ams_device || amsData.length === 0) {
+      console.log('Prism Bambu: No AMS configured or no data, hiding AMS section');
+      amsData = []; // Empty = hide section
     }
 
     const returnData = {
@@ -802,7 +932,11 @@ class PrismBambuCard extends HTMLElement {
       cameraEntity,
       cameraImage,
       printerImg,
+      coverImageEntity,
+      coverImageUrl,
+      showCoverImage: this.config.show_cover_image && coverImageUrl,
       amsData,
+      isExternalSpool,
       isPrinting,
       isPaused,
       isIdle,
@@ -841,12 +975,16 @@ class PrismBambuCard extends HTMLElement {
       cameraEntity: null,
       cameraImage: null,
       printerImg: this.config?.image || '/local/custom-components/images/prism-bambu-pic.png',
+      coverImageEntity: null,
+      coverImageUrl: null,
+      showCoverImage: false,
       amsData: [
         { id: 1, type: 'PLA', color: '#FF4444', remaining: 85, active: false },
         { id: 2, type: 'PETG', color: '#4488FF', remaining: 42, active: true },
         { id: 3, type: 'ABS', color: '#111111', remaining: 12, active: false },
         { id: 4, type: 'TPU', color: '#FFFFFF', remaining: 0, active: false, empty: true }
       ],
+      isExternalSpool: false,
       isPrinting: true,
       isPaused: false,
       isIdle: false,
@@ -1004,6 +1142,38 @@ class PrismBambuCard extends HTMLElement {
             gap: 12px;
             margin-bottom: 24px;
             z-index: 20;
+        }
+        /* For fewer slots, keep same slot size as 4-slot layout */
+        .ams-grid.slots-1 {
+            grid-template-columns: repeat(4, 1fr);
+            /* Only first slot is visible, others are empty space */
+        }
+        .ams-grid.slots-1 .ams-slot {
+            grid-column: 2 / 3; /* Center the single slot */
+        }
+        .ams-grid.slots-2 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .ams-grid.slots-2 .ams-slot:nth-child(1) {
+            grid-column: 2;
+        }
+        .ams-grid.slots-2 .ams-slot:nth-child(2) {
+            grid-column: 3;
+        }
+        .ams-grid.slots-3 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .ams-grid.slots-3 .ams-slot:nth-child(1) {
+            grid-column: 1;
+        }
+        .ams-grid.slots-3 .ams-slot:nth-child(2) {
+            grid-column: 2;
+        }
+        .ams-grid.slots-3 .ams-slot:nth-child(3) {
+            grid-column: 3;
+        }
+        .ams-grid.hidden {
+            display: none;
         }
         .ams-slot {
             position: relative;
@@ -1222,6 +1392,142 @@ class PrismBambuCard extends HTMLElement {
         }
         .camera-feed:hover {
             opacity: 0.9;
+        }
+        
+        /* Cover Image (3D Model Preview) - positioned on print bed */
+        .cover-image-container {
+            position: absolute;
+            /* Position on the print bed area - adjust based on printer image */
+            bottom: 28%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 38%;
+            max-width: 150px;
+            z-index: 15;
+            pointer-events: none;
+        }
+        .cover-image-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* Square aspect ratio */
+            border-radius: 8px;
+            overflow: visible;
+            background: transparent;
+        }
+        .cover-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Subtle shadow to make it "sit" on the bed */
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
+                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
+                    brightness(1.0) contrast(1.1);
+            transition: filter 0.3s ease, transform 0.3s ease;
+        }
+        /* Reflection/shadow on the bed */
+        .cover-image-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 10%;
+            right: 10%;
+            height: 8px;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(4px);
+        }
+        /* Progress overlay - fills from bottom to top with green tint */
+        .cover-image-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--progress-height, 0%);
+            background: linear-gradient(
+                to top,
+                rgba(74, 222, 128, 0.6) 0%,
+                rgba(34, 197, 94, 0.4) 40%,
+                rgba(34, 197, 94, 0.15) 100%
+            );
+            mix-blend-mode: hard-light;
+            pointer-events: none;
+            transition: height 0.5s ease-out;
+            border-radius: 4px;
+        }
+        /* Glow effect when printing - affects the image directly */
+        .cover-image-wrapper.printing .cover-image {
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
+                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
+                    drop-shadow(0 0 20px rgba(74, 222, 128, 0.4))
+                    brightness(1.1) contrast(1.1);
+            animation: modelGlow 2s ease-in-out infinite;
+        }
+        @keyframes modelGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
+                        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
+                        drop-shadow(0 0 15px rgba(74, 222, 128, 0.3))
+                        brightness(1.05) contrast(1.1);
+            }
+            50% { 
+                filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
+                        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
+                        drop-shadow(0 0 30px rgba(74, 222, 128, 0.5))
+                        brightness(1.15) contrast(1.1);
+            }
+        }
+        /* Idle state - dim and grayscale */
+        .cover-image-wrapper.idle .cover-image {
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) 
+                    brightness(0.5) contrast(0.9) grayscale(0.6);
+        }
+        .cover-image-wrapper.idle::after {
+            opacity: 0.3;
+        }
+        /* Paused state - yellow tint */
+        .cover-image-wrapper.paused .cover-image-progress {
+            background: linear-gradient(
+                to top,
+                rgba(251, 191, 36, 0.6) 0%,
+                rgba(245, 158, 11, 0.4) 40%,
+                rgba(245, 158, 11, 0.15) 100%
+            );
+        }
+        .cover-image-wrapper.paused .cover-image {
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
+                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
+                    drop-shadow(0 0 15px rgba(251, 191, 36, 0.4))
+                    brightness(1.0) contrast(1.1);
+        }
+        /* Progress percentage badge - positioned below model */
+        .cover-progress-badge {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(20, 20, 20, 0.9));
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: monospace;
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            z-index: 20;
+            backdrop-filter: blur(4px);
+        }
+        .cover-image-wrapper.paused .cover-progress-badge {
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+        .cover-image-wrapper.idle .cover-progress-badge {
+            color: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.6);
         }
         
         /* Overlays */
@@ -1443,7 +1749,8 @@ class PrismBambuCard extends HTMLElement {
             </div>
         </div>
 
-        <div class="ams-grid">
+        ${data.amsData.length > 0 ? `
+        <div class="ams-grid ${data.amsData.length <= 3 ? 'slots-' + data.amsData.length : ''}">
             ${data.amsData.map(slot => `
                 <div class="ams-slot ${slot.active ? 'active' : ''}">
                     <div class="spool-visual">
@@ -1459,6 +1766,7 @@ class PrismBambuCard extends HTMLElement {
                 </div>
             `).join('')}
         </div>
+        ` : ''}
 
         <div class="main-visual ${!data.isLightOn ? 'light-off' : ''}">
             ${data.powerSwitch ? `
@@ -1474,6 +1782,16 @@ class PrismBambuCard extends HTMLElement {
                 <div class="printer-fallback-icon" style="display: none;">
                   <ha-icon icon="mdi:printer-3d"></ha-icon>
                 </div>
+                
+                ${data.showCoverImage ? `
+                <div class="cover-image-container">
+                    <div class="cover-image-wrapper ${data.isPrinting ? 'printing' : ''} ${data.isPaused ? 'paused' : ''} ${data.isIdle ? 'idle' : ''}">
+                        <img src="${data.coverImageUrl}" class="cover-image" alt="3D Model" />
+                        <div class="cover-image-progress" style="--progress-height: ${data.progress}%;"></div>
+                        <div class="cover-progress-badge">${Math.round(data.progress)}%</div>
+                    </div>
+                </div>
+                ` : ''}
                 
                 <div class="overlay-left">
                     <div class="overlay-pill">
