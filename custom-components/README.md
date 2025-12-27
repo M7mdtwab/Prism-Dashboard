@@ -256,6 +256,97 @@ Die Karte ist kompatibel mit der [ha-bambulab Integration](https://github.com/gr
 
 ---
 
+### prism-creality
+
+Eine Creality 3D-Drucker-Karte mit Glassmorphism-Design und vollständiger Anzeige von Druckfortschritt, Temperaturen, Lüfter, Layer-Infos. Unterstützt K1, K1C, K1 Max, K1 SE und weitere Creality Drucker.
+
+<img width="400" alt="prism-creality" src="images/prism-creality.jpg" />
+
+**Verwendung:**
+
+**Basis-Konfiguration (Visual Editor):**
+```yaml
+- type: custom:prism-creality
+  printer: <device_id>  # Creality Drucker-Gerät (z.B. aus Device-Registry)
+  name: Creality Printer  # Optional: Custom Name
+  image: /local/custom-components/images/prism-creality.webp  # Optional: Drucker-Bild
+```
+
+**Erweiterte Konfiguration (mit Kamera und Light):**
+```yaml
+- type: custom:prism-creality
+  printer: <device_id>  # Creality Drucker-Gerät
+  name: Creality K1 SE
+  camera_entity: camera.creality_k1_se_camera  # Optional: Camera Entity
+  light_switch: switch.creality_light  # Optional: Light Switch Entity
+  image: /local/custom-components/images/prism-creality.webp  # Optional: .webp, .png oder .jpg
+```
+
+**Hinweis:** Die Karte verwendet die **Device-Registry** von Home Assistant und filtert automatisch alle relevanten Entities basierend auf dem ausgewählten Drucker-Gerät. Dies funktioniert mit der [Creality-Control Integration](https://github.com/SiloCityLabs/Creality-Control).
+
+**Features:**
+- ✅ **Auto-Entity-Erkennung**: Automatische Erkennung von Light Switch und Camera Entities
+- ✅ **Live Kamera-Stream**: Toggle zwischen Drucker-Bild und Live-Video-Stream
+- ✅ **Kamera-Popup**: Klick auf Kamera öffnet großes More-Info Fenster
+- ✅ **Light Control**: Licht-Button zum Ein/Ausschalten der Drucker-Beleuchtung
+- ✅ **Dynamisches Bild**: Drucker-Bild wird abgedunkelt wenn Licht aus ist
+- ✅ **Interaktive Buttons**: Pause/Resume, Stop, Home All Axes mit korrekter State-Logik
+- ✅ **Temperatur-Overlays**: Nozzle, Bed, Box/Chamber mit Ziel-Temperaturen
+- ✅ **Fan-Geschwindigkeiten**: Model Fan, Auxiliary Fan, Case Fan Anzeige
+- ✅ **Layer-Informationen**: Aktuelle Layer / Gesamt-Layer
+- ✅ **Fortschrittsbalken**: Visueller Progress-Bar mit Prozent
+- ✅ **Status-Indikator**: Farbiger Punkt (grün=pulsierend beim Drucken, gelb=pausiert, grau=idle)
+- ✅ **Power Switch**: Optionaler Power-Button (grün=an, grau/rot=aus)
+
+**Konfiguration im Visual Editor:**
+
+1. **Printer Device**: Wähle dein Creality Drucker-Gerät aus der Device-Liste
+2. **Name** (optional): Custom Name für die Karte
+3. **Camera Entity** (optional): Camera Entity für Live-Stream (wird auch auto-erkannt)
+4. **Light Switch** (optional): Light/Switch Entity für Beleuchtung (wird auch auto-erkannt)
+5. **Image** (optional): Pfad zum Drucker-Bild (`.webp`, `.png` oder `.jpg`)
+
+**Automatische Entity-Erkennung:**
+
+Die Karte erkennt automatisch alle relevanten Entities basierend auf dem Drucker-Gerät:
+
+- **Print Status**: `print_state` oder `device_state` Entity
+- **Temperatures**: `nozzle_temp`, `bed_temp`, `box_temp` mit Ziel-Temperaturen
+- **Fans**: `model_fan_pct`, `auxiliary_fan_pct`, `case_fan_pct`
+- **Progress**: `print_progress`, `time_left`, `current_layer`, `total_layer`
+- **Light Switch**: `switch.creality_light` (wird automatisch erkannt)
+- **Camera**: `camera.creality_*_camera` (wird automatisch erkannt oder kann manuell gesetzt werden)
+
+**Unterstützte Drucker-Modelle:**
+
+- ✅ **K1, K1C, K1 Max, K1 SE** (FDM Drucker)
+- ✅ **K2 Plus, K2 Pro** (FDM Drucker)
+- ✅ **Halot Series** (Resin Drucker)
+- ✅ Weitere Creality Drucker mit WebSocket-Support
+
+**Creality-Control Integration:**
+Die Karte ist kompatibel mit der [Creality-Control Integration](https://github.com/SiloCityLabs/Creality-Control) und nutzt alle verfügbaren Sensoren, Switches, Buttons und Camera Entities.
+
+**Bild hochladen:**
+
+Das Drucker-Bild muss manuell in Home Assistant hochgeladen werden:
+1. Kopiere das Bild nach `/config/www/custom-components/images/prism-creality.webp` (oder `.png`/`.jpg`)
+2. Oder verwende einen anderen Pfad und gib ihn im `image`-Feld an
+3. Die Karte unterstützt `.webp`, `.png` und `.jpg` Formate
+4. Als letzter Fallback wird ein Drucker-Icon angezeigt
+
+**Interaktionen:**
+
+- **Licht-Button**: Toggle Light an/aus (Button zeigt sofortigen Feedback)
+- **Kamera-Button**: Wechselt zwischen Drucker-Bild und Live-Kamera-Stream
+- **Kamera-Bild klicken**: Öffnet großes More-Info Popup (wie bei HA Bild-Entities)
+- **Pause-Button**: Pause/Resume Print (nur aktiv wenn Drucker druckt/pausiert)
+- **Stop-Button**: Stop Print (nur aktiv wenn Drucker druckt/pausiert)
+- **Home-Button**: Home All Axes (nur aktiv wenn Drucker idle ist)
+- **Power-Button**: Toggle Power Switch (wenn konfiguriert)
+
+---
+
 ### prism-energy
 
 Eine Energie-Flow-Karte mit Glassmorphism-Design zur Visualisierung von Solar-Erzeugung, Netz-Bezug/Einspeisung, Batterie-Speicher, Hausverbrauch und E-Auto-Ladung. Optimiert für die [OpenEMS/Fenecon Integration](https://github.com/Lamarqe/ha_openems).
