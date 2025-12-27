@@ -15,6 +15,11 @@ Dieses Repository enthält folgende Custom Cards:
 - **prism-shutter-vertical** - Vertikale Jalousien-Karte mit kompaktem Design
 - **prism-vacuum** - Staubsauger-Roboter-Karte mit Animation und Saugleistungssteuerung
 - **prism-led** - Licht-Karte mit Farbrad und Temperatursteuerung
+- **prism-3dprinter** - 3D-Drucker-Karte mit Glassmorphism-Design
+- **prism-bambu** - Bambu Lab 3D-Drucker-Karte mit AMS Support
+- **prism-creality** - Creality 3D-Drucker-Karte für K1, K1C, K1 Max, K1 SE
+- **prism-energy** - Energie-Flow-Karte für Solar, Batterie, Netz und E-Auto
+- **prism-sidebar** - Sidebar-Karte mit Kamera, Uhr, Kalender und Wetter
 
 Alle Karten sind auch als **Light Theme** Versionen verfügbar (mit `-light` Suffix).
 
@@ -35,6 +40,11 @@ Nach der Installation über HACS:
    - `/hacsfiles/Prism-Dashboard/prism-shutter-vertical.js`
    - `/hacsfiles/Prism-Dashboard/prism-vacuum.js`
    - `/hacsfiles/Prism-Dashboard/prism-led.js`
+   - `/hacsfiles/Prism-Dashboard/prism-3dprinter.js`
+   - `/hacsfiles/Prism-Dashboard/prism-bambu.js`
+   - `/hacsfiles/Prism-Dashboard/prism-creality.js`
+   - `/hacsfiles/Prism-Dashboard/prism-energy.js`
+   - `/hacsfiles/Prism-Dashboard/prism-sidebar.js`
    
    Light Theme Versionen (optional): `/hacsfiles/Prism-Dashboard/prism-*-light.js`
 
