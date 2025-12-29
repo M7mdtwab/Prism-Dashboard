@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2025-12-29T17:38:52.016Z
+ * Build Date: 2025-12-29T18:31:10.959Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -2819,11 +2819,54 @@ class PrismMediaCard extends HTMLElement {
     if (!this.config || !this.config.entity) return;
     
     const attr = this._entity ? this._entity.attributes : {};
-    const title = attr.media_title || 'No Media';
-    const artist = attr.media_artist || attr.media_series_title || 'Idle';
+    const state = this._entity ? this._entity.state : 'idle';
+    
+    // Title: try various attributes
+    const title = attr.media_title || attr.media_album_name || 'No Media';
+    
+    // Subtitle: try artist, series, app name, channel, or show state
+    let subtitle = '';
+    if (attr.media_artist) {
+      subtitle = attr.media_artist;
+    } else if (attr.media_series_title) {
+      subtitle = attr.media_series_title;
+      // Add episode info if available
+      if (attr.media_season && attr.media_episode) {
+        subtitle += ` S${attr.media_season}E${attr.media_episode}`;
+      }
+    } else if (attr.media_channel) {
+      subtitle = attr.media_channel;
+    } else if (attr.app_name) {
+      // Apple TV and similar devices
+      subtitle = attr.app_name;
+    } else if (attr.source) {
+      subtitle = attr.source;
+    } else {
+      // Fallback to translated state
+      const stateMap = {
+        'playing': 'Wiedergabe',
+        'paused': 'Pausiert', 
+        'idle': 'Bereit',
+        'off': 'Aus',
+        'standby': 'Standby',
+        'buffering': 'Puffern...',
+        'on': 'An',
+        'unavailable': 'Nicht verfügbar'
+      };
+      subtitle = stateMap[state] || state;
+    }
+    
     const art = attr.entity_picture; // This usually returns e.g. /api/media_player_proxy/...
-    const vol = (attr.volume_level || 0) * 100;
-    const isPlaying = this._entity ? this._entity.state === 'playing' : false;
+    
+    // Volume: handle undefined, null, or 0
+    const volLevel = attr.volume_level;
+    const vol = (volLevel !== undefined && volLevel !== null) ? volLevel * 100 : 0;
+    const hasVolume = volLevel !== undefined && volLevel !== null;
+    const isMuted = attr.is_volume_muted === true;
+    
+    const isPlaying = state === 'playing';
+    const isPaused = state === 'paused';
+    const isActive = isPlaying || isPaused;
     const playingColor = this.config.playing_color || "#60a5fa";
 
     this.shadowRoot.innerHTML = `
@@ -2866,7 +2909,18 @@ class PrismMediaCard extends HTMLElement {
         
         .info { flex: 1; min-width: 0; }
         .title { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .artist { font-size: 14px; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+        .subtitle-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .subtitle { font-size: 14px; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .state-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+            background: ${isPlaying ? playingColor : isPaused ? '#f59e0b' : 'rgba(255,255,255,0.3)'};
+            ${isPlaying ? `box-shadow: 0 0 6px ${playingColor};` : ''}
+            ${isPlaying ? 'animation: pulse 2s infinite;' : ''}
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         
         .volume-container {
             margin-top: 12px; display: flex; align-items: center; gap: 12px;
@@ -2944,10 +2998,13 @@ class PrismMediaCard extends HTMLElement {
             <div class="art-cover" style="background-image: url('${art || ''}');"></div>
             <div class="info">
                 <div class="title">${title}</div>
-                <div class="artist">${artist}</div>
+                <div class="subtitle-row">
+                    <div class="state-dot"></div>
+                    <div class="subtitle">${subtitle}</div>
+                </div>
                 
                 <div class="volume-container">
-                    <ha-icon class="vol-icon" icon="mdi:volume-high"></ha-icon>
+                    <ha-icon class="vol-icon" icon="${isMuted ? 'mdi:volume-off' : vol > 50 ? 'mdi:volume-high' : vol > 0 ? 'mdi:volume-medium' : 'mdi:volume-low'}"></ha-icon>
                     <div class="volume-slider" id="volume-slider">
                         <div class="volume-fill" id="volume-fill" style="width: ${vol}%"></div>
                     </div>
@@ -3151,12 +3208,55 @@ class PrismMediaLightCard extends HTMLElement {
     if (!this.config || !this.config.entity) return;
     
     const attr = this._entity ? this._entity.attributes : {};
-    const title = attr.media_title || 'No Media';
-    const artist = attr.media_artist || attr.media_series_title || 'Idle';
+    const state = this._entity ? this._entity.state : 'idle';
+    
+    // Title: try various attributes
+    const title = attr.media_title || attr.media_album_name || 'No Media';
+    
+    // Subtitle: try artist, series, app name, channel, or show state
+    let subtitle = '';
+    if (attr.media_artist) {
+      subtitle = attr.media_artist;
+    } else if (attr.media_series_title) {
+      subtitle = attr.media_series_title;
+      // Add episode info if available
+      if (attr.media_season && attr.media_episode) {
+        subtitle += ` S${attr.media_season}E${attr.media_episode}`;
+      }
+    } else if (attr.media_channel) {
+      subtitle = attr.media_channel;
+    } else if (attr.app_name) {
+      // Apple TV and similar devices
+      subtitle = attr.app_name;
+    } else if (attr.source) {
+      subtitle = attr.source;
+    } else {
+      // Fallback to translated state
+      const stateMap = {
+        'playing': 'Wiedergabe',
+        'paused': 'Pausiert', 
+        'idle': 'Bereit',
+        'off': 'Aus',
+        'standby': 'Standby',
+        'buffering': 'Puffern...',
+        'on': 'An',
+        'unavailable': 'Nicht verfügbar'
+      };
+      subtitle = stateMap[state] || state;
+    }
+    
     const art = attr.entity_picture; // This usually returns e.g. /api/media_player_proxy/...
-    const vol = (attr.volume_level || 0) * 100;
-    const isPlaying = this._entity ? this._entity.state === 'playing' : false;
-    const playingColor = this.config.playing_color || "#60a5fa";
+    
+    // Volume: handle undefined, null, or 0
+    const volLevel = attr.volume_level;
+    const vol = (volLevel !== undefined && volLevel !== null) ? volLevel * 100 : 0;
+    const hasVolume = volLevel !== undefined && volLevel !== null;
+    const isMuted = attr.is_volume_muted === true;
+    
+    const isPlaying = state === 'playing';
+    const isPaused = state === 'paused';
+    const isActive = isPlaying || isPaused;
+    const playingColor = this.config.playing_color || "#2563eb";
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -3201,7 +3301,18 @@ class PrismMediaLightCard extends HTMLElement {
         
         .info { flex: 1; min-width: 0; }
         .title { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #1a1a1a; }
-        .artist { font-size: 14px; color: rgba(0,0,0,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+        .subtitle-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .subtitle { font-size: 14px; color: rgba(0,0,0,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .state-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+            background: ${isPlaying ? playingColor : isPaused ? '#d97706' : 'rgba(0,0,0,0.2)'};
+            ${isPlaying ? `box-shadow: 0 0 6px ${playingColor};` : ''}
+            ${isPlaying ? 'animation: pulse 2s infinite;' : ''}
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         
         .volume-container {
             margin-top: 12px; display: flex; align-items: center; gap: 12px;
@@ -3283,10 +3394,13 @@ class PrismMediaLightCard extends HTMLElement {
             <div class="art-cover" style="background-image: url('${art || ''}');"></div>
             <div class="info">
                 <div class="title">${title}</div>
-                <div class="artist">${artist}</div>
+                <div class="subtitle-row">
+                    <div class="state-dot"></div>
+                    <div class="subtitle">${subtitle}</div>
+                </div>
                 
                 <div class="volume-container">
-                    <ha-icon class="vol-icon" icon="mdi:volume-high"></ha-icon>
+                    <ha-icon class="vol-icon" icon="${isMuted ? 'mdi:volume-off' : vol > 50 ? 'mdi:volume-high' : vol > 0 ? 'mdi:volume-medium' : 'mdi:volume-low'}"></ha-icon>
                     <div class="volume-slider" id="volume-slider">
                         <div class="volume-fill" id="volume-fill" style="width: ${vol}%"></div>
                     </div>
@@ -5046,6 +5160,8 @@ class PrismShutterVerticalCard extends HTMLElement {
 
         </div>
       `;
+      
+      this.setupListeners();
     }
   }
   
@@ -5398,6 +5514,8 @@ class PrismShutterVerticalLightCard extends HTMLElement {
 
         </div>
       `;
+      
+      this.setupListeners();
     }
   }
   
@@ -5515,20 +5633,11 @@ class PrismVacuumCard extends HTMLElement {
             });
         }
         
-        // Locate
-        const locateBtn = root.querySelector('#locate-btn');
-        if(locateBtn) {
-            locateBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.handleAction('locate');
-            });
-        }
-        
-        // Toggle Play on main inlet click
+        // Locate - click on vacuum inlet/robot to find it
         const inlet = root.querySelector('.vacuum-inlet');
         if(inlet) {
             inlet.addEventListener('click', () => {
-                this.handleAction('toggle');
+                this.handleAction('locate');
             });
         }
 
@@ -5761,8 +5870,14 @@ class PrismVacuumCard extends HTMLElement {
           /* Header */
           .header {
               display: flex; justify-content: space-between; align-items: center; z-index: 2;
+              gap: 12px;
           }
-          .header-left { display: flex; align-items: center; gap: 16px; }
+          .header-left { 
+              display: flex; align-items: center; gap: 16px;
+              flex: 1;
+              min-width: 0;
+              overflow: hidden;
+          }
           
           .icon-box {
               width: 48px; height: 48px; border-radius: 50%;
@@ -5770,6 +5885,7 @@ class PrismVacuumCard extends HTMLElement {
               color: ${isActive ? '#60a5fa' : hasError ? '#ef4444' : 'rgba(255,255,255,0.4)'};
               display: flex; align-items: center; justify-content: center;
               transition: all 0.5s ease;
+              flex-shrink: 0;
               ${isActive ? 'filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));' : ''}
               ${hasError ? 'filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));' : ''}
           }
@@ -5784,11 +5900,22 @@ class PrismVacuumCard extends HTMLElement {
           }
           @keyframes spin { 100% { transform: rotate(360deg); } }
           
-          .info { display: flex; flex-direction: column; }
-          .title { font-size: 18px; font-weight: 700; color: #e0e0e0; line-height: 1.2; }
+          .info { 
+              display: flex; flex-direction: column;
+              min-width: 0;
+              overflow: hidden;
+          }
+          .title { 
+              font-size: 18px; font-weight: 700; color: #e0e0e0; line-height: 1.2;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+          }
           .subtitle { 
               font-size: 12px; font-weight: 500; color: #999; margin-top: 2px;
               display: flex; align-items: center; gap: 8px;
+              flex-wrap: wrap;
+              overflow: hidden;
           }
           .subtitle ha-icon {
               display: flex;
@@ -5832,6 +5959,7 @@ class PrismVacuumCard extends HTMLElement {
               display: flex;
               align-items: center;
               gap: 8px;
+              flex-shrink: 0;
           }
           
           .action-btn {
@@ -5874,7 +6002,7 @@ class PrismVacuumCard extends HTMLElement {
           }
           .play-btn.inactive:hover { background: rgba(255,255,255,0.1); }
           
-          /* Visual Inlet */
+          /* Visual Inlet - click to locate robot */
           .vacuum-inlet {
               width: 100%; height: 160px; border-radius: 16px;
               background: rgba(20, 20, 20, 0.8);
@@ -5883,6 +6011,13 @@ class PrismVacuumCard extends HTMLElement {
               border-top: 1px solid rgba(0,0,0,0.4);
               position: relative; overflow: hidden;
               cursor: pointer;
+              transition: all 0.2s ease;
+          }
+          .vacuum-inlet:hover {
+              background: rgba(25, 25, 25, 0.9);
+          }
+          .vacuum-inlet:active {
+              transform: scale(0.995);
           }
           
           /* Map display */
@@ -6077,11 +6212,8 @@ class PrismVacuumCard extends HTMLElement {
               </div>
               
               <div class="header-right">
-                  <div id="locate-btn" class="action-btn" title="Lokalisieren">
-                      <ha-icon icon="mdi:map-marker" style="width: 16px; height: 16px;"></ha-icon>
-                  </div>
                   <div id="play-btn" class="play-btn ${isCleaning ? 'active' : 'inactive'}">
-                      <ha-icon icon="${isCleaning ? 'mdi:pause' : 'mdi:play'}" style="width: 18px; height: 18px;"></ha-icon>
+                      <ha-icon icon="${isCleaning ? 'mdi:pause' : 'mdi:play'}" style="width: 20px; height: 20px;"></ha-icon>
                   </div>
               </div>
           </div>
@@ -6252,20 +6384,11 @@ class PrismVacuumLightCard extends HTMLElement {
             });
         }
         
-        // Locate
-        const locateBtn = root.querySelector('#locate-btn');
-        if(locateBtn) {
-            locateBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.handleAction('locate');
-            });
-        }
-        
-        // Toggle Play on main inlet click
+        // Locate - click on vacuum inlet/robot to find it
         const inlet = root.querySelector('.vacuum-inlet');
         if(inlet) {
             inlet.addEventListener('click', () => {
-                this.handleAction('toggle');
+                this.handleAction('locate');
             });
         }
 
@@ -6486,8 +6609,14 @@ class PrismVacuumLightCard extends HTMLElement {
           
           .header {
               display: flex; justify-content: space-between; align-items: center; z-index: 2;
+              gap: 12px;
           }
-          .header-left { display: flex; align-items: center; gap: 16px; }
+          .header-left { 
+              display: flex; align-items: center; gap: 16px;
+              flex: 1;
+              min-width: 0;
+              overflow: hidden;
+          }
           
           .icon-box {
               width: 48px; height: 48px; border-radius: 50%;
@@ -6495,6 +6624,7 @@ class PrismVacuumLightCard extends HTMLElement {
               color: ${isActive ? '#2563eb' : hasError ? '#dc2626' : 'rgba(0,0,0,0.4)'};
               display: flex; align-items: center; justify-content: center;
               transition: all 0.5s ease;
+              flex-shrink: 0;
               ${isActive ? 'filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));' : ''}
               ${hasError ? 'filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.4));' : ''}
           }
@@ -6509,11 +6639,22 @@ class PrismVacuumLightCard extends HTMLElement {
           }
           @keyframes spin { 100% { transform: rotate(360deg); } }
           
-          .info { display: flex; flex-direction: column; }
-          .title { font-size: 18px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
+          .info { 
+              display: flex; flex-direction: column;
+              min-width: 0;
+              overflow: hidden;
+          }
+          .title { 
+              font-size: 18px; font-weight: 700; color: #1a1a1a; line-height: 1.2;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+          }
           .subtitle { 
               font-size: 12px; font-weight: 500; color: #666; margin-top: 2px;
               display: flex; align-items: center; gap: 8px;
+              flex-wrap: wrap;
+              overflow: hidden;
           }
           .subtitle ha-icon {
               display: flex;
@@ -6557,6 +6698,7 @@ class PrismVacuumLightCard extends HTMLElement {
               display: flex;
               align-items: center;
               gap: 8px;
+              flex-shrink: 0;
           }
           
           .action-btn {
@@ -6611,6 +6753,7 @@ class PrismVacuumLightCard extends HTMLElement {
           }
           .play-btn.inactive:hover { background: rgba(0,0,0,0.08); }
           
+          /* Visual Inlet - click to locate robot */
           .vacuum-inlet {
               width: 100%; height: 160px; border-radius: 16px;
               background: linear-gradient(145deg, #e6e6e6, #f8f8f8);
@@ -6620,6 +6763,13 @@ class PrismVacuumLightCard extends HTMLElement {
               border: 1px solid rgba(0,0,0,0.05);
               position: relative; overflow: hidden;
               cursor: pointer;
+              transition: all 0.2s ease;
+          }
+          .vacuum-inlet:hover {
+              background: linear-gradient(145deg, #e0e0e0, #f5f5f5);
+          }
+          .vacuum-inlet:active {
+              transform: scale(0.995);
           }
           
           .map-container {
@@ -6809,11 +6959,8 @@ class PrismVacuumLightCard extends HTMLElement {
               </div>
               
               <div class="header-right">
-                  <div id="locate-btn" class="action-btn" title="Lokalisieren">
-                      <ha-icon icon="mdi:map-marker" style="width: 16px; height: 16px;"></ha-icon>
-                  </div>
                   <div id="play-btn" class="play-btn ${isCleaning ? 'active' : 'inactive'}">
-                      <ha-icon icon="${isCleaning ? 'mdi:pause' : 'mdi:play'}" style="width: 18px; height: 18px;"></ha-icon>
+                      <ha-icon icon="${isCleaning ? 'mdi:pause' : 'mdi:play'}" style="width: 20px; height: 20px;"></ha-icon>
                   </div>
               </div>
           </div>
