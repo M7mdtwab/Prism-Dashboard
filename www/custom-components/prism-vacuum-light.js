@@ -262,12 +262,20 @@ class PrismVacuumLightCard extends HTMLElement {
       const fanSpeed = attr.fan_speed || 'Standard';
       const isCharging = attr.status === 'charging' || state === 'docked';
       
-      const isCleaning = state === 'cleaning';
-      const isReturning = state === 'returning';
+      // Handle different vacuum integration states
+      // Some integrations use 'cleaning', others 'on', 'running', etc.
+      const cleaningStates = ['cleaning', 'on', 'running', 'auto', 'spot', 'edge', 'single_room', 'mop', 'sweeping', 'mopping', 'vacuuming'];
+      const returningStates = ['returning', 'returning_home', 'going_home', 'return_to_base'];
+      const dockedStates = ['docked', 'charging', 'charged', 'idle'];
+      const pausedStates = ['paused', 'pause', 'stopped'];
+      const errorStates = ['error', 'stuck', 'offline', 'unavailable'];
+      
+      const isCleaning = cleaningStates.includes(state);
+      const isReturning = returningStates.includes(state);
+      const isDocked = dockedStates.includes(state) && !isCleaning;
+      const isPaused = pausedStates.includes(state);
+      const hasError = errorStates.includes(state);
       const isActive = isCleaning || isReturning;
-      const isDocked = state === 'docked';
-      const isPaused = state === 'paused';
-      const hasError = state === 'error';
 
       const speeds = this.getFanSpeeds();
       const currentSpeedIndex = speeds.findIndex(s => s.toLowerCase() === fanSpeed.toLowerCase());

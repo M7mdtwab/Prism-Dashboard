@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2025-12-29T18:31:10.959Z
+ * Build Date: 2025-12-29T19:03:16.291Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -5807,12 +5807,20 @@ class PrismVacuumCard extends HTMLElement {
       const fanSpeed = attr.fan_speed || 'Standard';
       const isCharging = attr.status === 'charging' || state === 'docked';
       
-      const isCleaning = state === 'cleaning';
-      const isReturning = state === 'returning';
+      // Handle different vacuum integration states
+      // Some integrations use 'cleaning', others 'on', 'running', etc.
+      const cleaningStates = ['cleaning', 'on', 'running', 'auto', 'spot', 'edge', 'single_room', 'mop', 'sweeping', 'mopping', 'vacuuming'];
+      const returningStates = ['returning', 'returning_home', 'going_home', 'return_to_base'];
+      const dockedStates = ['docked', 'charging', 'charged', 'idle'];
+      const pausedStates = ['paused', 'pause', 'stopped'];
+      const errorStates = ['error', 'stuck', 'offline', 'unavailable'];
+      
+      const isCleaning = cleaningStates.includes(state);
+      const isReturning = returningStates.includes(state);
+      const isDocked = dockedStates.includes(state) && !isCleaning;
+      const isPaused = pausedStates.includes(state);
+      const hasError = errorStates.includes(state);
       const isActive = isCleaning || isReturning;
-      const isDocked = state === 'docked';
-      const isPaused = state === 'paused';
-      const hasError = state === 'error';
 
       // Get fan speeds from entity or defaults
       const speeds = this.getFanSpeeds();
@@ -6549,12 +6557,20 @@ class PrismVacuumLightCard extends HTMLElement {
       const fanSpeed = attr.fan_speed || 'Standard';
       const isCharging = attr.status === 'charging' || state === 'docked';
       
-      const isCleaning = state === 'cleaning';
-      const isReturning = state === 'returning';
+      // Handle different vacuum integration states
+      // Some integrations use 'cleaning', others 'on', 'running', etc.
+      const cleaningStates = ['cleaning', 'on', 'running', 'auto', 'spot', 'edge', 'single_room', 'mop', 'sweeping', 'mopping', 'vacuuming'];
+      const returningStates = ['returning', 'returning_home', 'going_home', 'return_to_base'];
+      const dockedStates = ['docked', 'charging', 'charged', 'idle'];
+      const pausedStates = ['paused', 'pause', 'stopped'];
+      const errorStates = ['error', 'stuck', 'offline', 'unavailable'];
+      
+      const isCleaning = cleaningStates.includes(state);
+      const isReturning = returningStates.includes(state);
+      const isDocked = dockedStates.includes(state) && !isCleaning;
+      const isPaused = pausedStates.includes(state);
+      const hasError = errorStates.includes(state);
       const isActive = isCleaning || isReturning;
-      const isDocked = state === 'docked';
-      const isPaused = state === 'paused';
-      const hasError = state === 'error';
 
       const speeds = this.getFanSpeeds();
       const currentSpeedIndex = speeds.findIndex(s => s.toLowerCase() === fanSpeed.toLowerCase());
@@ -14019,6 +14035,11 @@ class PrismBambuCard extends HTMLElement {
               selector: { entity: { domain: 'switch' } }
             },
             {
+              name: 'power_switch_icon',
+              label: 'Power switch icon (default: mdi:power)',
+              selector: { icon: {} }
+            },
+            {
               name: 'custom_light',
               label: 'Custom light entity (overrides auto-detected)',
               selector: { entity: { domain: 'light' } }
@@ -14876,6 +14897,7 @@ class PrismBambuCard extends HTMLElement {
     const powerSwitch = this.config.power_switch;
     const powerSwitchState = powerSwitch ? this._hass.states[powerSwitch] : null;
     const isPowerOn = powerSwitchState?.state === 'on';
+    const powerSwitchIcon = this.config.power_switch_icon || 'mdi:power';
     
     // Custom fan
     const customFan = this.config.custom_fan;
@@ -15259,6 +15281,7 @@ class PrismBambuCard extends HTMLElement {
       customLightName,
       powerSwitch,
       isPowerOn,
+      powerSwitchIcon,
       // AMS sensors
       amsTemperature,
       amsHumidity,
@@ -15329,6 +15352,7 @@ class PrismBambuCard extends HTMLElement {
       customLightName: 'Light',
       powerSwitch: null,
       isPowerOn: true,
+      powerSwitchIcon: 'mdi:power',
       // AMS sensors
       amsTemperature: 25,
       amsHumidity: 45,
@@ -16373,7 +16397,7 @@ class PrismBambuCard extends HTMLElement {
         <div class="main-visual ${!data.isLightOn ? 'light-off' : ''}">
             ${data.powerSwitch ? `
             <button class="power-corner-btn btn-power ${data.isPowerOn ? 'on' : 'off'}" title="Power ${data.isPowerOn ? 'Off' : 'On'}">
-                <ha-icon icon="mdi:power"></ha-icon>
+                <ha-icon icon="${data.powerSwitchIcon}"></ha-icon>
             </button>
             ` : ''}
             <div class="main-visual-inner">
@@ -16655,6 +16679,11 @@ class PrismCrealityCard extends HTMLElement {
           name: 'power_switch',
           label: 'Power switch (optional)',
           selector: { entity: { domain: 'switch' } }
+        },
+        {
+          name: 'power_switch_icon',
+          label: 'Power switch icon (default: mdi:power)',
+          selector: { icon: {} }
         }
       ]
     };
@@ -17286,6 +17315,7 @@ class PrismCrealityCard extends HTMLElement {
     const powerSwitch = this.config.power_switch;
     const powerSwitchState = powerSwitch ? this._hass.states[powerSwitch] : null;
     const isPowerOn = powerSwitchState?.state === 'on';
+    const powerSwitchIcon = this.config.power_switch_icon || 'mdi:power';
     
     // Debug: Log light entity details
     console.log('Prism Creality: Light - configured:', this.config.light_switch, 'auto-switch:', lightSwitchEntity, 'auto-sensor:', lightSensorEntity);
@@ -17343,7 +17373,8 @@ class PrismCrealityCard extends HTMLElement {
       humidity,
       customTemp,
       powerSwitch,
-      isPowerOn
+      isPowerOn,
+      powerSwitchIcon
     };
     
     // Debug: Log key data
@@ -17382,7 +17413,8 @@ class PrismCrealityCard extends HTMLElement {
       humidity: null,
       customTemp: null,
       powerSwitch: null,
-      isPowerOn: true
+      isPowerOn: true,
+      powerSwitchIcon: 'mdi:power'
     };
   }
 
@@ -17886,7 +17918,7 @@ class PrismCrealityCard extends HTMLElement {
         <div class="main-visual ${!data.isLightOn ? 'light-off' : ''}">
             ${data.powerSwitch ? `
             <button class="power-corner-btn btn-power ${data.isPowerOn ? 'on' : 'off'}" title="Power ${data.isPowerOn ? 'Off' : 'On'}">
-                <ha-icon icon="mdi:power"></ha-icon>
+                <ha-icon icon="${data.powerSwitchIcon}"></ha-icon>
             </button>
             ` : ''}
             <div class="main-visual-inner">
