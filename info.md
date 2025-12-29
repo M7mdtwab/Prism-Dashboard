@@ -1,58 +1,44 @@
 # Prism Dashboard
 
-💎 Ein modernes, glassmorphism-inspiriertes Dashboard für Home Assistant.
+💎 A modern, glassmorphism-inspired dashboard for Home Assistant.
 
-## Custom Cards
+## Custom Cards Included
 
-Dieses Repository enthält folgende Custom Cards:
+This repository contains the following custom cards:
 
-- **prism-heat** - Thermostat-Knob-Karte mit Glassmorphism-Design
-- **prism-heat-small** - Kompakte Heizungs-Karte mit Inlet-Styling
-- **prism-button** - Entity-Button-Karte mit Neumorphismus-Effekten
-- **prism-media** - Media-Player-Karte mit Glassmorphism-Design
-- **prism-calendar** - Kalender-Karte zur Anzeige kommender Termine
-- **prism-shutter** - Horizontale Jalousien-Karte mit Inlet-Slider
-- **prism-shutter-vertical** - Vertikale Jalousien-Karte mit kompaktem Design
-- **prism-vacuum** - Staubsauger-Roboter-Karte mit Animation und Saugleistungssteuerung
-- **prism-led** - Licht-Karte mit Farbrad und Temperatursteuerung
-- **prism-3dprinter** - 3D-Drucker-Karte mit Glassmorphism-Design
-- **prism-bambu** - Bambu Lab 3D-Drucker-Karte mit AMS Support
-- **prism-creality** - Creality 3D-Drucker-Karte für K1, K1C, K1 Max, K1 SE
-- **prism-energy** - Energie-Flow-Karte für Solar, Batterie, Netz und E-Auto
-- **prism-sidebar** - Sidebar-Karte mit Kamera, Uhr, Kalender und Wetter
+- **prism-heat** - Thermostat knob card with glassmorphism design
+- **prism-heat-small** - Compact heating card with inlet styling
+- **prism-button** - Entity button card with neumorphism effects
+- **prism-media** - Media player card with glassmorphism design
+- **prism-calendar** - Calendar card for displaying upcoming events
+- **prism-shutter** - Horizontal blinds card with inlet slider
+- **prism-shutter-vertical** - Vertical blinds card with compact design
+- **prism-vacuum** - Robot vacuum card with animation and suction control
+- **prism-led** - Light card with color wheel and temperature control
+- **prism-3dprinter** - 3D printer card with glassmorphism design
+- **prism-bambu** - Bambu Lab 3D printer card with AMS support
+- **prism-creality** - Creality 3D printer card for K1, K1C, K1 Max, K1 SE
+- **prism-energy** - Energy flow card for solar, battery, grid and EV
+- **prism-energy-horizontal** - Horizontal energy flow card
+- **prism-sidebar** - Sidebar card with camera, clock, calendar and weather
 
-Alle Karten sind auch als **Light Theme** Versionen verfügbar (mit `-light` Suffix).
+All cards are also available as **Light Theme** versions.
 
 ## Installation
 
-Nach der Installation über HACS:
+After installing via HACS:
 
-1. Gehe zu **Einstellungen → Dashboards → Ressourcen** (oben rechts)
-2. Klicke auf **"Ressource hinzufügen"**
-3. Füge die gewünschten Custom Cards hinzu (nur die, die du verwenden möchtest):
-   
-   - `/hacsfiles/Prism-Dashboard/prism-heat.js`
-   - `/hacsfiles/Prism-Dashboard/prism-heat-small.js`
-   - `/hacsfiles/Prism-Dashboard/prism-button.js`
-   - `/hacsfiles/Prism-Dashboard/prism-media.js`
-   - `/hacsfiles/Prism-Dashboard/prism-calendar.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter-vertical.js`
-   - `/hacsfiles/Prism-Dashboard/prism-vacuum.js`
-   - `/hacsfiles/Prism-Dashboard/prism-led.js`
-   - `/hacsfiles/Prism-Dashboard/prism-3dprinter.js`
-   - `/hacsfiles/Prism-Dashboard/prism-bambu.js`
-   - `/hacsfiles/Prism-Dashboard/prism-creality.js`
-   - `/hacsfiles/Prism-Dashboard/prism-energy.js`
-   - `/hacsfiles/Prism-Dashboard/prism-sidebar.js`
-   
-   Light Theme Versionen (optional): `/hacsfiles/Prism-Dashboard/prism-*-light.js`
+1. Go to **Settings → Dashboards → Resources** (top right)
+2. Click **"Add Resource"**
+3. Add the bundled file:
+   - **URL:** `/hacsfiles/Prism-Dashboard/prism-dashboard.js`
+   - **Type:** `JavaScript Module`
+4. Restart Home Assistant
 
-4. Wähle für alle den Typ **"JavaScript-Modul"**
-5. Starte Home Assistant neu
+> **✨ All 25 cards included!** One file contains all dark and light theme cards with automatic cache updates.
 
-## Verwendung
+## Usage
 
-Alle Karten können im visuellen Dashboard-Editor verwendet werden. Suche einfach nach "prism" im Karten-Browser.
+All cards can be used in the visual dashboard editor. Simply search for "prism" in the card browser.
 
-Weitere Informationen findest du in der [README.md](https://github.com/BangerTech/Prism-Dashboard).
+For more information, see the [README.md](https://github.com/BangerTech/Prism-Dashboard).

@@ -105,42 +105,13 @@ For this dashboard to work, the following frontend integrations must be installe
    - **Repository:** `https://github.com/BangerTech/Prism-Dashboard`
    - **Type:** `Dashboard`
 4. Search for "Prism Dashboard" and click **"Download"**
-5. **IMPORTANT:** After installation, the custom cards must be manually added to the dashboard resources (HACS downloads the files but does not automatically register them).
-6. Go to **Settings → Dashboards** → **Resources** (top right)
-7. Click **"Add Resource"** and add the desired custom cards:
-   
-   **Dark Theme Cards:**
-   - `/hacsfiles/Prism-Dashboard/prism-heat.js`
-   - `/hacsfiles/Prism-Dashboard/prism-heat-small.js`
-   - `/hacsfiles/Prism-Dashboard/prism-button.js`
-   - `/hacsfiles/Prism-Dashboard/prism-media.js`
-   - `/hacsfiles/Prism-Dashboard/prism-calendar.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter-vertical.js`
-   - `/hacsfiles/Prism-Dashboard/prism-vacuum.js`
-   - `/hacsfiles/Prism-Dashboard/prism-led.js`
-   - `/hacsfiles/Prism-Dashboard/prism-3dprinter.js`
-   - `/hacsfiles/Prism-Dashboard/prism-bambu.js`
-   - `/hacsfiles/Prism-Dashboard/prism-creality.js`
-   - `/hacsfiles/Prism-Dashboard/prism-energy.js`
-   - `/hacsfiles/Prism-Dashboard/prism-energy-horizontal.js`
-   - `/hacsfiles/Prism-Dashboard/prism-sidebar.js`
-   
-   **Light Theme Cards (optional):**
-   - `/hacsfiles/Prism-Dashboard/prism-heat-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-heat-small-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-button-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-media-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-calendar-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-shutter-vertical-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-vacuum-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-led-light.js`
-   - `/hacsfiles/Prism-Dashboard/prism-sidebar-light.js`
-   
-   > **Note:** You only need to add the cards you actually want to use. You can use dark and light theme cards in parallel.
-8. Select **"JavaScript Module"** as the type for all
-9. Restart Home Assistant
+5. Go to **Settings → Dashboards** → **Resources** (top right)
+6. Click **"Add Resource"** and add:
+   - **URL:** `/hacsfiles/Prism-Dashboard/prism-dashboard.js`
+   - **Type:** `JavaScript Module`
+7. Restart Home Assistant
+
+> **✨ That's it!** All 25 custom cards (dark + light themes) are included in this single file and will receive automatic cache updates via HACS.
 
 ### Option 2: Manual Installation
 
@@ -168,62 +139,12 @@ If you chose Option 2 (manual installation), the custom cards must be registered
 1. Navigate to **Settings → Dashboards** in Home Assistant.  
 2. Click **"Resources"** (top right).  
 3. Click **"Add Resource"**.  
-4. Add the following resources:
-   - **URL:** `/local/custom-components/prism-heat.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-heat-small.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-button.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-media.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-calendar.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-shutter.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-shutter-vertical.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-vacuum.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-led.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-3dprinter.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-bambu.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-creality.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-energy.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-energy-horizontal.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-sidebar.js`  
-     **Type:** `JavaScript Module`
-   
-   **Light Theme Cards (optional):**
-   - **URL:** `/local/custom-components/prism-heat-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-heat-small-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-button-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-media-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-calendar-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-shutter-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-shutter-vertical-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-vacuum-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-led-light.js`  
-     **Type:** `JavaScript Module`
-   - **URL:** `/local/custom-components/prism-sidebar-light.js`  
-     **Type:** `JavaScript Module`
+4. Add the bundled resource:
+   - **URL:** `/local/custom-components/prism-dashboard.js`  
+   - **Type:** `JavaScript Module`
 5. Restart Home Assistant so the custom cards are loaded.
 
-> **Note:** When installing via HACS, resources are automatically provided under `/hacsfiles/` (see Option 1).
+> **✨ All 25 cards are included!** The bundled file contains all dark and light theme cards.
 
 ---
 
