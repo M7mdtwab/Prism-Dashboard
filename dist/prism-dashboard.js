@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2026-01-02T10:36:03.237Z
+ * Build Date: 2026-01-03T07:16:45.504Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -17288,6 +17288,20 @@ class PrismBambuCard extends HTMLElement {
       clearInterval(this._snapshotInterval);
       this._snapshotInterval = null;
     }
+    if (this._cameraPopupInterval) {
+      clearInterval(this._cameraPopupInterval);
+      this._cameraPopupInterval = null;
+    }
+    if (this._cameraPopupUpdateInterval) {
+      clearInterval(this._cameraPopupUpdateInterval);
+      this._cameraPopupUpdateInterval = null;
+    }
+    if (this._cameraPopupEscHandler) {
+      document.removeEventListener('keydown', this._cameraPopupEscHandler);
+      this._cameraPopupEscHandler = null;
+    }
+    // Close camera popup if open
+    this.closeCameraPopup();
     this._powerToggleDebounce = false;
   }
 
@@ -17650,13 +17664,841 @@ class PrismBambuCard extends HTMLElement {
     
     if (!entityId) return;
     
-    // Fire the more-info event to open the camera popup
-    const event = new CustomEvent('hass-more-info', {
-      bubbles: true,
-      composed: true,
-      detail: { entityId: entityId }
+    const stateObj = this._hass.states[entityId];
+    if (!stateObj) return;
+    
+    // Remove existing popup if any
+    this.closeCameraPopup();
+    
+    // Get printer name for title
+    const deviceId = this.config.printer;
+    const device = this._hass.devices?.[deviceId];
+    const printerName = this.config.name || device?.name || 'Bambu Lab Printer';
+    
+    // Get printer data for info panel
+    const data = this.getPrinterData();
+    
+    // Create popup in document.body (outside shadow DOM for true fullscreen modal)
+    const overlay = document.createElement('div');
+    overlay.id = 'prism-camera-popup-overlay';
+    overlay.innerHTML = `
+      <style>
+        #prism-camera-popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          box-sizing: border-box;
+          animation: prismCameraFadeIn 0.2s ease;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        @keyframes prismCameraFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .prism-camera-popup {
+          position: relative;
+          min-width: 500px;
+          min-height: 400px;
+          width: 75vw;
+          height: 75vh;
+          max-width: 95vw;
+          max-height: 90vh;
+          background: #0a0a0a;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.1);
+          animation: prismCameraSlideIn 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          /* resize via custom handle */
+        }
+        @keyframes prismCameraSlideIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .prism-camera-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 16px;
+          background: linear-gradient(180deg, rgba(30,32,36,0.95), rgba(25,27,30,0.95));
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          cursor: move;
+          user-select: none;
+        }
+        .prism-camera-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: rgba(255,255,255,0.95);
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .prism-camera-title-icon {
+          width: 28px;
+          height: 28px;
+          background: rgba(0, 174, 66, 0.15);
+          border: 1px solid rgba(0, 174, 66, 0.3);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #00AE42;
+        }
+        .prism-camera-title-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-close {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.1);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255,255,255,0.6);
+          transition: all 0.2s;
+        }
+        .prism-camera-close ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-close:hover {
+          background: rgba(255,80,80,0.25);
+          border-color: rgba(255,80,80,0.4);
+          color: #ff6b6b;
+        }
+        .prism-camera-body {
+          flex: 1;
+          display: flex;
+          overflow: hidden;
+          position: relative;
+        }
+        .prism-camera-content {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          background: #000;
+          position: relative;
+        }
+        .prism-camera-content ha-camera-stream {
+          width: 100%;
+          height: 100%;
+          --video-max-height: 100%;
+        }
+        .prism-camera-content ha-camera-stream video {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .prism-camera-content .prism-camera-snapshot {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        
+        /* Info Panel Overlay - Compact & Transparent */
+        .prism-camera-info {
+          position: absolute;
+          right: 12px;
+          top: 12px;
+          width: 160px;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .prism-info-header {
+          padding: 10px 12px;
+          background: rgba(0,0,0,0.2);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .prism-info-header-icon {
+          width: 22px;
+          height: 22px;
+          background: rgba(0, 174, 66, 0.2);
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #00AE42;
+        }
+        .prism-info-header-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-header-text {
+          font-size: 10px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.7);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .prism-info-content {
+          flex: 1;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          overflow-y: auto;
+        }
+        
+        /* Progress Section */
+        .prism-info-progress {
+          background: rgba(0,0,0,0.2);
+          border-radius: 8px;
+          padding: 10px;
+          border: 1px solid rgba(255,255,255,0.04);
+        }
+        .prism-info-progress-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+        .prism-info-progress-label {
+          font-size: 8px;
+          color: rgba(255,255,255,0.4);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .prism-info-progress-value {
+          font-size: 16px;
+          font-weight: 700;
+          color: #4ade80;
+          font-family: 'SF Mono', Monaco, monospace;
+        }
+        .prism-info-progress-bar {
+          height: 4px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        .prism-info-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #00AE42, #4ade80);
+          border-radius: 2px;
+          transition: width 0.3s ease;
+        }
+        
+        /* Stat Items */
+        .prism-info-stat {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 8px;
+          background: rgba(0,0,0,0.15);
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.03);
+        }
+        .prism-info-stat-icon {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .prism-info-stat-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-stat-icon.time { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+        .prism-info-stat-icon.layer { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+        .prism-info-stat-icon.nozzle { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+        .prism-info-stat-icon.bed { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+        .prism-info-stat-icon.chamber { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+        .prism-info-stat-data {
+          flex: 1;
+          min-width: 0;
+        }
+        .prism-info-stat-label {
+          font-size: 8px;
+          color: rgba(255,255,255,0.35);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+        .prism-info-stat-value {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.85);
+          font-family: 'SF Mono', Monaco, monospace;
+        }
+        .prism-info-stat-value .target {
+          font-size: 9px;
+          color: rgba(255,255,255,0.35);
+          font-weight: 500;
+        }
+        
+        /* Status Badge */
+        .prism-info-status {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px;
+          background: ${data.isPrinting ? 'rgba(74, 222, 128, 0.08)' : data.isPaused ? 'rgba(251, 191, 36, 0.08)' : 'rgba(255,255,255,0.03)'};
+          border: 1px solid ${data.isPrinting ? 'rgba(74, 222, 128, 0.2)' : data.isPaused ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.06)'};
+          border-radius: 8px;
+          margin-top: auto;
+        }
+        .prism-info-status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: ${data.isPrinting ? '#4ade80' : data.isPaused ? '#fbbf24' : 'rgba(255,255,255,0.3)'};
+          ${data.isPrinting ? 'animation: statusPulse 2s infinite;' : ''}
+        }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.9); }
+        }
+        .prism-info-status-text {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: ${data.isPrinting ? '#4ade80' : data.isPaused ? '#fbbf24' : 'rgba(255,255,255,0.4)'};
+        }
+        
+        .prism-camera-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 16px;
+          background: rgba(15,15,15,0.9);
+          border-top: 1px solid rgba(255,255,255,0.05);
+          font-size: 10px;
+          color: rgba(255,255,255,0.35);
+        }
+        .prism-camera-footer-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .prism-camera-entity {
+          font-family: 'SF Mono', Monaco, monospace;
+          font-size: 9px;
+          background: rgba(255,255,255,0.06);
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+        .prism-camera-toggle-info {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 8px;
+          background: rgba(255,255,255,0.06);
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          color: rgba(255,255,255,0.5);
+          font-size: 9px;
+          font-family: inherit;
+        }
+        .prism-camera-toggle-info:hover {
+          background: rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.8);
+        }
+        .prism-camera-toggle-info.active {
+          background: rgba(0, 174, 66, 0.15);
+          color: #4ade80;
+        }
+        .prism-camera-toggle-info ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-resize-hint {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-right: 30px;
+        }
+        .prism-camera-resize-hint ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-stop-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          width: 100%;
+          padding: 8px 12px;
+          margin-top: 8px;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 8px;
+          color: #ef4444;
+          font-size: 10px;
+          font-weight: 500;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .prism-info-stop-btn:hover {
+          background: rgba(239, 68, 68, 0.25);
+          border-color: rgba(239, 68, 68, 0.5);
+          transform: translateY(-1px);
+        }
+        .prism-info-stop-btn:active {
+          transform: translateY(0);
+        }
+        .prism-info-stop-btn ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-info.hidden {
+          display: none;
+        }
+        /* Custom Resize Handle - larger grab area */
+        .prism-camera-resize-handle {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 40px;
+          height: 40px;
+          cursor: nwse-resize;
+          z-index: 100;
+          display: flex;
+          align-items: flex-end;
+          justify-content: flex-end;
+          padding: 8px;
+        }
+        .prism-camera-resize-handle::before {
+          content: '';
+          width: 20px;
+          height: 20px;
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.12) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(255,255,255,0.12) 48%, rgba(255,255,255,0.12) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(255,255,255,0.18) 66%);
+          border-radius: 0 0 12px 0;
+          transition: all 0.2s;
+        }
+        .prism-camera-resize-handle:hover::before {
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 30%, rgba(255,255,255,0.2) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(255,255,255,0.2) 48%, rgba(255,255,255,0.2) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(255,255,255,0.3) 66%);
+        }
+        .prism-camera-resize-handle:active::before {
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(0,174,66,0.3) 30%, rgba(0,174,66,0.3) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(0,174,66,0.3) 48%, rgba(0,174,66,0.3) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(0,174,66,0.4) 66%);
+        }
+      </style>
+      <div class="prism-camera-popup">
+        <div class="prism-camera-header">
+          <div class="prism-camera-title">
+            <div class="prism-camera-title-icon">
+              <ha-icon icon="mdi:camera" style="width:16px;height:16px;"></ha-icon>
+            </div>
+            <span>${printerName}</span>
+          </div>
+          <button class="prism-camera-close">
+            <ha-icon icon="mdi:close" style="width:16px;height:16px;"></ha-icon>
+          </button>
+        </div>
+        <div class="prism-camera-body">
+          <div class="prism-camera-content"></div>
+          <div class="prism-camera-info">
+            <div class="prism-info-header">
+              <div class="prism-info-header-icon">
+                <ha-icon icon="mdi:printer-3d-nozzle" style="width:12px;height:12px;"></ha-icon>
+              </div>
+              <span class="prism-info-header-text">Print Info</span>
+            </div>
+            <div class="prism-info-content">
+              <div class="prism-info-progress">
+                <div class="prism-info-progress-header">
+                  <span class="prism-info-progress-label">Progress</span>
+                  <span class="prism-info-progress-value" data-field="progress">${Math.round(data.progress)}%</span>
+                </div>
+                <div class="prism-info-progress-bar">
+                  <div class="prism-info-progress-fill" style="width: ${data.progress}%"></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon time">
+                  <ha-icon icon="mdi:clock-outline" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Time Left</div>
+                  <div class="prism-info-stat-value" data-field="time">${data.printTimeLeft}</div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon layer">
+                  <ha-icon icon="mdi:layers-triple" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Layer</div>
+                  <div class="prism-info-stat-value" data-field="layer">${data.currentLayer} <span class="target">/ ${data.totalLayers}</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon nozzle">
+                  <ha-icon icon="mdi:printer-3d-nozzle-heat" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Nozzle</div>
+                  <div class="prism-info-stat-value" data-field="nozzle">${Math.round(data.nozzleTemp)}° <span class="target">/ ${Math.round(data.targetNozzleTemp)}°</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon bed">
+                  <ha-icon icon="mdi:radiator" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Bed</div>
+                  <div class="prism-info-stat-value" data-field="bed">${Math.round(data.bedTemp)}° <span class="target">/ ${Math.round(data.targetBedTemp)}°</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon chamber">
+                  <ha-icon icon="mdi:thermometer" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Chamber</div>
+                  <div class="prism-info-stat-value" data-field="chamber">${Math.round(data.chamberTemp)}°</div>
+                </div>
+              </div>
+              
+              <div class="prism-info-status">
+                <div class="prism-info-status-dot"></div>
+                <span class="prism-info-status-text" data-field="status">${data.stateStr}</span>
+              </div>
+              
+              <button class="prism-info-stop-btn" title="Stop Print">
+                <ha-icon icon="mdi:stop-circle" style="width:16px;height:16px;"></ha-icon>
+                <span>Stop Print</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="prism-camera-footer">
+          <div class="prism-camera-footer-left">
+            <div class="prism-camera-entity">${entityId}</div>
+            <button class="prism-camera-toggle-info active">
+              <ha-icon icon="mdi:information" style="width:10px;height:10px;"></ha-icon>
+              <span>Info</span>
+            </button>
+          </div>
+          <div class="prism-camera-resize-hint">
+            <ha-icon icon="mdi:resize-bottom-right" style="width:12px;height:12px;"></ha-icon>
+            <span>Resize</span>
+          </div>
+        </div>
+        <div class="prism-camera-resize-handle"></div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    this._cameraPopupOverlay = overlay;
+    
+    // Get content container
+    const content = overlay.querySelector('.prism-camera-content');
+    
+    // Check config for live stream mode (default: true)
+    const useLiveStream = this.config.camera_live_stream !== false;
+    
+    if (useLiveStream) {
+      // LIVE STREAM MODE - use ha-camera-stream element
+      const cameraStream = document.createElement('ha-camera-stream');
+      cameraStream.hass = this._hass;
+      cameraStream.stateObj = stateObj;
+      cameraStream.muted = true;
+      cameraStream.controls = true;
+      cameraStream.allowExoPlayer = true;
+      cameraStream.setAttribute('muted', '');
+      cameraStream.setAttribute('controls', '');
+      cameraStream.setAttribute('autoplay', '');
+      content.appendChild(cameraStream);
+    } else {
+      // SNAPSHOT MODE - use img element
+      const snapshotImg = document.createElement('img');
+      snapshotImg.className = 'prism-camera-snapshot';
+      snapshotImg.alt = 'Camera';
+      
+      if (stateObj.attributes?.entity_picture) {
+        const baseUrl = stateObj.attributes.entity_picture;
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        snapshotImg.src = `${baseUrl}${separator}_ts=${Date.now()}`;
+      }
+      content.appendChild(snapshotImg);
+      
+      // Start interval for snapshot refresh
+      this._cameraPopupInterval = setInterval(() => {
+        const currentState = this._hass?.states[entityId];
+        if (currentState?.attributes?.entity_picture) {
+          const baseUrl = currentState.attributes.entity_picture;
+          const separator = baseUrl.includes('?') ? '&' : '?';
+          snapshotImg.src = `${baseUrl}${separator}_ts=${Date.now()}`;
+        }
+      }, 2000);
+    }
+    
+    // Close button handler
+    overlay.querySelector('.prism-camera-close').onclick = () => this.closeCameraPopup();
+    
+    // Toggle info panel handler
+    const toggleInfoBtn = overlay.querySelector('.prism-camera-toggle-info');
+    const infoPanel = overlay.querySelector('.prism-camera-info');
+    toggleInfoBtn.onclick = () => {
+      infoPanel.classList.toggle('hidden');
+      toggleInfoBtn.classList.toggle('active');
+    };
+    
+    // Stop print button handler
+    const stopBtn = overlay.querySelector('.prism-info-stop-btn');
+    stopBtn.onclick = async () => {
+      // Find the print stop button entity
+      const deviceId = this.config.printer;
+      let stopEntity = null;
+      
+      // Look for button.xxx_stop_print or similar
+      for (const entityId in this._hass.entities) {
+        const entityInfo = this._hass.entities[entityId];
+        if (entityInfo.device_id === deviceId && 
+            entityInfo.platform === 'bambu_lab' &&
+            (entityId.includes('stop') || entityInfo.translation_key === 'stop')) {
+          stopEntity = entityId;
+          break;
+        }
+      }
+      
+      if (stopEntity) {
+        // Confirm before stopping
+        if (confirm('Are you sure you want to stop the print?')) {
+          try {
+            await this._hass.callService('button', 'press', {
+              entity_id: stopEntity
+            });
+          } catch (e) {
+            console.error('Failed to stop print:', e);
+          }
+        }
+      } else {
+        // Alternative: try to find any stop-related entity or use event
+        alert('Stop entity not found. Please check your Bambu Lab integration.');
+      }
+    };
+    
+    // Click on overlay background closes popup
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        this.closeCameraPopup();
+      }
+    };
+    
+    // Escape key handler
+    this._cameraPopupEscHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeCameraPopup();
+      }
+    };
+    document.addEventListener('keydown', this._cameraPopupEscHandler);
+    
+    // Make popup draggable by header
+    const popup = overlay.querySelector('.prism-camera-popup');
+    const header = overlay.querySelector('.prism-camera-header');
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    header.onmousedown = (e) => {
+      if (e.target.closest('.prism-camera-close')) return;
+      isDragging = true;
+      const rect = popup.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = rect.left;
+      startTop = rect.top;
+      popup.style.position = 'fixed';
+      popup.style.margin = '0';
+      popup.style.left = startLeft + 'px';
+      popup.style.top = startTop + 'px';
+      e.preventDefault();
+    };
+    
+    document.addEventListener('mousemove', this._cameraPopupDragHandler = (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      popup.style.left = (startLeft + dx) + 'px';
+      popup.style.top = (startTop + dy) + 'px';
     });
-    this.dispatchEvent(event);
+    
+    document.addEventListener('mouseup', this._cameraPopupDragEndHandler = () => {
+      isDragging = false;
+    });
+    
+    // Custom resize handle
+    const resizeHandle = overlay.querySelector('.prism-camera-resize-handle');
+    let isResizing = false;
+    let resizeStartX, resizeStartY, resizeStartWidth, resizeStartHeight;
+    
+    resizeHandle.onmousedown = (e) => {
+      isResizing = true;
+      const rect = popup.getBoundingClientRect();
+      resizeStartX = e.clientX;
+      resizeStartY = e.clientY;
+      resizeStartWidth = rect.width;
+      resizeStartHeight = rect.height;
+      
+      // Ensure popup has fixed positioning for resize
+      if (popup.style.position !== 'fixed') {
+        popup.style.position = 'fixed';
+        popup.style.margin = '0';
+        popup.style.left = rect.left + 'px';
+        popup.style.top = rect.top + 'px';
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    document.addEventListener('mousemove', this._cameraPopupResizeHandler = (e) => {
+      if (!isResizing) return;
+      const dx = e.clientX - resizeStartX;
+      const dy = e.clientY - resizeStartY;
+      const newWidth = Math.max(400, Math.min(resizeStartWidth + dx, window.innerWidth * 0.95));
+      const newHeight = Math.max(300, Math.min(resizeStartHeight + dy, window.innerHeight * 0.95));
+      popup.style.width = newWidth + 'px';
+      popup.style.height = newHeight + 'px';
+    });
+    
+    document.addEventListener('mouseup', this._cameraPopupResizeEndHandler = () => {
+      isResizing = false;
+    });
+    
+    // Update info panel data periodically
+    this._cameraPopupUpdateInterval = setInterval(() => {
+      if (!this._cameraPopupOverlay) return;
+      const newData = this.getPrinterData();
+      
+      // Update progress
+      const progressValue = overlay.querySelector('[data-field="progress"]');
+      const progressFill = overlay.querySelector('.prism-info-progress-fill');
+      if (progressValue) progressValue.textContent = `${Math.round(newData.progress)}%`;
+      if (progressFill) progressFill.style.width = `${newData.progress}%`;
+      
+      // Update time
+      const timeValue = overlay.querySelector('[data-field="time"]');
+      if (timeValue) timeValue.textContent = newData.printTimeLeft;
+      
+      // Update layer
+      const layerValue = overlay.querySelector('[data-field="layer"]');
+      if (layerValue) layerValue.innerHTML = `${newData.currentLayer} <span class="target">/ ${newData.totalLayers}</span>`;
+      
+      // Update temperatures
+      const nozzleValue = overlay.querySelector('[data-field="nozzle"]');
+      if (nozzleValue) nozzleValue.innerHTML = `${Math.round(newData.nozzleTemp)}° <span class="target">/ ${Math.round(newData.targetNozzleTemp)}°</span>`;
+      
+      const bedValue = overlay.querySelector('[data-field="bed"]');
+      if (bedValue) bedValue.innerHTML = `${Math.round(newData.bedTemp)}° <span class="target">/ ${Math.round(newData.targetBedTemp)}°</span>`;
+      
+      const chamberValue = overlay.querySelector('[data-field="chamber"]');
+      if (chamberValue) chamberValue.textContent = `${Math.round(newData.chamberTemp)}°`;
+      
+      // Update status
+      const statusText = overlay.querySelector('[data-field="status"]');
+      if (statusText) statusText.textContent = newData.stateStr;
+    }, 2000);
+    
+    PrismBambuCard.log('Camera popup opened:', entityId);
+  }
+  
+  closeCameraPopup() {
+    // Remove popup from document.body
+    if (this._cameraPopupOverlay) {
+      this._cameraPopupOverlay.remove();
+      this._cameraPopupOverlay = null;
+    }
+    
+    // Also check for any orphaned popups
+    const existingPopup = document.getElementById('prism-camera-popup-overlay');
+    if (existingPopup) {
+      existingPopup.remove();
+    }
+    
+    // Clear snapshot interval if running
+    if (this._cameraPopupInterval) {
+      clearInterval(this._cameraPopupInterval);
+      this._cameraPopupInterval = null;
+    }
+    
+    // Clear info update interval
+    if (this._cameraPopupUpdateInterval) {
+      clearInterval(this._cameraPopupUpdateInterval);
+      this._cameraPopupUpdateInterval = null;
+    }
+    
+    // Remove escape key listener
+    if (this._cameraPopupEscHandler) {
+      document.removeEventListener('keydown', this._cameraPopupEscHandler);
+      this._cameraPopupEscHandler = null;
+    }
+    
+    // Remove drag listeners
+    if (this._cameraPopupDragHandler) {
+      document.removeEventListener('mousemove', this._cameraPopupDragHandler);
+      this._cameraPopupDragHandler = null;
+    }
+    if (this._cameraPopupDragEndHandler) {
+      document.removeEventListener('mouseup', this._cameraPopupDragEndHandler);
+      this._cameraPopupDragEndHandler = null;
+    }
+    
+    // Remove resize listeners
+    if (this._cameraPopupResizeHandler) {
+      document.removeEventListener('mousemove', this._cameraPopupResizeHandler);
+      this._cameraPopupResizeHandler = null;
+    }
+    if (this._cameraPopupResizeEndHandler) {
+      document.removeEventListener('mouseup', this._cameraPopupResizeEndHandler);
+      this._cameraPopupResizeEndHandler = null;
+    }
+    
+    PrismBambuCard.log('Camera popup closed');
   }
 
   getPrinterData() {
@@ -19811,7 +20653,17 @@ class PrismCrealityCard extends HTMLElement {
   }
 
   disconnectedCallback() {
-    // Cleanup if needed
+    // Cleanup camera popup
+    if (this._cameraPopupEscHandler) {
+      document.removeEventListener('keydown', this._cameraPopupEscHandler);
+      this._cameraPopupEscHandler = null;
+    }
+    if (this._cameraPopupUpdateInterval) {
+      clearInterval(this._cameraPopupUpdateInterval);
+      this._cameraPopupUpdateInterval = null;
+    }
+    // Close camera popup if open
+    this.closeCameraPopup();
   }
 
   setupListeners() {
@@ -20020,13 +20872,815 @@ class PrismCrealityCard extends HTMLElement {
       return;
     }
     
-    // Fire the more-info event to open the camera popup
-    const event = new CustomEvent('hass-more-info', {
-      bubbles: true,
-      composed: true,
-      detail: { entityId: entityId }
+    const stateObj = this._hass.states[entityId];
+    if (!stateObj) return;
+    
+    // Remove existing popup if any
+    this.closeCameraPopup();
+    
+    // Get printer name for title
+    const deviceId = this.config.printer;
+    const device = this._hass.devices?.[deviceId];
+    const printerName = this.config.name || device?.name || 'Creality Printer';
+    
+    // Get printer data for info panel
+    const data = this.getPrinterData();
+    
+    // Create popup in document.body (outside shadow DOM for true fullscreen modal)
+    const overlay = document.createElement('div');
+    overlay.id = 'prism-camera-popup-overlay';
+    overlay.innerHTML = `
+      <style>
+        #prism-camera-popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          box-sizing: border-box;
+          animation: prismCameraFadeIn 0.2s ease;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        @keyframes prismCameraFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .prism-camera-popup {
+          position: relative;
+          min-width: 500px;
+          min-height: 400px;
+          width: 75vw;
+          height: 75vh;
+          max-width: 95vw;
+          max-height: 90vh;
+          background: #0a0a0a;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.1);
+          animation: prismCameraSlideIn 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          /* resize via custom handle */
+        }
+        @keyframes prismCameraSlideIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .prism-camera-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 16px;
+          background: linear-gradient(180deg, rgba(30,32,36,0.95), rgba(25,27,30,0.95));
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          cursor: move;
+          user-select: none;
+        }
+        .prism-camera-title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: rgba(255,255,255,0.95);
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .prism-camera-title-icon {
+          width: 28px;
+          height: 28px;
+          background: rgba(0, 150, 255, 0.15);
+          border: 1px solid rgba(0, 150, 255, 0.3);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #0096FF;
+        }
+        .prism-camera-title-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-close {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.1);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255,255,255,0.6);
+          transition: all 0.2s;
+        }
+        .prism-camera-close ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-close:hover {
+          background: rgba(255,80,80,0.25);
+          border-color: rgba(255,80,80,0.4);
+          color: #ff6b6b;
+        }
+        .prism-camera-body {
+          flex: 1;
+          display: flex;
+          overflow: hidden;
+          position: relative;
+        }
+        .prism-camera-content {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          background: #000;
+          position: relative;
+        }
+        .prism-camera-content ha-camera-stream {
+          width: 100%;
+          height: 100%;
+          --video-max-height: 100%;
+        }
+        .prism-camera-content ha-camera-stream video {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .prism-camera-content .prism-camera-snapshot {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        
+        /* Info Panel Overlay - Compact & Transparent */
+        .prism-camera-info {
+          position: absolute;
+          right: 12px;
+          top: 12px;
+          width: 160px;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .prism-info-header {
+          padding: 10px 12px;
+          background: rgba(0,0,0,0.2);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .prism-info-header-icon {
+          width: 22px;
+          height: 22px;
+          background: rgba(0, 150, 255, 0.2);
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #0096FF;
+        }
+        .prism-info-header-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-header-text {
+          font-size: 10px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.7);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .prism-info-content {
+          flex: 1;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          overflow-y: auto;
+        }
+        
+        /* Progress Section */
+        .prism-info-progress {
+          background: rgba(0,0,0,0.2);
+          border-radius: 8px;
+          padding: 10px;
+          border: 1px solid rgba(255,255,255,0.04);
+        }
+        .prism-info-progress-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+        .prism-info-progress-label {
+          font-size: 8px;
+          color: rgba(255,255,255,0.4);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .prism-info-progress-value {
+          font-size: 16px;
+          font-weight: 700;
+          color: #00C8FF;
+          font-family: 'SF Mono', Monaco, monospace;
+        }
+        .prism-info-progress-bar {
+          height: 4px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+        .prism-info-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #0096FF, #00C8FF);
+          border-radius: 2px;
+          transition: width 0.3s ease;
+        }
+        
+        /* Stat Items */
+        .prism-info-stat {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 8px;
+          background: rgba(0,0,0,0.15);
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.03);
+        }
+        .prism-info-stat-icon {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .prism-info-stat-icon ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-stat-icon.time { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+        .prism-info-stat-icon.layer { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+        .prism-info-stat-icon.nozzle { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+        .prism-info-stat-icon.bed { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+        .prism-info-stat-icon.chamber { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+        .prism-info-stat-data {
+          flex: 1;
+          min-width: 0;
+        }
+        .prism-info-stat-label {
+          font-size: 8px;
+          color: rgba(255,255,255,0.35);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+        .prism-info-stat-value {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255,255,255,0.85);
+          font-family: 'SF Mono', Monaco, monospace;
+        }
+        .prism-info-stat-value .target {
+          font-size: 9px;
+          color: rgba(255,255,255,0.35);
+          font-weight: 500;
+        }
+        
+        /* Status Badge */
+        .prism-info-status {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px;
+          background: ${data.isPrinting ? 'rgba(0, 200, 255, 0.08)' : data.isPaused ? 'rgba(251, 191, 36, 0.08)' : 'rgba(255,255,255,0.03)'};
+          border: 1px solid ${data.isPrinting ? 'rgba(0, 200, 255, 0.2)' : data.isPaused ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.06)'};
+          border-radius: 8px;
+          margin-top: auto;
+        }
+        .prism-info-status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: ${data.isPrinting ? '#00C8FF' : data.isPaused ? '#fbbf24' : 'rgba(255,255,255,0.3)'};
+          ${data.isPrinting ? 'animation: statusPulse 2s infinite;' : ''}
+        }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.9); }
+        }
+        .prism-info-status-text {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: ${data.isPrinting ? '#00C8FF' : data.isPaused ? '#fbbf24' : 'rgba(255,255,255,0.4)'};
+        }
+        
+        .prism-camera-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 16px;
+          background: rgba(15,15,15,0.9);
+          border-top: 1px solid rgba(255,255,255,0.05);
+          font-size: 10px;
+          color: rgba(255,255,255,0.35);
+        }
+        .prism-camera-footer-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .prism-camera-entity {
+          font-family: 'SF Mono', Monaco, monospace;
+          font-size: 9px;
+          background: rgba(255,255,255,0.06);
+          padding: 3px 8px;
+          border-radius: 4px;
+        }
+        .prism-camera-toggle-info {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 8px;
+          background: rgba(255,255,255,0.06);
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          color: rgba(255,255,255,0.5);
+          font-size: 9px;
+          font-family: inherit;
+        }
+        .prism-camera-toggle-info:hover {
+          background: rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.8);
+        }
+        .prism-camera-toggle-info.active {
+          background: rgba(0, 150, 255, 0.15);
+          color: #00C8FF;
+        }
+        .prism-camera-toggle-info ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-resize-hint {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-right: 30px;
+        }
+        .prism-camera-resize-hint ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-info-stop-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          width: 100%;
+          padding: 8px 12px;
+          margin-top: 8px;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 8px;
+          color: #ef4444;
+          font-size: 10px;
+          font-weight: 500;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .prism-info-stop-btn:hover {
+          background: rgba(239, 68, 68, 0.25);
+          border-color: rgba(239, 68, 68, 0.5);
+          transform: translateY(-1px);
+        }
+        .prism-info-stop-btn:active {
+          transform: translateY(0);
+        }
+        .prism-info-stop-btn ha-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .prism-camera-info.hidden {
+          display: none;
+        }
+        /* Custom Resize Handle - larger grab area */
+        .prism-camera-resize-handle {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 40px;
+          height: 40px;
+          cursor: nwse-resize;
+          z-index: 100;
+          display: flex;
+          align-items: flex-end;
+          justify-content: flex-end;
+          padding: 8px;
+        }
+        .prism-camera-resize-handle::before {
+          content: '';
+          width: 20px;
+          height: 20px;
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.12) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(255,255,255,0.12) 48%, rgba(255,255,255,0.12) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(255,255,255,0.18) 66%);
+          border-radius: 0 0 12px 0;
+          transition: all 0.2s;
+        }
+        .prism-camera-resize-handle:hover::before {
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 30%, rgba(255,255,255,0.2) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(255,255,255,0.2) 48%, rgba(255,255,255,0.2) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(255,255,255,0.3) 66%);
+        }
+        .prism-camera-resize-handle:active::before {
+          background: 
+            linear-gradient(135deg, transparent 30%, rgba(0,150,255,0.3) 30%, rgba(0,150,255,0.3) 38%, transparent 38%),
+            linear-gradient(135deg, transparent 48%, rgba(0,150,255,0.3) 48%, rgba(0,150,255,0.3) 56%, transparent 56%),
+            linear-gradient(135deg, transparent 66%, rgba(0,150,255,0.4) 66%);
+        }
+      </style>
+      <div class="prism-camera-popup">
+        <div class="prism-camera-header">
+          <div class="prism-camera-title">
+            <div class="prism-camera-title-icon">
+              <ha-icon icon="mdi:camera" style="width:16px;height:16px;"></ha-icon>
+            </div>
+            <span>${printerName}</span>
+          </div>
+          <button class="prism-camera-close">
+            <ha-icon icon="mdi:close" style="width:16px;height:16px;"></ha-icon>
+          </button>
+        </div>
+        <div class="prism-camera-body">
+          <div class="prism-camera-content"></div>
+          <div class="prism-camera-info">
+            <div class="prism-info-header">
+              <div class="prism-info-header-icon">
+                <ha-icon icon="mdi:printer-3d-nozzle" style="width:12px;height:12px;"></ha-icon>
+              </div>
+              <span class="prism-info-header-text">Print Info</span>
+            </div>
+            <div class="prism-info-content">
+              <div class="prism-info-progress">
+                <div class="prism-info-progress-header">
+                  <span class="prism-info-progress-label">Progress</span>
+                  <span class="prism-info-progress-value" data-field="progress">${Math.round(data.progress)}%</span>
+                </div>
+                <div class="prism-info-progress-bar">
+                  <div class="prism-info-progress-fill" style="width: ${data.progress}%"></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon time">
+                  <ha-icon icon="mdi:clock-outline" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Time Left</div>
+                  <div class="prism-info-stat-value" data-field="time">${data.printTimeLeft}</div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon layer">
+                  <ha-icon icon="mdi:layers-triple" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Layer</div>
+                  <div class="prism-info-stat-value" data-field="layer">${data.currentLayer} <span class="target">/ ${data.totalLayers}</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon nozzle">
+                  <ha-icon icon="mdi:printer-3d-nozzle-heat" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Nozzle</div>
+                  <div class="prism-info-stat-value" data-field="nozzle">${Math.round(data.nozzleTemp)}° <span class="target">/ ${Math.round(data.targetNozzleTemp)}°</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon bed">
+                  <ha-icon icon="mdi:radiator" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Bed</div>
+                  <div class="prism-info-stat-value" data-field="bed">${Math.round(data.bedTemp)}° <span class="target">/ ${Math.round(data.targetBedTemp)}°</span></div>
+                </div>
+              </div>
+              
+              <div class="prism-info-stat">
+                <div class="prism-info-stat-icon chamber">
+                  <ha-icon icon="mdi:thermometer" style="width:14px;height:14px;"></ha-icon>
+                </div>
+                <div class="prism-info-stat-data">
+                  <div class="prism-info-stat-label">Chamber</div>
+                  <div class="prism-info-stat-value" data-field="chamber">${Math.round(data.chamberTemp)}°</div>
+                </div>
+              </div>
+              
+              <div class="prism-info-status">
+                <div class="prism-info-status-dot"></div>
+                <span class="prism-info-status-text" data-field="status">${data.stateStr}</span>
+              </div>
+              
+              <button class="prism-info-stop-btn" title="Stop Print">
+                <ha-icon icon="mdi:stop-circle" style="width:16px;height:16px;"></ha-icon>
+                <span>Stop Print</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="prism-camera-footer">
+          <div class="prism-camera-footer-left">
+            <div class="prism-camera-entity">${entityId}</div>
+            <button class="prism-camera-toggle-info active">
+              <ha-icon icon="mdi:information" style="width:10px;height:10px;"></ha-icon>
+              <span>Info</span>
+            </button>
+          </div>
+          <div class="prism-camera-resize-hint">
+            <ha-icon icon="mdi:resize-bottom-right" style="width:12px;height:12px;"></ha-icon>
+            <span>Resize</span>
+          </div>
+        </div>
+        <div class="prism-camera-resize-handle"></div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    this._cameraPopupOverlay = overlay;
+    
+    // Get content container
+    const content = overlay.querySelector('.prism-camera-content');
+    
+    // Use ha-camera-stream element for live stream
+    const cameraStream = document.createElement('ha-camera-stream');
+    cameraStream.hass = this._hass;
+    cameraStream.stateObj = stateObj;
+    cameraStream.muted = true;
+    cameraStream.controls = true;
+    cameraStream.allowExoPlayer = true;
+    cameraStream.setAttribute('muted', '');
+    cameraStream.setAttribute('controls', '');
+    cameraStream.setAttribute('autoplay', '');
+    content.appendChild(cameraStream);
+    
+    // Close button handler
+    overlay.querySelector('.prism-camera-close').onclick = () => this.closeCameraPopup();
+    
+    // Toggle info panel handler
+    const toggleInfoBtn = overlay.querySelector('.prism-camera-toggle-info');
+    const infoPanel = overlay.querySelector('.prism-camera-info');
+    toggleInfoBtn.onclick = () => {
+      infoPanel.classList.toggle('hidden');
+      toggleInfoBtn.classList.toggle('active');
+    };
+    
+    // Stop print button handler
+    const stopBtn = overlay.querySelector('.prism-info-stop-btn');
+    stopBtn.onclick = async () => {
+      // For Creality, we look for stop-related entities
+      const deviceId = this.config.printer;
+      let stopEntity = null;
+      
+      // Look for button.xxx_stop or similar Creality entities
+      for (const entityId in this._hass.entities) {
+        const entityInfo = this._hass.entities[entityId];
+        if (entityInfo.device_id === deviceId && 
+            (entityId.includes('stop') || 
+             (entityInfo.translation_key && entityInfo.translation_key.includes('stop')))) {
+          stopEntity = entityId;
+          break;
+        }
+      }
+      
+      if (stopEntity) {
+        // Confirm before stopping
+        if (confirm('Are you sure you want to stop the print?')) {
+          try {
+            // Determine the domain from entity_id
+            const domain = stopEntity.split('.')[0];
+            if (domain === 'button') {
+              await this._hass.callService('button', 'press', {
+                entity_id: stopEntity
+              });
+            } else if (domain === 'switch') {
+              await this._hass.callService('switch', 'turn_off', {
+                entity_id: stopEntity
+              });
+            }
+          } catch (e) {
+            console.error('Failed to stop print:', e);
+          }
+        }
+      } else {
+        alert('Stop entity not found. Please check your Creality integration.');
+      }
+    };
+    
+    // Click on overlay background closes popup
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        this.closeCameraPopup();
+      }
+    };
+    
+    // Escape key handler
+    this._cameraPopupEscHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeCameraPopup();
+      }
+    };
+    document.addEventListener('keydown', this._cameraPopupEscHandler);
+    
+    // Make popup draggable by header
+    const popup = overlay.querySelector('.prism-camera-popup');
+    const header = overlay.querySelector('.prism-camera-header');
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    header.onmousedown = (e) => {
+      if (e.target.closest('.prism-camera-close')) return;
+      isDragging = true;
+      const rect = popup.getBoundingClientRect();
+      startX = e.clientX;
+      startY = e.clientY;
+      startLeft = rect.left;
+      startTop = rect.top;
+      popup.style.position = 'fixed';
+      popup.style.margin = '0';
+      popup.style.left = startLeft + 'px';
+      popup.style.top = startTop + 'px';
+      e.preventDefault();
+    };
+    
+    document.addEventListener('mousemove', this._cameraPopupDragHandler = (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      popup.style.left = (startLeft + dx) + 'px';
+      popup.style.top = (startTop + dy) + 'px';
     });
-    this.dispatchEvent(event);
+    
+    document.addEventListener('mouseup', this._cameraPopupDragEndHandler = () => {
+      isDragging = false;
+    });
+    
+    // Custom resize handle
+    const resizeHandle = overlay.querySelector('.prism-camera-resize-handle');
+    let isResizing = false;
+    let resizeStartX, resizeStartY, resizeStartWidth, resizeStartHeight;
+    
+    resizeHandle.onmousedown = (e) => {
+      isResizing = true;
+      const rect = popup.getBoundingClientRect();
+      resizeStartX = e.clientX;
+      resizeStartY = e.clientY;
+      resizeStartWidth = rect.width;
+      resizeStartHeight = rect.height;
+      
+      // Ensure popup has fixed positioning for resize
+      if (popup.style.position !== 'fixed') {
+        popup.style.position = 'fixed';
+        popup.style.margin = '0';
+        popup.style.left = rect.left + 'px';
+        popup.style.top = rect.top + 'px';
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    document.addEventListener('mousemove', this._cameraPopupResizeHandler = (e) => {
+      if (!isResizing) return;
+      const dx = e.clientX - resizeStartX;
+      const dy = e.clientY - resizeStartY;
+      const newWidth = Math.max(400, Math.min(resizeStartWidth + dx, window.innerWidth * 0.95));
+      const newHeight = Math.max(300, Math.min(resizeStartHeight + dy, window.innerHeight * 0.95));
+      popup.style.width = newWidth + 'px';
+      popup.style.height = newHeight + 'px';
+    });
+    
+    document.addEventListener('mouseup', this._cameraPopupResizeEndHandler = () => {
+      isResizing = false;
+    });
+    
+    // Update info panel data periodically
+    this._cameraPopupUpdateInterval = setInterval(() => {
+      if (!this._cameraPopupOverlay) return;
+      const newData = this.getPrinterData();
+      
+      // Update progress
+      const progressValue = overlay.querySelector('[data-field="progress"]');
+      const progressFill = overlay.querySelector('.prism-info-progress-fill');
+      if (progressValue) progressValue.textContent = `${Math.round(newData.progress)}%`;
+      if (progressFill) progressFill.style.width = `${newData.progress}%`;
+      
+      // Update time
+      const timeValue = overlay.querySelector('[data-field="time"]');
+      if (timeValue) timeValue.textContent = newData.printTimeLeft;
+      
+      // Update layer
+      const layerValue = overlay.querySelector('[data-field="layer"]');
+      if (layerValue) layerValue.innerHTML = `${newData.currentLayer} <span class="target">/ ${newData.totalLayers}</span>`;
+      
+      // Update temperatures
+      const nozzleValue = overlay.querySelector('[data-field="nozzle"]');
+      if (nozzleValue) nozzleValue.innerHTML = `${Math.round(newData.nozzleTemp)}° <span class="target">/ ${Math.round(newData.targetNozzleTemp)}°</span>`;
+      
+      const bedValue = overlay.querySelector('[data-field="bed"]');
+      if (bedValue) bedValue.innerHTML = `${Math.round(newData.bedTemp)}° <span class="target">/ ${Math.round(newData.targetBedTemp)}°</span>`;
+      
+      const chamberValue = overlay.querySelector('[data-field="chamber"]');
+      if (chamberValue) chamberValue.textContent = `${Math.round(newData.chamberTemp)}°`;
+      
+      // Update status
+      const statusText = overlay.querySelector('[data-field="status"]');
+      if (statusText) statusText.textContent = newData.stateStr;
+    }, 2000);
+    
+    console.log('Prism Creality: Camera popup opened:', entityId);
+  }
+  
+  closeCameraPopup() {
+    // Remove popup from document.body
+    if (this._cameraPopupOverlay) {
+      this._cameraPopupOverlay.remove();
+      this._cameraPopupOverlay = null;
+    }
+    
+    // Also check for any orphaned popups
+    const existingPopup = document.getElementById('prism-camera-popup-overlay');
+    if (existingPopup) {
+      existingPopup.remove();
+    }
+    
+    // Clear info update interval
+    if (this._cameraPopupUpdateInterval) {
+      clearInterval(this._cameraPopupUpdateInterval);
+      this._cameraPopupUpdateInterval = null;
+    }
+    
+    // Remove escape key listener
+    if (this._cameraPopupEscHandler) {
+      document.removeEventListener('keydown', this._cameraPopupEscHandler);
+      this._cameraPopupEscHandler = null;
+    }
+    
+    // Remove drag listeners
+    if (this._cameraPopupDragHandler) {
+      document.removeEventListener('mousemove', this._cameraPopupDragHandler);
+      this._cameraPopupDragHandler = null;
+    }
+    if (this._cameraPopupDragEndHandler) {
+      document.removeEventListener('mouseup', this._cameraPopupDragEndHandler);
+      this._cameraPopupDragEndHandler = null;
+    }
+    
+    // Remove resize listeners
+    if (this._cameraPopupResizeHandler) {
+      document.removeEventListener('mousemove', this._cameraPopupResizeHandler);
+      this._cameraPopupResizeHandler = null;
+    }
+    if (this._cameraPopupResizeEndHandler) {
+      document.removeEventListener('mouseup', this._cameraPopupResizeEndHandler);
+      this._cameraPopupResizeEndHandler = null;
+    }
+    
+    console.log('Prism Creality: Camera popup closed');
   }
 
   getPrinterData() {
