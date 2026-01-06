@@ -264,8 +264,8 @@ class PrismShutterLightCard extends HTMLElement {
             color: #3b82f6;
         }
 
-        /* Responsive: Tablet (768px - 1024px) */
-        @media (max-width: 1024px) {
+        /* Responsive: Tablet (768px - 1400px) - includes iPad Pro */
+        @media (max-width: 1400px) {
           .card {
             padding: 16px;
           }

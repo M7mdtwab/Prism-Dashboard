@@ -352,8 +352,8 @@ class PrismMediaLightCard extends HTMLElement {
         ha-icon { pointer-events: none; }
         .play ha-icon { --mdc-icon-size: 18px; }
 
-        /* Responsive: Tablet (768px - 1024px) */
-        @media (max-width: 1024px) {
+        /* Responsive: Tablet (768px - 1400px) - includes iPad Pro */
+        @media (max-width: 1400px) {
           .content {
             padding: 16px;
             gap: 14px;

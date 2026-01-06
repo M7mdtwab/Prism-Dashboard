@@ -21,13 +21,19 @@ class PrismNavigationCard extends HTMLElement {
       tab_2_path: "rooms",
       tab_2_icon: "",
       active_color: "#2196f3",
-      show_icons: true
+      show_icons: true,
+      sticky_position: true
     };
   }
 
   static getConfigForm() {
     return {
       schema: [
+        {
+          name: "sticky_position",
+          label: "Fixed position at top (recommended for grid layouts)",
+          selector: { boolean: {} }
+        },
         {
           name: "active_color",
           label: "Active Tab Color",
@@ -169,7 +175,8 @@ class PrismNavigationCard extends HTMLElement {
       tabs: tabs,
       active_color: this._normalizeColor(config.active_color) || '#2196f3',
       show_icons: config.show_icons || false,
-      icon_only: config.icon_only || false
+      icon_only: config.icon_only || false,
+      sticky_position: config.sticky_position !== false // Default true
     };
     
     this._updateCard();
@@ -290,6 +297,7 @@ class PrismNavigationCard extends HTMLElement {
     const activeColor = this._config.active_color || '#2196f3';
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
+    const stickyPosition = this._config.sticky_position;
     
     // Re-check current path
     this._currentPath = this._getCurrentPath();
@@ -297,13 +305,39 @@ class PrismNavigationCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host {
-          display: flex;
+          display: ${stickyPosition ? 'block' : 'flex'};
           justify-content: center;
           width: 100%;
           box-sizing: border-box;
+          ${stickyPosition ? `
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            overflow: visible;
+            margin: 0 !important;
+            padding: 0 !important;
+          ` : ''}
+        }
+        
+        .nav-wrapper {
+          ${stickyPosition ? `
+            position: fixed;
+            top: 16px;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+          ` : `
+            display: flex;
+            justify-content: center;
+            width: 100%;
+          `}
         }
         
         .nav-container {
+          ${stickyPosition ? 'pointer-events: auto;' : ''}
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -428,20 +462,22 @@ class PrismNavigationCard extends HTMLElement {
         }
       </style>
       
-      <div class="nav-container">
-        ${tabs.map(tab => {
-          const isActive = this._isTabActive(tab);
-          const hasIcon = showIcons && tab.icon;
-          const isIconOnly = iconOnly && tab.icon;
-          
-          return `
-            <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
-                    data-path="${tab.path || ''}">
-              ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
-              <span class="nav-tab-text">${tab.name || ''}</span>
-            </button>
-          `;
-        }).join('')}
+      <div class="nav-wrapper">
+        <div class="nav-container">
+          ${tabs.map(tab => {
+            const isActive = this._isTabActive(tab);
+            const hasIcon = showIcons && tab.icon;
+            const isIconOnly = iconOnly && tab.icon;
+            
+            return `
+              <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
+                      data-path="${tab.path || ''}">
+                ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
+                <span class="nav-tab-text">${tab.name || ''}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
       </div>
     `;
 

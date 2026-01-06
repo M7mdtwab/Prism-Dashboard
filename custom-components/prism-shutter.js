@@ -272,8 +272,8 @@ class PrismShutterCard extends HTMLElement {
             filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
         }
 
-        /* Responsive: Tablet (768px - 1024px) */
-        @media (max-width: 1024px) {
+        /* Responsive: Tablet (768px - 1400px) - includes iPad Pro */
+        @media (max-width: 1400px) {
           .card {
             padding: 16px;
           }

@@ -318,8 +318,8 @@ class PrismHeatSmallCard extends HTMLElement {
             font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.9); font-family: monospace; letter-spacing: 1px;
         }
 
-        /* Responsive: Tablet (768px - 1024px) */
-        @media (max-width: 1024px) {
+        /* Responsive: Tablet (768px - 1400px) - includes iPad Pro */
+        @media (max-width: 1400px) {
           .card {
             padding: 14px;
           }
