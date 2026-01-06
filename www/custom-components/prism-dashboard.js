@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2026-01-06T07:51:55.149Z
+ * Build Date: 2026-01-06T12:26:35.836Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -13615,7 +13615,7 @@ window.customCards.push({
  * - Day/Night transitions with house dimming
  * - Sunrise/Sunset effects
  * 
- * @version 1.2.5
+ * @version 1.2.6
  * @author BangerTech
  */
 
@@ -15135,6 +15135,8 @@ class PrismEnergyCard extends HTMLElement {
         .card {
           position: relative;
           width: 100%;
+          height: 100%;
+          min-height: 0;
           border-radius: 24px;
           display: flex;
           flex-direction: column;
@@ -15264,17 +15266,116 @@ class PrismEnergyCard extends HTMLElement {
           font-weight: 700;
           color: rgba(255, 255, 255, 0.95);
         }
+        
+        /* Responsive Header */
+        @container energy-card (max-width: 400px) {
+          .header {
+            padding: 16px 18px;
+          }
+          .icon-circle {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            min-height: 34px;
+          }
+          .icon-circle ha-icon {
+            width: 18px;
+            height: 18px;
+            --mdc-icon-size: 18px;
+          }
+          .title-group h2 {
+            font-size: 1rem;
+          }
+          .live-text, .weather-status {
+            font-size: 0.6rem;
+          }
+          .autarkie-badge {
+            padding: 6px 10px;
+            gap: 6px;
+          }
+          .autarkie-text {
+            font-size: 0.7rem;
+          }
+          .autarkie-badge ha-icon {
+            --mdc-icon-size: 14px;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .header {
+            padding: 12px 14px;
+          }
+          .header-left {
+            gap: 8px;
+          }
+          .icon-circle {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            min-height: 30px;
+          }
+          .icon-circle ha-icon {
+            width: 16px;
+            height: 16px;
+            --mdc-icon-size: 16px;
+          }
+          .title-group h2 {
+            font-size: 0.9rem;
+          }
+          .live-indicator {
+            margin-top: 2px;
+          }
+          .dot {
+            width: 5px;
+            height: 5px;
+          }
+          .live-text {
+            font-size: 0.55rem;
+          }
+          .weather-status {
+            display: none; /* Hide weather status on very small screens */
+          }
+          .weather-separator {
+            display: none;
+          }
+          .autarkie-badge {
+            padding: 5px 8px;
+            gap: 4px;
+          }
+          .autarkie-text {
+            font-size: 0.65rem;
+          }
+          .autarkie-badge ha-icon {
+            --mdc-icon-size: 12px;
+          }
+        }
 
         /* Main Visual */
         .visual-container {
           position: relative;
           width: 100%;
-          min-height: 320px;
+          min-height: 250px;
+          flex: 1 1 auto;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: visible;
           padding-top: 20px;
+        }
+        
+        /* Responsive visual container */
+        @container energy-card (max-width: 400px) {
+          .visual-container {
+            min-height: 200px;
+            padding-top: 15px;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .visual-container {
+            min-height: 180px;
+            padding-top: 10px;
+          }
         }
         
         .house-img {
@@ -15438,6 +15539,48 @@ class PrismEnergyCard extends HTMLElement {
           letter-spacing: 0.05em;
           color: rgba(255, 255, 255, 0.4);
         }
+        
+        /* Responsive Pills */
+        @container energy-card (max-width: 400px) {
+          .pill {
+            padding: 5px 8px 5px 5px;
+            gap: 6px;
+          }
+          .pill-icon {
+            width: 24px;
+            height: 24px;
+          }
+          .pill-icon ha-icon {
+            --mdc-icon-size: 14px;
+          }
+          .pill-val {
+            font-size: 0.7rem;
+          }
+          .pill-label {
+            font-size: 0.45rem;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .pill {
+            padding: 4px 6px 4px 4px;
+            gap: 4px;
+          }
+          .pill-icon {
+            width: 20px;
+            height: 20px;
+          }
+          .pill-icon ha-icon {
+            --mdc-icon-size: 12px;
+          }
+          .pill-val {
+            font-size: 0.6rem;
+          }
+          .pill-label {
+            font-size: 0.4rem;
+            display: none; /* Hide labels on very small screens */
+          }
+        }
 
         /* Pill Icon Colors */
         .bg-solar {
@@ -15476,7 +15619,13 @@ class PrismEnergyCard extends HTMLElement {
         }
         .color-inactive { color: rgba(255, 255, 255, 0.35); }
 
-        /* Bottom Details */
+        /* Bottom Details - Responsive Container */
+        .details-wrapper {
+          flex-shrink: 0;
+          min-height: 0;
+          overflow: hidden;
+        }
+        
         .details-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -15487,9 +15636,108 @@ class PrismEnergyCard extends HTMLElement {
           border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
         
+        /* Medium screens - 2 columns */
         @media (max-width: 600px) {
           .details-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 16px 20px;
+          }
+        }
+        
+        /* Small screens - compact mode */
+        @media (max-width: 400px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+          }
+          .detail-header {
+            padding: 3px 8px;
+            font-size: 0.5rem;
+            margin-bottom: 6px;
+          }
+          .detail-row {
+            font-size: 0.65rem;
+            gap: 4px;
+          }
+          .detail-bar {
+            height: 4px;
+          }
+        }
+        
+        /* Very small - single column */
+        @media (max-width: 280px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 10px 12px;
+          }
+          .detail-col {
+            min-height: auto;
+          }
+        }
+        
+        /* Container query based responsive (for card-level sizing) */
+        :host {
+          container-type: inline-size;
+          container-name: energy-card;
+        }
+        
+        @container energy-card (max-width: 450px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 14px 18px;
+          }
+          .detail-header {
+            padding: 4px 10px;
+            font-size: 0.55rem;
+            margin-bottom: 8px;
+          }
+          .detail-row {
+            font-size: 0.7rem;
+          }
+        }
+        
+        @container energy-card (max-width: 350px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px 14px;
+          }
+          .detail-header {
+            padding: 3px 8px;
+            font-size: 0.5rem;
+            margin-bottom: 6px;
+          }
+          .detail-row {
+            font-size: 0.6rem;
+            gap: 3px;
+          }
+          .detail-val {
+            font-size: 0.6rem;
+          }
+          .detail-bar {
+            height: 4px;
+            margin-top: 4px;
+          }
+        }
+        
+        @container energy-card (max-width: 280px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 10px 12px;
+          }
+          .detail-col {
+            min-height: auto;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .detail-col:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
           }
         }
         
@@ -15497,14 +15745,14 @@ class PrismEnergyCard extends HTMLElement {
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-height: 90px;
+          min-height: 80px;
         }
         
         .detail-content {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
           width: 100%;
         }
         
@@ -15514,7 +15762,7 @@ class PrismEnergyCard extends HTMLElement {
           align-items: center;
           justify-content: center;
           padding: 5px 12px;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           
           background: linear-gradient(145deg, #2d3038, #22252b);
           border-radius: 20px;
@@ -15546,7 +15794,7 @@ class PrismEnergyCard extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           font-size: 0.75rem;
-          gap: 8px;
+          gap: 6px;
           white-space: nowrap;
         }
         
@@ -15564,11 +15812,12 @@ class PrismEnergyCard extends HTMLElement {
           color: rgba(255, 255, 255, 0.9);
           flex-shrink: 0;
           white-space: nowrap;
+          font-size: 0.75rem;
         }
         
         /* Inlet-style progress bar - aligned at bottom */
         .detail-bar {
-          height: 6px;
+          height: 5px;
           width: 100%;
           border-radius: 999px;
           overflow: hidden;
@@ -15766,6 +16015,7 @@ class PrismEnergyCard extends HTMLElement {
 
         <!-- Bottom Details -->
         ${this._config.show_details ? `
+        <div class="details-wrapper">
         <div class="details-grid">
           <!-- Solar -->
           <div class="detail-col">
@@ -15838,6 +16088,7 @@ class PrismEnergyCard extends HTMLElement {
             </div>
           </div>
         </div>
+        </div>
         ` : ''}
       </div>
     `;
@@ -15860,7 +16111,7 @@ window.customCards.push({
 });
 
 console.info(
-  `%c PRISM-ENERGY %c v1.2.5 %c Weather Performance Optimized `,
+  `%c PRISM-ENERGY %c v1.2.6 %c Responsive Details Section `,
   'background: #F59E0B; color: black; font-weight: bold; padding: 2px 6px; border-radius: 4px 0 0 4px;',
   'background: #1e2024; color: white; font-weight: bold; padding: 2px 6px;',
   'background: #3B82F6; color: white; font-weight: bold; padding: 2px 6px; border-radius: 0 4px 4px 0;'
@@ -27772,10 +28023,17 @@ class PrismRoomCard extends HTMLElement {
       show_icon: true,
       icon_size: 42,
       name_size: 1.125,
+      hide_card_background: false,
       temperature_entity: "",
       humidity_entity: "",
-      light_entity: "",
-      entities: []
+      light_entities: [],
+      climate_entities: [],
+      motion_entities: [],
+      media_entities: [],
+      cover_entities: [],
+      switch_entities: [],
+      fan_entities: [],
+      other_entities: []
     };
   }
 
@@ -27804,6 +28062,11 @@ class PrismRoomCard extends HTMLElement {
           selector: { number: { min: 0.75, max: 2, step: 0.125 } }
         },
         {
+          name: "hide_card_background",
+          label: "Hide card background (show only icons and text)",
+          selector: { boolean: {} }
+        },
+        {
           name: "temperature_entity",
           selector: { entity: { domain: "sensor" } }
         },
@@ -27812,28 +28075,110 @@ class PrismRoomCard extends HTMLElement {
           selector: { entity: { domain: "sensor" } }
         },
         {
-          name: "light_entity",
-          selector: { entity: { domain: "light" } }
-        },
-        {
-          name: "climate_entity",
-          selector: { entity: { domain: "climate" } }
-        },
-        {
-          name: "motion_entity",
-          selector: { entity: { domain: "binary_sensor" } }
-        },
-        {
-          name: "media_entity",
-          selector: { entity: { domain: "media_player" } }
-        },
-        {
           name: "active_color",
           selector: { color_rgb: {} }
         },
+        // Grouped entities section
         {
-          name: "entities",
-          selector: { entity: { multiple: true } }
+          type: 'expandable',
+          name: '',
+          title: 'Lights',
+          schema: [
+            {
+              name: "light_entities",
+              label: "Light entities (all lights in this group will show as 1 icon)",
+              selector: { entity: { multiple: true, domain: "light" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Climate/Heating',
+          schema: [
+            {
+              name: "climate_entities",
+              label: "Climate entities",
+              selector: { entity: { multiple: true, domain: "climate" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Motion Sensors',
+          schema: [
+            {
+              name: "motion_entities",
+              label: "Motion sensor entities",
+              selector: { entity: { multiple: true, domain: "binary_sensor" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Media Players',
+          schema: [
+            {
+              name: "media_entities",
+              label: "Media player entities",
+              selector: { entity: { multiple: true, domain: "media_player" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Covers/Blinds',
+          schema: [
+            {
+              name: "cover_entities",
+              label: "Cover entities",
+              selector: { entity: { multiple: true, domain: "cover" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Switches',
+          schema: [
+            {
+              name: "switch_entities",
+              label: "Switch entities",
+              selector: { entity: { multiple: true, domain: "switch" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Fans',
+          schema: [
+            {
+              name: "fan_entities",
+              label: "Fan entities",
+              selector: { entity: { multiple: true, domain: "fan" } }
+            }
+          ]
+        },
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Other Entities',
+          schema: [
+            {
+              name: "other_entities",
+              label: "Other entities (scenes, scripts, etc.)",
+              selector: { entity: { multiple: true } }
+            },
+            {
+              name: "other_entities_icon",
+              label: "Icon for Other entities (shown in status bar)",
+              selector: { icon: {} }
+            }
+          ]
         }
       ]
     };
@@ -27848,7 +28193,17 @@ class PrismRoomCard extends HTMLElement {
       icon: config.icon || 'mdi:home',
       show_icon: config.show_icon !== false,
       icon_size: config.icon_size || 42,
-      name_size: config.name_size || 1.125
+      name_size: config.name_size || 1.125,
+      hide_card_background: config.hide_card_background || false,
+      light_entities: config.light_entities || [],
+      climate_entities: config.climate_entities || [],
+      motion_entities: config.motion_entities || [],
+      media_entities: config.media_entities || [],
+      cover_entities: config.cover_entities || [],
+      switch_entities: config.switch_entities || [],
+      fan_entities: config.fan_entities || [],
+      other_entities: config.other_entities || [],
+      other_entities_icon: config.other_entities_icon || 'mdi:apps'
     };
     
     if (this._config.active_color) {
@@ -27873,6 +28228,10 @@ class PrismRoomCard extends HTMLElement {
     this._hass = hass;
     if (this._config) {
       this._updateCardContent();
+      // Update popup if it's open
+      if (this._popupElement) {
+        this._updatePopupContent();
+      }
     }
   }
 
@@ -27902,80 +28261,202 @@ class PrismRoomCard extends HTMLElement {
     return parseFloat(entity.state);
   }
 
-  // Get light entity status (for groups)
+  // Get all entities from all groups
+  _getAllEntities() {
+    const allEntities = [
+      ...(this._config.light_entities || []),
+      ...(this._config.climate_entities || []),
+      ...(this._config.motion_entities || []),
+      ...(this._config.media_entities || []),
+      ...(this._config.cover_entities || []),
+      ...(this._config.switch_entities || []),
+      ...(this._config.fan_entities || []),
+      ...(this._config.other_entities || [])
+    ];
+    return allEntities;
+  }
+
+  // Get light status from light_entities group
   _getLightStatus() {
-    if (!this._hass || !this._config.light_entity) return { active: false, brightness: 0 };
-    const entity = this._hass.states[this._config.light_entity];
-    if (!entity) return { active: false, brightness: 0 };
-    const isOn = entity.state === 'on';
-    const brightness = entity.attributes?.brightness ? Math.round((entity.attributes.brightness / 255) * 100) : 0;
-    return { active: isOn, brightness: brightness };
-  }
-
-  // Get climate/heating status
-  _getClimateStatus() {
-    if (!this._hass || !this._config.climate_entity) return { active: false, mode: null };
-    const entity = this._hass.states[this._config.climate_entity];
-    if (!entity) return { active: false, mode: null };
-    const state = entity.state;
-    const isActive = state === 'heat' || state === 'auto' || state === 'heating' || state === 'cool' || state === 'cooling';
-    return { active: isActive, mode: state, temp: entity.attributes?.temperature };
-  }
-
-  // Get motion sensor status
-  _getMotionStatus() {
-    if (!this._hass || !this._config.motion_entity) return false;
-    const entity = this._hass.states[this._config.motion_entity];
-    return entity && entity.state === 'on';
-  }
-
-  // Get media player status
-  _getMediaStatus() {
-    if (!this._hass || !this._config.media_entity) return { active: false, title: null };
-    const entity = this._hass.states[this._config.media_entity];
-    if (!entity) return { active: false, title: null };
-    const isActive = entity.state === 'playing' || entity.state === 'paused';
+    if (!this._hass || !this._config.light_entities || this._config.light_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const lights = this._config.light_entities;
+    const activeLights = lights.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      return entity && entity.state === 'on';
+    });
     return { 
-      active: isActive, 
-      playing: entity.state === 'playing',
-      title: entity.attributes?.media_title || null
+      active: activeLights.length > 0, 
+      count: activeLights.length, 
+      total: lights.length 
     };
   }
 
-  // Count active lights from entities list (if no light_entity is set)
-  _getActiveLightsFromEntities() {
-    if (!this._hass || !this._config.entities) return { count: 0, total: 0 };
-    const entities = Array.isArray(this._config.entities) ? this._config.entities : [];
-    const lights = entities.filter(e => e.startsWith('light.'));
-    const activeLights = lights.filter(e => {
-      const entity = this._hass.states[e];
-      return entity && entity.state === 'on';
-    });
-    return { count: activeLights.length, total: lights.length };
+  // Get climate/heating status from climate_entities group
+  _getClimateStatus() {
+    if (!this._hass || !this._config.climate_entities || this._config.climate_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const climates = this._config.climate_entities;
+    const activeClimateCount = climates.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
+      const state = entity.state;
+      return state === 'heat' || state === 'auto' || state === 'heating' || state === 'cool' || state === 'cooling';
+    }).length;
+    return { 
+      active: activeClimateCount > 0, 
+      count: activeClimateCount, 
+      total: climates.length 
+    };
   }
 
-  // Get all entities with their states
-  _getEntitiesWithStates() {
-    if (!this._hass || !this._config.entities) return [];
-    const entities = Array.isArray(this._config.entities) ? this._config.entities : [];
-    
-    return entities.map(entityId => {
+  // Get motion sensor status from motion_entities group
+  _getMotionStatus() {
+    if (!this._hass || !this._config.motion_entities || this._config.motion_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const motions = this._config.motion_entities;
+    const activeMotionCount = motions.filter(entityId => {
       const entity = this._hass.states[entityId];
-      if (!entity) return null;
-      
+      return entity && entity.state === 'on';
+    }).length;
+    return { 
+      active: activeMotionCount > 0, 
+      count: activeMotionCount, 
+      total: motions.length 
+    };
+  }
+
+  // Get media player status from media_entities group
+  _getMediaStatus() {
+    if (!this._hass || !this._config.media_entities || this._config.media_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const medias = this._config.media_entities;
+    const activeMediaCount = medias.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
+      return entity.state === 'playing' || entity.state === 'paused';
+    }).length;
+    return { 
+      active: activeMediaCount > 0, 
+      count: activeMediaCount, 
+      total: medias.length 
+    };
+  }
+
+  // Get cover status from cover_entities group
+  _getCoverStatus() {
+    if (!this._hass || !this._config.cover_entities || this._config.cover_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const covers = this._config.cover_entities;
+    const activeCoverCount = covers.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
+      return entity.state === 'open' || entity.state === 'opening';
+    }).length;
+    return { 
+      active: activeCoverCount > 0, 
+      count: activeCoverCount, 
+      total: covers.length 
+    };
+  }
+
+  // Get switch status from switch_entities group
+  _getSwitchStatus() {
+    if (!this._hass || !this._config.switch_entities || this._config.switch_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const switches = this._config.switch_entities;
+    const activeSwitchCount = switches.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
+      return entity.state === 'on';
+    }).length;
+    return { 
+      active: activeSwitchCount > 0, 
+      count: activeSwitchCount, 
+      total: switches.length 
+    };
+  }
+
+  // Get fan status from fan_entities group
+  _getFanStatus() {
+    if (!this._hass || !this._config.fan_entities || this._config.fan_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const fans = this._config.fan_entities;
+    const activeFanCount = fans.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
+      return entity.state === 'on';
+    }).length;
+    return { 
+      active: activeFanCount > 0, 
+      count: activeFanCount, 
+      total: fans.length 
+    };
+  }
+
+  // Get other entities status
+  _getOtherStatus() {
+    if (!this._hass || !this._config.other_entities || this._config.other_entities.length === 0) {
+      return { active: false, count: 0, total: 0 };
+    }
+    const others = this._config.other_entities;
+    const activeOtherCount = others.filter(entityId => {
+      const entity = this._hass.states[entityId];
+      if (!entity) return false;
       const domain = entityId.split('.')[0];
-      const isActive = this._isEntityActive(entity, domain);
+      return this._isEntityActive(entity, domain);
+    }).length;
+    return { 
+      active: activeOtherCount > 0, 
+      count: activeOtherCount, 
+      total: others.length 
+    };
+  }
+
+  // Get all entities with their states, grouped by type
+  _getEntitiesWithStates() {
+    if (!this._hass) return [];
+    
+    const processGroup = (entityIds, groupName) => {
+      if (!entityIds || !Array.isArray(entityIds) || entityIds.length === 0) return [];
       
-      return {
-        id: entityId,
-        name: entity.attributes?.friendly_name || entityId,
-        state: entity.state,
-        icon: entity.attributes?.icon || this._getDomainIcon(domain),
-        domain: domain,
-        isActive: isActive,
-        attributes: entity.attributes
-      };
-    }).filter(e => e !== null);
+      return entityIds.map(entityId => {
+        const entity = this._hass.states[entityId];
+        if (!entity) return null;
+        
+        const domain = entityId.split('.')[0];
+        const isActive = this._isEntityActive(entity, domain);
+        
+        return {
+          id: entityId,
+          name: entity.attributes?.friendly_name || entityId,
+          state: entity.state,
+          icon: entity.attributes?.icon || this._getDomainIcon(domain),
+          domain: domain,
+          group: groupName,
+          isActive: isActive,
+          attributes: entity.attributes
+        };
+      }).filter(e => e !== null);
+    };
+    
+    return [
+      ...processGroup(this._config.light_entities, 'Lights'),
+      ...processGroup(this._config.climate_entities, 'Climate'),
+      ...processGroup(this._config.motion_entities, 'Motion Sensors'),
+      ...processGroup(this._config.media_entities, 'Media Players'),
+      ...processGroup(this._config.cover_entities, 'Covers'),
+      ...processGroup(this._config.switch_entities, 'Switches'),
+      ...processGroup(this._config.fan_entities, 'Fans'),
+      ...processGroup(this._config.other_entities, 'Other')
+    ];
   }
 
   _isEntityActive(entity, domain) {
@@ -28028,7 +28509,7 @@ class PrismRoomCard extends HTMLElement {
       this._hass.callService(domain, 'toggle', { entity_id: entityId });
     } else if (domain === 'cover') {
       const entity = this._hass.states[entityId];
-      if (entity?.state === 'open') {
+      if (entity?.state === 'open' || entity?.state === 'opening') {
         this._hass.callService('cover', 'close_cover', { entity_id: entityId });
       } else {
         this._hass.callService('cover', 'open_cover', { entity_id: entityId });
@@ -28043,7 +28524,21 @@ class PrismRoomCard extends HTMLElement {
     } else if (domain === 'media_player') {
       this._hass.callService('media_player', 'media_play_pause', { entity_id: entityId });
     } else if (domain === 'climate') {
-      this._handleEntityLongPress(entityId);
+      // Toggle climate between heat and off
+      const entity = this._hass.states[entityId];
+      if (!entity) return;
+      const currentState = entity.state;
+      if (currentState === 'off') {
+        this._hass.callService('climate', 'set_hvac_mode', { 
+          entity_id: entityId, 
+          hvac_mode: 'heat' 
+        });
+      } else {
+        this._hass.callService('climate', 'set_hvac_mode', { 
+          entity_id: entityId, 
+          hvac_mode: 'off' 
+        });
+      }
     } else if (domain === 'scene') {
       this._hass.callService('scene', 'turn_on', { entity_id: entityId });
     } else if (domain === 'script') {
@@ -28087,28 +28582,49 @@ class PrismRoomCard extends HTMLElement {
     }
   }
 
+  _updatePopupContent() {
+    if (!this._popupElement) return;
+    
+    const popup = this._popupElement.querySelector('.prism-room-popup');
+    if (!popup) return;
+    
+    // Extract the inner HTML from the new popup HTML
+    const newPopupHTML = this._getPopupHTML();
+    const match = newPopupHTML.match(/<div class="prism-room-popup">([\s\S]*)<\/div>$/);
+    if (match) {
+      popup.innerHTML = match[1];
+      this._setupPopupListeners();
+    }
+  }
+
   _handleEntityLongPress(entityId) {
-    const event = new CustomEvent('hass-more-info', {
-      bubbles: true,
-      composed: true,
-      detail: { entityId: entityId }
-    });
-    this.dispatchEvent(event);
+    // Close popup first so more-info dialog appears on top
+    this._closePopup();
+    
+    // Dispatch more-info event after a short delay to ensure popup is closed
+    setTimeout(() => {
+      const event = new CustomEvent('hass-more-info', {
+        bubbles: true,
+        composed: true,
+        detail: { entityId: entityId }
+      });
+      this.dispatchEvent(event);
+    }, 100);
   }
 
   _getEntityColor(entity) {
     const colors = {
       'light': '#ffc864',
       'switch': '#4ade80',
-      'fan': '#60a5fa',
-      'cover': '#a78bfa',
-      'lock': '#4ade80',
+      'fan': '#38bdf8',
+      'cover': '#22d3ee',
+      'lock': '#10b981',
       'climate': '#fb923c',
       'media_player': '#a78bfa',
-      'binary_sensor': '#60a5fa',
+      'binary_sensor': '#818cf8',
       'vacuum': '#4ade80'
     };
-    return colors[entity.domain] || '#60a5fa';
+    return colors[entity.domain] || '#94a3b8';
   }
 
   // Translation helper - English default, German if HA is set to German
@@ -28146,7 +28662,25 @@ class PrismRoomCard extends HTMLElement {
       'devices': isGerman ? 'Geräte' : 'Devices',
       'no_entities': isGerman ? 'Keine Entitäten konfiguriert' : 'No entities configured',
       'room': isGerman ? 'Raum' : 'Room',
-      'light': isGerman ? 'Licht' : 'Light'
+      'light': isGerman ? 'Licht' : 'Light',
+      // Group names
+      'Lights': isGerman ? 'Lichter' : 'Lights',
+      'Climate': isGerman ? 'Heizungen' : 'Climate',
+      'Motion Sensors': isGerman ? 'Bewegungsmelder' : 'Motion Sensors',
+      'Media Players': isGerman ? 'Mediaplayer' : 'Media Players',
+      'Covers': isGerman ? 'Rollläden' : 'Covers',
+      'Switches': isGerman ? 'Schalter' : 'Switches',
+      'Fans': isGerman ? 'Ventilatoren' : 'Fans',
+      'Other': isGerman ? 'Sonstige' : 'Other',
+      // Status messages
+      'covers_open': isGerman ? 'offen' : 'open',
+      'covers_closed': isGerman ? 'geschlossen' : 'closed',
+      'switches_on': isGerman ? 'an' : 'on',
+      'switches_off': isGerman ? 'aus' : 'off',
+      'fans_on': isGerman ? 'an' : 'on',
+      'fans_off': isGerman ? 'aus' : 'off',
+      'other_active': isGerman ? 'aktiv' : 'active',
+      'other_inactive': isGerman ? 'inaktiv' : 'inactive'
     };
     
     return translations[key] || key;
@@ -28181,13 +28715,27 @@ class PrismRoomCard extends HTMLElement {
           user-select: none;
           -webkit-tap-highlight-color: transparent;
         }
+        .prism-room-card.transparent {
+          background: transparent;
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          border: none;
+          box-shadow: none;
+        }
         .prism-room-card:hover {
           box-shadow: 0 12px 24px -5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        .prism-room-card.transparent:hover {
+          box-shadow: none;
         }
         .prism-room-card:active {
           transform: scale(0.98);
           background: rgba(20, 20, 20, 0.6);
           box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8), inset -1px -1px 2px rgba(255,255,255,0.1);
+        }
+        .prism-room-card.transparent:active {
+          background: transparent;
+          box-shadow: none;
         }
         
         .card-content {
@@ -28338,23 +28886,23 @@ class PrismRoomCard extends HTMLElement {
         
         .status-badge {
           position: absolute;
-          top: -4px;
-          right: -4px;
-          min-width: 16px;
-          height: 16px;
-          border-radius: 8px;
+          top: -3px;
+          right: -3px;
+          min-width: 14px;
+          height: 14px;
+          border-radius: 7px;
           color: white;
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 4px;
+          padding: 0 3px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
       </style>
       
-      <div class="prism-room-card" style="--active-color: ${activeColor}; --active-color-rgb: ${this._hexToRgb(activeColor)}; --icon-size: ${this._config.icon_size}px; --name-size: ${this._config.name_size}rem;">
+      <div class="prism-room-card ${this._config.hide_card_background ? 'transparent' : ''}" style="--active-color: ${activeColor}; --active-color-rgb: ${this._hexToRgb(activeColor)}; --icon-size: ${this._config.icon_size}px; --name-size: ${this._config.name_size}rem;">
         <div class="card-content">
           <div class="icon-container ${this._config.show_icon ? '' : 'hidden'}">
             <div class="icon-circle" id="icon-circle"></div>
@@ -28394,17 +28942,15 @@ class PrismRoomCard extends HTMLElement {
     const climate = this._getClimateStatus();
     const motion = this._getMotionStatus();
     const media = this._getMediaStatus();
-    const lightStatus = this._getLightStatus();
-    const lightsFromEntities = this._getActiveLightsFromEntities();
-    
-    // Use light_entity if set, otherwise count from entities
-    const hasLightEntity = !!this._config.light_entity;
-    const lightsActive = hasLightEntity ? lightStatus.active : lightsFromEntities.count > 0;
-    const lightCount = hasLightEntity ? (lightStatus.active ? 1 : 0) : lightsFromEntities.count;
-    const lightTotal = hasLightEntity ? 1 : lightsFromEntities.total;
+    const lights = this._getLightStatus();
+    const covers = this._getCoverStatus();
+    const switches = this._getSwitchStatus();
+    const fans = this._getFanStatus();
+    const others = this._getOtherStatus();
     
     // Determine if any status should be highlighted
-    const hasActiveStatus = climate.active || motion || media.active || lightsActive;
+    const hasActiveStatus = climate.active || motion.active || media.active || lights.active || 
+                            covers.active || switches.active || fans.active || others.active;
     
     // Update icon circle
     const iconCircle = this.querySelector('#icon-circle');
@@ -28434,40 +28980,83 @@ class PrismRoomCard extends HTMLElement {
     // Build status icons
     const statusIcons = [];
     
-    if (this._config.climate_entity) {
+    if (climate.total > 0) {
       statusIcons.push({
         icon: 'mdi:heating-coil',
         active: climate.active,
         color: '#fb923c',
-        title: climate.active ? `${this._t('heating_on')}: ${climate.temp}°C` : this._t('heating_off')
+        title: climate.active ? `${climate.count} ${this._t('heating_on')}` : this._t('heating_off'),
+        badge: climate.count > 0 ? climate.count : null
       });
     }
     
-    if (lightTotal > 0 || hasLightEntity) {
+    if (lights.total > 0) {
       statusIcons.push({
         icon: 'mdi:lightbulb-group',
-        active: lightsActive,
+        active: lights.active,
         color: '#ffc864',
-        title: lightsActive ? `${lightCount} ${this._t('light')}${lightCount > 1 ? this._t('lights_on') : ' ' + this._t('light_on')}` : this._t('light_off'),
-        badge: lightCount > 0 ? lightCount : null
+        title: lights.active ? `${lights.count} ${this._t('light')}${lights.count > 1 ? this._t('lights_on') : ' ' + this._t('light_on')}` : this._t('light_off'),
+        badge: lights.count > 0 ? lights.count : null
       });
     }
     
-    if (this._config.motion_entity) {
+    if (covers.total > 0) {
+      statusIcons.push({
+        icon: 'mdi:blinds',
+        active: covers.active,
+        color: '#22d3ee',
+        title: covers.active ? `${covers.count} ${this._t('covers_open')}` : this._t('covers_closed'),
+        badge: covers.count > 0 ? covers.count : null
+      });
+    }
+    
+    if (switches.total > 0) {
+      statusIcons.push({
+        icon: 'mdi:power-socket-de',
+        active: switches.active,
+        color: '#4ade80',
+        title: switches.active ? `${switches.count} ${this._t('switches_on')}` : this._t('switches_off'),
+        badge: switches.count > 0 ? switches.count : null
+      });
+    }
+    
+    if (fans.total > 0) {
+      statusIcons.push({
+        icon: 'mdi:fan',
+        active: fans.active,
+        color: '#38bdf8',
+        title: fans.active ? `${fans.count} ${this._t('fans_on')}` : this._t('fans_off'),
+        badge: fans.count > 0 ? fans.count : null
+      });
+    }
+    
+    if (motion.total > 0) {
       statusIcons.push({
         icon: 'mdi:motion-sensor',
-        active: motion,
-        color: '#60a5fa',
-        title: motion ? this._t('motion_detected') : this._t('no_motion')
+        active: motion.active,
+        color: '#818cf8',
+        title: motion.active ? `${motion.count} ${this._t('motion_detected')}` : this._t('no_motion'),
+        badge: motion.count > 0 ? motion.count : null
       });
     }
     
-    if (this._config.media_entity) {
+    if (media.total > 0) {
       statusIcons.push({
-        icon: media.playing ? 'mdi:music' : 'mdi:music-off',
+        icon: media.active ? 'mdi:music' : 'mdi:music-off',
         active: media.active,
         color: '#a78bfa',
-        title: media.active ? (media.title || this._t('playback_active')) : this._t('no_playback')
+        title: media.active ? `${media.count} ${this._t('playback_active')}` : this._t('no_playback'),
+        badge: media.count > 0 ? media.count : null
+      });
+    }
+    
+    if (others.total > 0) {
+      statusIcons.push({
+        icon: this._config.other_entities_icon || 'mdi:apps',
+        active: others.active,
+        color: '#94a3b8',
+        title: others.active ? `${others.count} ${this._t('other_active')}` : this._t('other_inactive'),
+        badge: others.count > 0 ? others.count : null
       });
     }
     
@@ -28531,8 +29120,8 @@ class PrismRoomCard extends HTMLElement {
       
       .prism-room-popup {
         width: 100%;
-        max-width: 400px;
-        max-height: 80vh;
+        max-width: 700px;
+        max-height: 85vh;
         background: rgba(30, 32, 36, 0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
@@ -28545,6 +29134,12 @@ class PrismRoomCard extends HTMLElement {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      
+      @media (max-width: 768px) {
+        .prism-room-popup {
+          max-width: 90vw;
+        }
       }
       
       .prism-room-popup-overlay.visible .prism-room-popup {
@@ -28676,7 +29271,7 @@ class PrismRoomCard extends HTMLElement {
       
       .prism-room-popup-content {
         padding: 16px;
-        max-height: 50vh;
+        max-height: 55vh;
         overflow-y: auto;
       }
       
@@ -28694,33 +29289,62 @@ class PrismRoomCard extends HTMLElement {
         border-radius: 3px;
       }
       
+      .prism-room-groups-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        align-items: start;
+        justify-content: center;
+      }
+      
+      @media (max-width: 650px) {
+        .prism-room-groups-container {
+          grid-template-columns: 1fr;
+        }
+      }
+      
+      .prism-room-entity-group {
+        break-inside: avoid;
+        width: 100%;
+      }
+      
+      .prism-room-entity-group-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+        padding-left: 4px;
+      }
+      
       .prism-room-entity-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        gap: 10px;
       }
       
       .prism-room-entity-card {
         background: rgba(30, 32, 36, 0.8);
-        border-radius: 16px;
-        padding: 14px;
+        border-radius: 12px;
+        padding: 10px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
         cursor: pointer;
         transition: all 0.15s ease;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
       }
       
       .prism-room-entity-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
       }
       
       .prism-room-entity-card:active {
@@ -28731,12 +29355,12 @@ class PrismRoomCard extends HTMLElement {
         background: rgba(20, 20, 20, 0.8);
         border-top: 1px solid rgba(0, 0, 0, 0.1);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: inset 2px 2px 5px rgba(0,0,0,0.6), inset -1px -1px 3px rgba(255,255,255,0.05);
+        box-shadow: inset 2px 2px 4px rgba(0,0,0,0.6), inset -1px -1px 2px rgba(255,255,255,0.05);
       }
       
       .prism-room-entity-icon-wrapper {
-        width: 44px;
-        height: 44px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -28747,29 +29371,29 @@ class PrismRoomCard extends HTMLElement {
       .prism-room-entity-card.inactive .prism-room-entity-icon-wrapper {
         background: rgba(255, 255, 255, 0.03);
         box-shadow: 
-          inset 3px 3px 8px rgba(0, 0, 0, 0.5),
-          inset -2px -2px 6px rgba(255, 255, 255, 0.05);
+          inset 2px 2px 6px rgba(0, 0, 0, 0.5),
+          inset -1px -1px 4px rgba(255, 255, 255, 0.05);
         color: rgba(255, 255, 255, 0.35);
       }
       
       .prism-room-entity-card.active .prism-room-entity-icon-wrapper {
         background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
         box-shadow: 
-          inset 3px 3px 6px rgba(0, 0, 0, 0.6),
-          inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+          inset 2px 2px 5px rgba(0, 0, 0, 0.6),
+          inset -1px -1px 3px rgba(255, 255, 255, 0.03);
       }
       
       .prism-room-entity-icon-wrapper ha-icon {
-        --mdc-icon-size: 22px;
+        --mdc-icon-size: 18px;
         transition: all 0.2s ease;
       }
       
       .prism-room-entity-card.active .prism-room-entity-icon-wrapper ha-icon {
-        filter: drop-shadow(0 0 6px currentColor);
+        filter: drop-shadow(0 0 5px currentColor);
       }
       
       .prism-room-entity-name {
-        font-size: 0.75rem;
+        font-size: 0.6875rem;
         font-weight: 600;
         color: rgba(255, 255, 255, 0.8);
         text-align: center;
@@ -28783,7 +29407,7 @@ class PrismRoomCard extends HTMLElement {
       }
       
       .prism-room-entity-state {
-        font-size: 0.625rem;
+        font-size: 0.5625rem;
         font-weight: 500;
         color: rgba(255, 255, 255, 0.4);
         text-transform: capitalize;
@@ -28812,18 +29436,42 @@ class PrismRoomCard extends HTMLElement {
     const temperature = this._getTemperature();
     const humidity = this._getHumidity();
     
+    // Group entities by their group property
+    const groupedEntities = {};
+    entities.forEach(entity => {
+      if (!groupedEntities[entity.group]) {
+        groupedEntities[entity.group] = [];
+      }
+      groupedEntities[entity.group].push(entity);
+    });
+    
+    // Define group order for consistent display
+    const groupOrder = ['Lights', 'Climate', 'Motion Sensors', 'Media Players', 'Covers', 'Switches', 'Fans', 'Other'];
+    
     const entitiesHTML = entities.length > 0 
-      ? `<div class="prism-room-entity-grid">
-          ${entities.map(entity => {
-            const iconColor = this._getEntityColor(entity);
+      ? `<div class="prism-room-groups-container">
+          ${groupOrder.map(groupName => {
+            const groupEntities = groupedEntities[groupName];
+            if (!groupEntities || groupEntities.length === 0) return '';
+            
             return `
-              <div class="prism-room-entity-card ${entity.isActive ? 'active' : 'inactive'}" 
-                   data-entity-id="${entity.id}">
-                <div class="prism-room-entity-icon-wrapper" style="${entity.isActive ? `color: ${iconColor};` : ''}">
-                  <ha-icon icon="${entity.icon}"></ha-icon>
+              <div class="prism-room-entity-group">
+                <div class="prism-room-entity-group-title">${this._t(groupName)}</div>
+                <div class="prism-room-entity-grid">
+                  ${groupEntities.map(entity => {
+                    const iconColor = this._getEntityColor(entity);
+                    return `
+                      <div class="prism-room-entity-card ${entity.isActive ? 'active' : 'inactive'}" 
+                           data-entity-id="${entity.id}">
+                        <div class="prism-room-entity-icon-wrapper" style="${entity.isActive ? `color: ${iconColor};` : ''}">
+                          <ha-icon icon="${entity.icon}"></ha-icon>
+                        </div>
+                        <div class="prism-room-entity-name">${entity.name}</div>
+                        <div class="prism-room-entity-state">${this._translateState(entity.state)}</div>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
-                <div class="prism-room-entity-name">${entity.name}</div>
-                <div class="prism-room-entity-state">${this._translateState(entity.state)}</div>
               </div>
             `;
           }).join('')}
@@ -28904,16 +29552,7 @@ class PrismRoomCard extends HTMLElement {
         if (!longPressTriggered) {
           e.stopPropagation();
           this._toggleEntity(entityId);
-          // Update popup content after toggle
-          setTimeout(() => {
-            if (this._popupElement) {
-              const popup = this._popupElement.querySelector('.prism-room-popup');
-              if (popup) {
-                popup.innerHTML = this._getPopupHTML().match(/<div class="prism-room-popup">([\s\S]*)<\/div>$/)[1];
-                this._setupPopupListeners();
-              }
-            }
-          }, 100);
+          // Note: Popup will be automatically updated when hass state changes
         }
         longPressTriggered = false;
       });

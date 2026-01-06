@@ -9,7 +9,7 @@
  * - Day/Night transitions with house dimming
  * - Sunrise/Sunset effects
  * 
- * @version 1.2.5
+ * @version 1.2.6
  * @author BangerTech
  */
 
@@ -1529,6 +1529,8 @@ class PrismEnergyCard extends HTMLElement {
         .card {
           position: relative;
           width: 100%;
+          height: 100%;
+          min-height: 0;
           border-radius: 24px;
           display: flex;
           flex-direction: column;
@@ -1658,17 +1660,116 @@ class PrismEnergyCard extends HTMLElement {
           font-weight: 700;
           color: rgba(255, 255, 255, 0.95);
         }
+        
+        /* Responsive Header */
+        @container energy-card (max-width: 400px) {
+          .header {
+            padding: 16px 18px;
+          }
+          .icon-circle {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            min-height: 34px;
+          }
+          .icon-circle ha-icon {
+            width: 18px;
+            height: 18px;
+            --mdc-icon-size: 18px;
+          }
+          .title-group h2 {
+            font-size: 1rem;
+          }
+          .live-text, .weather-status {
+            font-size: 0.6rem;
+          }
+          .autarkie-badge {
+            padding: 6px 10px;
+            gap: 6px;
+          }
+          .autarkie-text {
+            font-size: 0.7rem;
+          }
+          .autarkie-badge ha-icon {
+            --mdc-icon-size: 14px;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .header {
+            padding: 12px 14px;
+          }
+          .header-left {
+            gap: 8px;
+          }
+          .icon-circle {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            min-height: 30px;
+          }
+          .icon-circle ha-icon {
+            width: 16px;
+            height: 16px;
+            --mdc-icon-size: 16px;
+          }
+          .title-group h2 {
+            font-size: 0.9rem;
+          }
+          .live-indicator {
+            margin-top: 2px;
+          }
+          .dot {
+            width: 5px;
+            height: 5px;
+          }
+          .live-text {
+            font-size: 0.55rem;
+          }
+          .weather-status {
+            display: none; /* Hide weather status on very small screens */
+          }
+          .weather-separator {
+            display: none;
+          }
+          .autarkie-badge {
+            padding: 5px 8px;
+            gap: 4px;
+          }
+          .autarkie-text {
+            font-size: 0.65rem;
+          }
+          .autarkie-badge ha-icon {
+            --mdc-icon-size: 12px;
+          }
+        }
 
         /* Main Visual */
         .visual-container {
           position: relative;
           width: 100%;
-          min-height: 320px;
+          min-height: 250px;
+          flex: 1 1 auto;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: visible;
           padding-top: 20px;
+        }
+        
+        /* Responsive visual container */
+        @container energy-card (max-width: 400px) {
+          .visual-container {
+            min-height: 200px;
+            padding-top: 15px;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .visual-container {
+            min-height: 180px;
+            padding-top: 10px;
+          }
         }
         
         .house-img {
@@ -1832,6 +1933,48 @@ class PrismEnergyCard extends HTMLElement {
           letter-spacing: 0.05em;
           color: rgba(255, 255, 255, 0.4);
         }
+        
+        /* Responsive Pills */
+        @container energy-card (max-width: 400px) {
+          .pill {
+            padding: 5px 8px 5px 5px;
+            gap: 6px;
+          }
+          .pill-icon {
+            width: 24px;
+            height: 24px;
+          }
+          .pill-icon ha-icon {
+            --mdc-icon-size: 14px;
+          }
+          .pill-val {
+            font-size: 0.7rem;
+          }
+          .pill-label {
+            font-size: 0.45rem;
+          }
+        }
+        
+        @container energy-card (max-width: 320px) {
+          .pill {
+            padding: 4px 6px 4px 4px;
+            gap: 4px;
+          }
+          .pill-icon {
+            width: 20px;
+            height: 20px;
+          }
+          .pill-icon ha-icon {
+            --mdc-icon-size: 12px;
+          }
+          .pill-val {
+            font-size: 0.6rem;
+          }
+          .pill-label {
+            font-size: 0.4rem;
+            display: none; /* Hide labels on very small screens */
+          }
+        }
 
         /* Pill Icon Colors */
         .bg-solar {
@@ -1870,7 +2013,13 @@ class PrismEnergyCard extends HTMLElement {
         }
         .color-inactive { color: rgba(255, 255, 255, 0.35); }
 
-        /* Bottom Details */
+        /* Bottom Details - Responsive Container */
+        .details-wrapper {
+          flex-shrink: 0;
+          min-height: 0;
+          overflow: hidden;
+        }
+        
         .details-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -1881,9 +2030,108 @@ class PrismEnergyCard extends HTMLElement {
           border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
         
+        /* Medium screens - 2 columns */
         @media (max-width: 600px) {
           .details-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 16px 20px;
+          }
+        }
+        
+        /* Small screens - compact mode */
+        @media (max-width: 400px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+          }
+          .detail-header {
+            padding: 3px 8px;
+            font-size: 0.5rem;
+            margin-bottom: 6px;
+          }
+          .detail-row {
+            font-size: 0.65rem;
+            gap: 4px;
+          }
+          .detail-bar {
+            height: 4px;
+          }
+        }
+        
+        /* Very small - single column */
+        @media (max-width: 280px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 10px 12px;
+          }
+          .detail-col {
+            min-height: auto;
+          }
+        }
+        
+        /* Container query based responsive (for card-level sizing) */
+        :host {
+          container-type: inline-size;
+          container-name: energy-card;
+        }
+        
+        @container energy-card (max-width: 450px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 14px 18px;
+          }
+          .detail-header {
+            padding: 4px 10px;
+            font-size: 0.55rem;
+            margin-bottom: 8px;
+          }
+          .detail-row {
+            font-size: 0.7rem;
+          }
+        }
+        
+        @container energy-card (max-width: 350px) {
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px 14px;
+          }
+          .detail-header {
+            padding: 3px 8px;
+            font-size: 0.5rem;
+            margin-bottom: 6px;
+          }
+          .detail-row {
+            font-size: 0.6rem;
+            gap: 3px;
+          }
+          .detail-val {
+            font-size: 0.6rem;
+          }
+          .detail-bar {
+            height: 4px;
+            margin-top: 4px;
+          }
+        }
+        
+        @container energy-card (max-width: 280px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 10px 12px;
+          }
+          .detail-col {
+            min-height: auto;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .detail-col:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
           }
         }
         
@@ -1891,14 +2139,14 @@ class PrismEnergyCard extends HTMLElement {
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-height: 90px;
+          min-height: 80px;
         }
         
         .detail-content {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
           width: 100%;
         }
         
@@ -1908,7 +2156,7 @@ class PrismEnergyCard extends HTMLElement {
           align-items: center;
           justify-content: center;
           padding: 5px 12px;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           
           background: linear-gradient(145deg, #2d3038, #22252b);
           border-radius: 20px;
@@ -1940,7 +2188,7 @@ class PrismEnergyCard extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           font-size: 0.75rem;
-          gap: 8px;
+          gap: 6px;
           white-space: nowrap;
         }
         
@@ -1958,11 +2206,12 @@ class PrismEnergyCard extends HTMLElement {
           color: rgba(255, 255, 255, 0.9);
           flex-shrink: 0;
           white-space: nowrap;
+          font-size: 0.75rem;
         }
         
         /* Inlet-style progress bar - aligned at bottom */
         .detail-bar {
-          height: 6px;
+          height: 5px;
           width: 100%;
           border-radius: 999px;
           overflow: hidden;
@@ -2160,6 +2409,7 @@ class PrismEnergyCard extends HTMLElement {
 
         <!-- Bottom Details -->
         ${this._config.show_details ? `
+        <div class="details-wrapper">
         <div class="details-grid">
           <!-- Solar -->
           <div class="detail-col">
@@ -2232,6 +2482,7 @@ class PrismEnergyCard extends HTMLElement {
             </div>
           </div>
         </div>
+        </div>
         ` : ''}
       </div>
     `;
@@ -2254,7 +2505,7 @@ window.customCards.push({
 });
 
 console.info(
-  `%c PRISM-ENERGY %c v1.2.5 %c Weather Performance Optimized `,
+  `%c PRISM-ENERGY %c v1.2.6 %c Responsive Details Section `,
   'background: #F59E0B; color: black; font-weight: bold; padding: 2px 6px; border-radius: 4px 0 0 4px;',
   'background: #1e2024; color: white; font-weight: bold; padding: 2px 6px;',
   'background: #3B82F6; color: white; font-weight: bold; padding: 2px 6px; border-radius: 0 4px 4px 0;'
