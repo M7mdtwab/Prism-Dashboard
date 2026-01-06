@@ -730,7 +730,7 @@ class PrismRoomCard extends HTMLElement {
           box-shadow: none;
         }
         
-        .card-content {
+        .prism-room-card .card-content {
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -738,18 +738,18 @@ class PrismRoomCard extends HTMLElement {
           gap: 10px;
         }
         
-        .icon-container {
+        .prism-room-card .icon-container {
           position: relative;
           width: var(--icon-size, 42px);
           height: var(--icon-size, 42px);
           flex-shrink: 0;
         }
         
-        .icon-container.hidden {
+        .prism-room-card .icon-container.hidden {
           display: none;
         }
         
-        .icon-circle {
+        .prism-room-card .icon-circle {
           position: absolute;
           top: 0;
           left: 0;
@@ -765,7 +765,7 @@ class PrismRoomCard extends HTMLElement {
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        .icon-circle.active {
+        .prism-room-card .icon-circle.active {
           background: linear-gradient(145deg, 
             rgba(var(--active-color-rgb), 0.2), 
             rgba(var(--active-color-rgb), 0.1));
@@ -778,7 +778,7 @@ class PrismRoomCard extends HTMLElement {
             inset 1px 1px 2px rgba(255, 255, 255, 0.1);
         }
         
-        .icon-wrapper {
+        .prism-room-card .icon-wrapper {
           position: absolute;
           top: 0;
           left: 0;
@@ -789,23 +789,23 @@ class PrismRoomCard extends HTMLElement {
           justify-content: center;
         }
         
-        .icon-wrapper ha-icon {
+        .prism-room-card .icon-wrapper ha-icon {
           --mdc-icon-size: calc(var(--icon-size, 42px) * 0.52);
           color: rgba(255, 255, 255, 0.4);
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        .icon-wrapper.active ha-icon {
+        .prism-room-card .icon-wrapper.active ha-icon {
           color: var(--active-color);
           filter: drop-shadow(0 0 6px rgba(var(--active-color-rgb), 0.6));
         }
         
-        .info {
+        .prism-room-card .info {
           text-align: center;
           width: 100%;
         }
         
-        .name {
+        .prism-room-card .name {
           font-size: var(--name-size, 1.125rem);
           font-weight: 700;
           color: rgba(255, 255, 255, 0.9);
@@ -813,14 +813,14 @@ class PrismRoomCard extends HTMLElement {
           margin-bottom: 2px;
         }
         
-        .state {
+        .prism-room-card .state {
           font-size: calc(var(--name-size, 1.125rem) * 0.65);
           font-weight: 500;
           color: rgba(255, 255, 255, 0.6);
         }
         
         /* Status Icons Row */
-        .status-row {
+        .prism-room-card .status-row {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -829,7 +829,7 @@ class PrismRoomCard extends HTMLElement {
           margin-top: 4px;
         }
         
-        .status-icon {
+        .prism-room-card .status-icon {
           position: relative;
           width: 32px;
           height: 32px;
@@ -837,7 +837,7 @@ class PrismRoomCard extends HTMLElement {
           transition: all 0.2s ease;
         }
         
-        .status-icon-inner {
+        .prism-room-card .status-icon-inner {
           position: absolute;
           top: 0;
           left: 0;
@@ -849,34 +849,34 @@ class PrismRoomCard extends HTMLElement {
           border-radius: 10px;
         }
         
-        .status-icon.inactive .status-icon-inner {
+        .prism-room-card .status-icon.inactive .status-icon-inner {
           background: linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1));
           box-shadow: 
             3px 3px 6px rgba(0, 0, 0, 0.4),
             -2px -2px 4px rgba(255, 255, 255, 0.03);
         }
         
-        .status-icon.inactive ha-icon {
+        .prism-room-card .status-icon.inactive ha-icon {
           color: rgba(255, 255, 255, 0.25);
         }
         
-        .status-icon.active .status-icon-inner {
+        .prism-room-card .status-icon.active .status-icon-inner {
           background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
           box-shadow: 
             inset 2px 2px 5px rgba(0, 0, 0, 0.6),
             inset -1px -1px 3px rgba(255, 255, 255, 0.03);
         }
         
-        .status-icon ha-icon {
+        .prism-room-card .status-icon ha-icon {
           --mdc-icon-size: 16px;
           transition: all 0.2s ease;
         }
         
-        .status-icon.active ha-icon {
+        .prism-room-card .status-icon.active ha-icon {
           filter: drop-shadow(0 0 4px currentColor);
         }
         
-        .status-badge {
+        .prism-room-card .status-badge {
           position: absolute;
           top: -3px;
           right: -3px;

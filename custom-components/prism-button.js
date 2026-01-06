@@ -346,7 +346,7 @@ class PrismButtonCard extends HTMLElement {
         }
         
         /* Brightness slider background - subtle gradient from light to stronger */
-        .brightness-slider {
+        prism-button > ha-card .brightness-slider {
           position: absolute;
           ${layout === 'vertical' ? `
             /* Vertical: von unten nach oben - OHNE Ausschnitt */
@@ -377,7 +377,7 @@ class PrismButtonCard extends HTMLElement {
           pointer-events: none;
           z-index: 0;
         }
-        .icon-container {
+        prism-button > ha-card .icon-container {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -390,7 +390,7 @@ class PrismButtonCard extends HTMLElement {
           z-index: 10;
         }
         /* Neumorphic icon circle - Dark Theme with Glassmorphism blend */
-        .icon-circle {
+        prism-button > ha-card .icon-circle {
           position: absolute;
           width: 100%;
           height: 100%;
@@ -424,7 +424,7 @@ class PrismButtonCard extends HTMLElement {
           `}
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        .icon-wrapper {
+        prism-button > ha-card .icon-wrapper {
           position: relative;
           z-index: 2;
           display: flex;
@@ -442,7 +442,7 @@ class PrismButtonCard extends HTMLElement {
             : 'color: rgba(255, 255, 255, 0.4);'}
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        .info {
+        prism-button > ha-card .info {
           flex: 1;
           min-width: 0;
           overflow: hidden;
@@ -450,7 +450,7 @@ class PrismButtonCard extends HTMLElement {
           position: relative;
           z-index: 10;
         }
-        .name {
+        prism-button > ha-card .name {
           font-size: 1.125rem;
           font-weight: 700;
           color: rgba(255, 255, 255, 0.9);
@@ -460,7 +460,7 @@ class PrismButtonCard extends HTMLElement {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .state {
+        prism-button > ha-card .state {
           font-size: 0.75rem;
           font-weight: 500;
           color: rgba(255, 255, 255, 0.6);

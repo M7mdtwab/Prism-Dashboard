@@ -367,7 +367,7 @@ class PrismButtonLightCard extends HTMLElement {
         }
         
         /* Brightness slider background - subtle gradient from light to stronger */
-        .brightness-slider {
+        prism-button-light > ha-card .brightness-slider {
           position: absolute;
           ${layout === 'vertical' ? `
             /* Vertical: von unten nach oben - OHNE Ausschnitt */
@@ -399,7 +399,7 @@ class PrismButtonLightCard extends HTMLElement {
           z-index: 0;
         }
         
-        .card-content {
+        prism-button-light > ha-card .card-content {
           display: flex;
           flex-direction: ${layout === 'vertical' ? 'column' : 'row'};
           align-items: center;
@@ -408,7 +408,7 @@ class PrismButtonLightCard extends HTMLElement {
           position: relative;
         }
         
-        .icon-container {
+        prism-button-light > ha-card .icon-container {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -419,7 +419,7 @@ class PrismButtonLightCard extends HTMLElement {
         }
         
         /* Glassmorphic icon circle with glow */
-        .icon-circle {
+        prism-button-light > ha-card .icon-circle {
           position: absolute;
           width: 100%;
           height: 100%;
@@ -454,7 +454,7 @@ class PrismButtonLightCard extends HTMLElement {
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        .icon-wrapper {
+        prism-button-light > ha-card .icon-wrapper {
           position: relative;
           z-index: 2; /* Ensure icon is above its circle */
           display: flex;
@@ -471,14 +471,14 @@ class PrismButtonLightCard extends HTMLElement {
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        .info {
+        prism-button-light > ha-card .info {
           flex: 1;
           min-width: 0;
           overflow: hidden;
           ${layout === 'vertical' ? 'text-align: center;' : ''}
         }
         
-        .name {
+        prism-button-light > ha-card .name {
           font-size: 15px;
           font-weight: 700;
           color: #1a1a1a;
@@ -489,7 +489,7 @@ class PrismButtonLightCard extends HTMLElement {
           letter-spacing: 0.2px;
         }
         
-        .state {
+        prism-button-light > ha-card .state {
           font-size: 12px;
           font-weight: 500;
           color: #666;
