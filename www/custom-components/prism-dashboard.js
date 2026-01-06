@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2026-01-06T14:41:50.863Z
+ * Build Date: 2026-01-06T15:04:59.160Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -25,11 +25,13 @@ console.info(
 class PrismButtonCard extends HTMLElement {
   constructor() {
     super();
+    this.attachShadow({ mode: 'open' });
     this._hass = null;
     this._config = null;
     this._isDragging = false;
     this._dragStartX = 0;
     this._dragStartBrightness = 0;
+    this._boundHandlers = null;
   }
 
   static getStubConfig() {
@@ -126,6 +128,27 @@ class PrismButtonCard extends HTMLElement {
     if (this._config) {
       this._updateCard();
     }
+  }
+
+  disconnectedCallback() {
+    // Cleanup event listeners when element is removed
+    this._removeEventListeners();
+  }
+
+  _removeEventListeners() {
+    if (this._boundHandlers && this._card) {
+      this._card.removeEventListener('touchstart', this._boundHandlers.touchStart);
+      this._card.removeEventListener('touchmove', this._boundHandlers.touchMove);
+      this._card.removeEventListener('touchend', this._boundHandlers.touchEnd);
+      this._card.removeEventListener('mousedown', this._boundHandlers.mouseDown);
+      this._card.removeEventListener('mousemove', this._boundHandlers.mouseMove);
+      this._card.removeEventListener('mouseup', this._boundHandlers.mouseUp);
+      this._card.removeEventListener('mouseleave', this._boundHandlers.mouseLeave);
+      this._card.removeEventListener('click', this._boundHandlers.click);
+      this._card.removeEventListener('contextmenu', this._boundHandlers.contextMenu);
+    }
+    this._boundHandlers = null;
+    this._card = null;
   }
 
   _isActive() {
@@ -355,12 +378,15 @@ class PrismButtonCard extends HTMLElement {
     const iconOpacity = showSlider ? (0.6 + (brightness / 100) * 0.4) : 1.0;
     const iconDropShadow = showSlider ? `drop-shadow(0 0 ${Math.round(4 + brightness * 0.08)}px ${iconColor ? iconColor.shadow.replace('0.6', String(glowIntensity * 1.2)) : 'rgba(255, 200, 100, 0.4)'})` : `drop-shadow(0 0 6px ${iconColor ? iconColor.shadow.replace('0.6', '0.4') : 'rgba(255, 200, 100, 0.4)'})`;
 
-    this.innerHTML = `
+    // Remove old event listeners before re-rendering
+    this._removeEventListeners();
+
+    this.shadowRoot.innerHTML = `
       <style>
-        prism-button {
+        :host {
           display: block;
         }
-        prism-button > ha-card {
+        ha-card {
           background: ${isActive ? 'rgba(20, 20, 20, 0.6)' : 'rgba(30, 32, 36, 0.6)'} !important;
           backdrop-filter: blur(12px) !important;
           -webkit-backdrop-filter: blur(12px) !important;
@@ -379,16 +405,16 @@ class PrismButtonCard extends HTMLElement {
           transform: ${isActive ? 'translateY(2px)' : 'none'};
           cursor: pointer;
         }
-        prism-button > ha-card:hover {
+        ha-card:hover {
           box-shadow: ${isActive 
             ? 'inset 2px 2px 5px rgba(0,0,0,0.8), inset -1px -1px 2px rgba(255,255,255,0.1)' 
             : '0 12px 24px -5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08)'} !important;
         }
-        prism-button > ha-card:active {
+        ha-card:active {
           transform: scale(0.98) ${isActive ? 'translateY(2px)' : ''};
         }
         
-        prism-button > ha-card .card-content {
+        ha-card .card-content {
           display: flex;
           flex-direction: ${layout === 'vertical' ? 'column' : 'row'};
           align-items: center;
@@ -398,7 +424,7 @@ class PrismButtonCard extends HTMLElement {
         }
         
         /* Brightness slider background - subtle gradient from light to stronger */
-        prism-button > ha-card .brightness-slider {
+        ha-card .brightness-slider {
           position: absolute;
           ${layout === 'vertical' ? `
             /* Vertical: von unten nach oben - OHNE Ausschnitt */
@@ -429,7 +455,7 @@ class PrismButtonCard extends HTMLElement {
           pointer-events: none;
           z-index: 0;
         }
-        prism-button > ha-card .icon-container {
+        ha-card .icon-container {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -442,7 +468,7 @@ class PrismButtonCard extends HTMLElement {
           z-index: 10;
         }
         /* Neumorphic icon circle - Dark Theme with Glassmorphism blend */
-        prism-button > ha-card .icon-circle {
+        ha-card .icon-circle {
           position: absolute;
           width: 100%;
           height: 100%;
@@ -476,14 +502,14 @@ class PrismButtonCard extends HTMLElement {
           `}
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        prism-button > ha-card .icon-wrapper {
+        ha-card .icon-wrapper {
           position: relative;
           z-index: 2;
           display: flex;
           align-items: center;
           justify-content: center;
         }
-        prism-button > ha-card ha-icon {
+        ha-card ha-icon {
           --mdc-icon-size: 22px;
           width: 22px;
           height: 22px;
@@ -494,7 +520,7 @@ class PrismButtonCard extends HTMLElement {
             : 'color: rgba(255, 255, 255, 0.4);'}
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        prism-button > ha-card .info {
+        ha-card .info {
           flex: 1;
           min-width: 0;
           overflow: hidden;
@@ -502,7 +528,7 @@ class PrismButtonCard extends HTMLElement {
           position: relative;
           z-index: 10;
         }
-        prism-button > ha-card .name {
+        ha-card .name {
           font-size: 1.125rem;
           font-weight: 700;
           color: rgba(255, 255, 255, 0.9);
@@ -512,7 +538,7 @@ class PrismButtonCard extends HTMLElement {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        prism-button > ha-card .state {
+        ha-card .state {
           font-size: 0.75rem;
           font-weight: 500;
           color: rgba(255, 255, 255, 0.6);
@@ -540,14 +566,16 @@ class PrismButtonCard extends HTMLElement {
     `;
 
     // Add event listeners
-    const card = this.querySelector('ha-card');
-    const slider = this.querySelector('.brightness-slider');
+    const card = this.shadowRoot.querySelector('ha-card');
+    const slider = this.shadowRoot.querySelector('.brightness-slider');
+    this._card = card;
     
     if (card) {
       let touchStart = 0;
       let touchStartX = 0;
       let touchStartY = 0;
       let hasMoved = false;
+      let hasHandledInteraction = false;
       
       // Handle start of interaction
       const handleInteractionStart = (e) => {
@@ -558,6 +586,7 @@ class PrismButtonCard extends HTMLElement {
         touchStartY = clientY;
         touchStart = Date.now();
         hasMoved = false;
+        hasHandledInteraction = false;
         this._isDragging = false;
         this._dragStartX = clientX;
         this._dragStartBrightness = brightness;
@@ -612,7 +641,7 @@ class PrismButtonCard extends HTMLElement {
           }
           
           // Update state display
-          const stateEl = this.querySelector('.state');
+          const stateEl = this.shadowRoot.querySelector('.state');
           if (stateEl) {
             stateEl.textContent = newBrightness + '%';
           }
@@ -627,6 +656,7 @@ class PrismButtonCard extends HTMLElement {
         // If we were dragging the brightness slider
         if (this._isDragging && showSlider) {
           e.preventDefault();
+          e.stopImmediatePropagation();
           const rect = card.getBoundingClientRect();
           let newBrightness;
           
@@ -642,6 +672,7 @@ class PrismButtonCard extends HTMLElement {
           
           this._setBrightness(newBrightness);
           this._isDragging = false;
+          hasHandledInteraction = true;
           return;
         }
         
@@ -651,64 +682,92 @@ class PrismButtonCard extends HTMLElement {
         const duration = Date.now() - touchStart;
         if (!hasMoved && duration < 500) {
           this._handleTap();
+          hasHandledInteraction = true;
         } else if (!hasMoved && duration >= 500) {
           e.preventDefault();
+          this._handleHold();
+          hasHandledInteraction = true;
+        }
+      };
+      
+      // Create bound handlers for proper cleanup
+      this._boundHandlers = {
+        touchStart: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionStart(e);
+        },
+        touchMove: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionMove(e);
+        },
+        touchEnd: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionEnd(e);
+        },
+        mouseDown: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionStart(e);
+        },
+        mouseMove: (e) => {
+          if (e.buttons === 1) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            handleInteractionMove(e);
+          }
+        },
+        mouseUp: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionEnd(e);
+        },
+        mouseLeave: () => {
+          if (this._isDragging) {
+            this._isDragging = false;
+            this._updateCard(); // Reset to actual brightness
+          }
+        },
+        click: (e) => {
+          // CRITICAL: Stop propagation immediately to prevent other cards from receiving this event
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          // Only handle if we haven't already handled via mouseup/touchend
+          if (!hasHandledInteraction && !hasMoved) {
+            this._handleTap();
+          }
+          // Reset state for next interaction
+          hasMoved = false;
+          hasHandledInteraction = false;
+          touchStart = 0;
+        },
+        contextMenu: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           this._handleHold();
         }
       };
       
-      // Touch events
-      card.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-        handleInteractionStart(e);
-      }, { passive: true });
-      card.addEventListener('touchmove', (e) => {
-        e.stopPropagation();
-        handleInteractionMove(e);
-      }, { passive: false });
-      card.addEventListener('touchend', (e) => {
-        e.stopPropagation();
-        handleInteractionEnd(e);
-      });
+      // Touch events - use capture phase for better isolation
+      card.addEventListener('touchstart', this._boundHandlers.touchStart, { passive: true, capture: true });
+      card.addEventListener('touchmove', this._boundHandlers.touchMove, { passive: false, capture: true });
+      card.addEventListener('touchend', this._boundHandlers.touchEnd, { capture: true });
       
       // Mouse events
-      card.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        handleInteractionStart(e);
-      });
-      card.addEventListener('mousemove', (e) => {
-        if (e.buttons === 1) {
-          e.stopPropagation();
-          handleInteractionMove(e);
-        }
-      });
-      card.addEventListener('mouseup', (e) => {
-        e.stopPropagation();
-        handleInteractionEnd(e);
-      });
-      card.addEventListener('mouseleave', () => {
-        if (this._isDragging) {
-          this._isDragging = false;
-          this._updateCard(); // Reset to actual brightness
-        }
-      });
+      card.addEventListener('mousedown', this._boundHandlers.mouseDown, { capture: true });
+      card.addEventListener('mousemove', this._boundHandlers.mouseMove, { capture: true });
+      card.addEventListener('mouseup', this._boundHandlers.mouseUp, { capture: true });
+      card.addEventListener('mouseleave', this._boundHandlers.mouseLeave);
       
-      // Click handler as fallback (for desktop without mousedown/up)
-      card.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent event from bubbling to other cards
-        // Only handle if we didn't already handle via mouseup
-        if (!hasMoved && touchStart === 0) {
-          this._handleTap();
-        }
-        hasMoved = false;
-      });
+      // Click handler - use capture phase to catch events before they bubble
+      card.addEventListener('click', this._boundHandlers.click, { capture: true });
       
       // Context menu for hold
-      card.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent event from bubbling
-        this._handleHold();
-      });
+      card.addEventListener('contextmenu', this._boundHandlers.contextMenu, { capture: true });
     }
   }
 }
@@ -733,11 +792,13 @@ window.customCards.push({
 class PrismButtonLightCard extends HTMLElement {
   constructor() {
     super();
+    this.attachShadow({ mode: 'open' });
     this._hass = null;
     this._config = null;
     this._isDragging = false;
     this._dragStartX = 0;
     this._dragStartBrightness = 0;
+    this._boundHandlers = null;
   }
 
   static getStubConfig() {
@@ -834,6 +895,26 @@ class PrismButtonLightCard extends HTMLElement {
     if (this._config) {
       this._updateCard();
     }
+  }
+
+  disconnectedCallback() {
+    this._removeEventListeners();
+  }
+
+  _removeEventListeners() {
+    if (this._boundHandlers && this._card) {
+      this._card.removeEventListener('touchstart', this._boundHandlers.touchStart);
+      this._card.removeEventListener('touchmove', this._boundHandlers.touchMove);
+      this._card.removeEventListener('touchend', this._boundHandlers.touchEnd);
+      this._card.removeEventListener('mousedown', this._boundHandlers.mouseDown);
+      this._card.removeEventListener('mousemove', this._boundHandlers.mouseMove);
+      this._card.removeEventListener('mouseup', this._boundHandlers.mouseUp);
+      this._card.removeEventListener('mouseleave', this._boundHandlers.mouseLeave);
+      this._card.removeEventListener('click', this._boundHandlers.click);
+      this._card.removeEventListener('contextmenu', this._boundHandlers.contextMenu);
+    }
+    this._boundHandlers = null;
+    this._card = null;
   }
 
   _isActive() {
@@ -1061,17 +1142,20 @@ class PrismButtonLightCard extends HTMLElement {
     const glowRadius2 = (isActive && brightness > 0) ? Math.max(12, Math.min(24, brightness / 100 * 24)) : 0;
     const iconOpacity = (isActive && brightness > 0) ? Math.max(0.64, Math.min(1.0, brightness / 100)) : 0.4; // Min 40% when off, min 64% when on
 
-    this.innerHTML = `
+    // Remove old event listeners before re-rendering
+    this._removeEventListeners();
+
+    this.shadowRoot.innerHTML = `
       <style>
         /* ============================================
            GLASSMORPHISM LIGHT THEME
            Transparent glass with blur + neumorphic icons
            ============================================ */
         
-        prism-button-light {
+        :host {
           display: block;
         }
-        prism-button-light > ha-card {
+        ha-card {
           /* Glassmorphism background - more transparent like dark version */
           background: ${isActive 
             ? 'rgba(240, 242, 245, 0.5)' 
@@ -1112,7 +1196,7 @@ class PrismButtonLightCard extends HTMLElement {
           cursor: pointer;
         }
         
-        prism-button-light > ha-card:hover {
+        ha-card:hover {
           box-shadow: ${isActive 
             ? `inset 2px 2px 6px rgba(0, 0, 0, 0.15),
                inset -1px -1px 3px rgba(255, 255, 255, 0.7),
@@ -1122,12 +1206,12 @@ class PrismButtonLightCard extends HTMLElement {
                0 0 0 1px rgba(0, 0, 0, 0.03)`} !important;
         }
         
-        prism-button-light > ha-card:active {
+        ha-card:active {
           transform: scale(0.98) ${isActive ? 'translateY(2px)' : ''};
         }
         
         /* Brightness slider background - subtle gradient from light to stronger */
-        prism-button-light > ha-card .brightness-slider {
+        ha-card .brightness-slider {
           position: absolute;
           ${layout === 'vertical' ? `
             /* Vertical: von unten nach oben - OHNE Ausschnitt */
@@ -1159,7 +1243,7 @@ class PrismButtonLightCard extends HTMLElement {
           z-index: 0;
         }
         
-        prism-button-light > ha-card .card-content {
+        ha-card .card-content {
           display: flex;
           flex-direction: ${layout === 'vertical' ? 'column' : 'row'};
           align-items: center;
@@ -1168,7 +1252,7 @@ class PrismButtonLightCard extends HTMLElement {
           position: relative;
         }
         
-        prism-button-light > ha-card .icon-container {
+        ha-card .icon-container {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1179,7 +1263,7 @@ class PrismButtonLightCard extends HTMLElement {
         }
         
         /* Glassmorphic icon circle with glow */
-        prism-button-light > ha-card .icon-circle {
+        ha-card .icon-circle {
           position: absolute;
           width: 100%;
           height: 100%;
@@ -1214,7 +1298,7 @@ class PrismButtonLightCard extends HTMLElement {
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        prism-button-light > ha-card .icon-wrapper {
+        ha-card .icon-wrapper {
           position: relative;
           z-index: 2; /* Ensure icon is above its circle */
           display: flex;
@@ -1222,7 +1306,7 @@ class PrismButtonLightCard extends HTMLElement {
           justify-content: center;
         }
         
-        prism-button-light > ha-card ha-icon {
+        ha-card ha-icon {
           --mdc-icon-size: 24px;
           ${iconColor 
             ? `color: ${iconColor.color.replace(')', `, ${iconOpacity})`)} !important; 
@@ -1231,14 +1315,14 @@ class PrismButtonLightCard extends HTMLElement {
           transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
         
-        prism-button-light > ha-card .info {
+        ha-card .info {
           flex: 1;
           min-width: 0;
           overflow: hidden;
           ${layout === 'vertical' ? 'text-align: center;' : ''}
         }
         
-        prism-button-light > ha-card .name {
+        ha-card .name {
           font-size: 15px;
           font-weight: 700;
           color: #1a1a1a;
@@ -1249,7 +1333,7 @@ class PrismButtonLightCard extends HTMLElement {
           letter-spacing: 0.2px;
         }
         
-        prism-button-light > ha-card .state {
+        ha-card .state {
           font-size: 12px;
           font-weight: 500;
           color: #666;
@@ -1277,14 +1361,16 @@ class PrismButtonLightCard extends HTMLElement {
     `;
 
     // Add event listeners
-    const card = this.querySelector('ha-card');
-    const slider = this.querySelector('.brightness-slider');
+    const card = this.shadowRoot.querySelector('ha-card');
+    const slider = this.shadowRoot.querySelector('.brightness-slider');
+    this._card = card;
     
     if (card) {
       let touchStart = 0;
       let touchStartX = 0;
       let touchStartY = 0;
       let hasMoved = false;
+      let hasHandledInteraction = false;
       
       // Handle start of interaction
       const handleInteractionStart = (e) => {
@@ -1295,6 +1381,7 @@ class PrismButtonLightCard extends HTMLElement {
         touchStartY = clientY;
         touchStart = Date.now();
         hasMoved = false;
+        hasHandledInteraction = false;
         this._isDragging = false;
         this._dragStartX = clientX;
         this._dragStartBrightness = brightness;
@@ -1312,13 +1399,11 @@ class PrismButtonLightCard extends HTMLElement {
         
         // Start dragging based on layout direction
         if (layout === 'vertical') {
-          // Vertical: Start dragging if moved more than 10px vertically and more vertical than horizontal
           if (deltaY > 10 && deltaY > deltaX) {
             this._isDragging = true;
             hasMoved = true;
           }
         } else {
-          // Horizontal: Start dragging if moved more than 10px horizontally and more horizontal than vertical
           if (deltaX > 10 && deltaX > deltaY) {
             this._isDragging = true;
             hasMoved = true;
@@ -1331,25 +1416,20 @@ class PrismButtonLightCard extends HTMLElement {
           let newBrightness;
           
           if (layout === 'vertical') {
-            // Vertical: Calculate from bottom (inverted Y-axis)
             const percent = Math.round(((rect.bottom - clientY) / rect.height) * 100);
             newBrightness = Math.max(1, Math.min(100, percent));
-            // Update slider visually
             if (slider) {
               slider.style.height = newBrightness + '%';
             }
           } else {
-            // Horizontal: Calculate from left
             const percent = Math.round(((clientX - rect.left) / rect.width) * 100);
             newBrightness = Math.max(1, Math.min(100, percent));
-            // Update slider visually
             if (slider) {
               slider.style.width = newBrightness + '%';
             }
           }
           
-          // Update state display
-          const stateEl = this.querySelector('.state');
+          const stateEl = this.shadowRoot.querySelector('.state');
           if (stateEl) {
             stateEl.textContent = newBrightness + '%';
           }
@@ -1361,94 +1441,114 @@ class PrismButtonLightCard extends HTMLElement {
         const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
         const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
         
-        // If we were dragging the brightness slider
         if (this._isDragging && showSlider) {
           e.preventDefault();
+          e.stopImmediatePropagation();
           const rect = card.getBoundingClientRect();
           let newBrightness;
           
           if (layout === 'vertical') {
-            // Vertical: Calculate from bottom (inverted Y-axis)
             const percent = Math.round(((rect.bottom - clientY) / rect.height) * 100);
             newBrightness = Math.max(1, Math.min(100, percent));
           } else {
-            // Horizontal: Calculate from left
             const percent = Math.round(((clientX - rect.left) / rect.width) * 100);
             newBrightness = Math.max(1, Math.min(100, percent));
           }
           
           this._setBrightness(newBrightness);
           this._isDragging = false;
+          hasHandledInteraction = true;
           return;
         }
         
         this._isDragging = false;
         
-        // Handle tap/hold for ALL entities (not just lights)
         const duration = Date.now() - touchStart;
-        
         if (!hasMoved && duration < 500) {
-          // Short tap - toggle entity
           this._handleTap();
-        } else if (duration >= 500) {
-          // Long press - show more-info
+          hasHandledInteraction = true;
+        } else if (!hasMoved && duration >= 500) {
           e.preventDefault();
+          this._handleHold();
+          hasHandledInteraction = true;
+        }
+      };
+      
+      // Create bound handlers for proper cleanup
+      this._boundHandlers = {
+        touchStart: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionStart(e);
+        },
+        touchMove: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionMove(e);
+        },
+        touchEnd: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionEnd(e);
+        },
+        mouseDown: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionStart(e);
+        },
+        mouseMove: (e) => {
+          if (e.buttons === 1) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            handleInteractionMove(e);
+          }
+        },
+        mouseUp: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          handleInteractionEnd(e);
+        },
+        mouseLeave: () => {
+          if (this._isDragging) {
+            this._isDragging = false;
+            this._updateCard();
+          }
+        },
+        click: (e) => {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          if (!hasHandledInteraction && !hasMoved) {
+            this._handleTap();
+          }
+          hasMoved = false;
+          hasHandledInteraction = false;
+          touchStart = 0;
+        },
+        contextMenu: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           this._handleHold();
         }
       };
       
-      // Touch events
-      card.addEventListener('touchstart', (e) => {
-        e.stopPropagation();
-        handleInteractionStart(e);
-      }, { passive: true });
-      card.addEventListener('touchmove', (e) => {
-        e.stopPropagation();
-        handleInteractionMove(e);
-      }, { passive: false });
-      card.addEventListener('touchend', (e) => {
-        e.stopPropagation();
-        handleInteractionEnd(e);
-      });
+      // Touch events - use capture phase for better isolation
+      card.addEventListener('touchstart', this._boundHandlers.touchStart, { passive: true, capture: true });
+      card.addEventListener('touchmove', this._boundHandlers.touchMove, { passive: false, capture: true });
+      card.addEventListener('touchend', this._boundHandlers.touchEnd, { capture: true });
       
       // Mouse events
-      card.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        handleInteractionStart(e);
-      });
-      card.addEventListener('mousemove', (e) => {
-        if (e.buttons === 1) {
-          e.stopPropagation();
-          handleInteractionMove(e);
-        }
-      });
-      card.addEventListener('mouseup', (e) => {
-        e.stopPropagation();
-        handleInteractionEnd(e);
-      });
-      card.addEventListener('mouseleave', () => {
-        if (this._isDragging) {
-          this._isDragging = false;
-          this._updateCard(); // Reset to actual brightness
-        }
-      });
+      card.addEventListener('mousedown', this._boundHandlers.mouseDown, { capture: true });
+      card.addEventListener('mousemove', this._boundHandlers.mouseMove, { capture: true });
+      card.addEventListener('mouseup', this._boundHandlers.mouseUp, { capture: true });
+      card.addEventListener('mouseleave', this._boundHandlers.mouseLeave);
       
-      // Click handler as fallback (for desktop without mousedown/up)
-      card.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent event from bubbling to other cards
-        // Only handle if we didn't already handle via mouseup
-        if (!hasMoved && touchStart === 0) {
-          this._handleTap();
-        }
-        hasMoved = false;
-      });
+      // Click handler - use capture phase
+      card.addEventListener('click', this._boundHandlers.click, { capture: true });
       
       // Context menu for hold
-      card.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevent event from bubbling
-        this._handleHold();
-      });
+      card.addEventListener('contextmenu', this._boundHandlers.contextMenu, { capture: true });
     }
   }
 }
@@ -11915,6 +12015,7 @@ class PrismSidebarCard extends HTMLElement {
             .energy-grid {
                 display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
                 margin-top: auto;
+                padding-top: 24px;
                 flex-shrink: 0;
             }
             .energy-pill {
@@ -13248,6 +13349,7 @@ class PrismSidebarLightCard extends HTMLElement {
             .energy-grid {
                 display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
                 margin-top: auto;
+                padding-top: 24px;
                 flex-shrink: 0;
             }
             .energy-pill {

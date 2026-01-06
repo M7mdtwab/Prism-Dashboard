@@ -816,6 +816,7 @@ class PrismSidebarLightCard extends HTMLElement {
             .energy-grid {
                 display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
                 margin-top: auto;
+                padding-top: 24px;
                 flex-shrink: 0;
             }
             .energy-pill {
