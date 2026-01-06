@@ -1,0 +1,15 @@
+{
+  "name": "prism-dashboard",
+  "version": "1.5.9",
+  "description": "Custom cards for Home Assistant with Glassmorphism design",
+  "main": "dist/prism-dashboard.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BangerTech/Prism-Dashboard.git"
+  },
+  "author": "BangerTech",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build.js"
+  }
+}

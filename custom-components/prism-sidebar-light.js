@@ -47,6 +47,11 @@ class PrismSidebarLightCard extends HTMLElement {
         return {
             schema: [
                 {
+                    name: "width",
+                    label: "Sidebar width (optional, e.g. 350px)",
+                    selector: { text: {} }
+                },
+                {
                     name: "camera_entity",
                     label: "Camera entity",
                     selector: { entity: { domain: "camera" } }
@@ -121,6 +126,9 @@ class PrismSidebarLightCard extends HTMLElement {
         this.solarEntity = this.config.solar_entity || 'sensor.example';
         this.homeEntity = this.config.home_entity || 'sensor.example';
         this.calendarEntity = this.config.calendar_entity || 'calendar.example';
+        
+        // Custom width (optional)
+        this.sidebarWidth = this.config.width || null;
         
         // Build camera entities array (only include non-empty entities)
         this.cameraEntities = [];
@@ -583,6 +591,7 @@ class PrismSidebarLightCard extends HTMLElement {
             :host {
                 display: block;
                 height: 100%;
+                ${this.sidebarWidth ? `width: ${this.sidebarWidth};` : ''}
             }
             .sidebar {
                 width: 100%;
@@ -1050,6 +1059,7 @@ class PrismSidebarLightCard extends HTMLElement {
         if (!this._hass) return;
         const cameraEntity = this.getCurrentCameraEntity();
         if (!cameraEntity) return;
+        // Open native HA camera dialog (has real live stream + fullscreen)
         const event = new CustomEvent('hass-more-info', {
             bubbles: true,
             composed: true,
@@ -1379,12 +1389,348 @@ class PrismSidebarLightCard extends HTMLElement {
 
     _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
-        const event = new CustomEvent('hass-more-info', {
-            bubbles: true,
-            composed: true,
-            detail: { entityId: this.weatherEntity }
+        
+        // Get weather data
+        const weatherState = this._hass.states[this.weatherEntity];
+        const temperatureState = this._hass.states[this.temperatureEntity];
+        
+        if (!weatherState) {
+            // Fallback to more-info
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+            return;
+        }
+        
+        // Get forecast data
+        let forecast = [];
+        if (weatherState.attributes.forecast) {
+            forecast = weatherState.attributes.forecast.slice(0, 7);
+        }
+        
+        this._showWeatherPopup(weatherState, temperatureState, forecast);
+    }
+
+    _showWeatherPopup(weatherState, temperatureState, forecast) {
+        // Remove existing popup
+        const existingPopup = this.shadowRoot?.querySelector('.weather-popup-overlay');
+        if (existingPopup) existingPopup.remove();
+        
+        const currentTemp = temperatureState?.state || weatherState?.attributes?.temperature || '0';
+        const condition = weatherState?.state || 'unknown';
+        const humidity = weatherState?.attributes?.humidity;
+        const windSpeed = weatherState?.attributes?.wind_speed;
+        const pressure = weatherState?.attributes?.pressure;
+        
+        // Icon map
+        const iconMap = {
+            'sunny': 'mdi:weather-sunny',
+            'partlycloudy': 'mdi:weather-partly-cloudy',
+            'cloudy': 'mdi:cloud',
+            'rainy': 'mdi:weather-rainy',
+            'snowy': 'mdi:weather-snowy',
+            'pouring': 'mdi:weather-pouring',
+            'lightning': 'mdi:weather-lightning',
+            'fog': 'mdi:weather-fog',
+            'windy': 'mdi:weather-windy',
+            'clear-night': 'mdi:weather-night',
+            'lightning-rainy': 'mdi:weather-lightning-rainy',
+            'hail': 'mdi:weather-hail',
+            'exceptional': 'mdi:alert-circle'
+        };
+        
+        // Condition translation
+        const conditionNames = {
+            'sunny': 'Sonnig',
+            'partlycloudy': 'Teilweise bewölkt',
+            'cloudy': 'Bewölkt',
+            'rainy': 'Regnerisch',
+            'snowy': 'Schnee',
+            'pouring': 'Starkregen',
+            'lightning': 'Gewitter',
+            'fog': 'Nebel',
+            'windy': 'Windig',
+            'clear-night': 'Klare Nacht',
+            'lightning-rainy': 'Gewitter mit Regen',
+            'hail': 'Hagel',
+            'exceptional': 'Außergewöhnlich'
+        };
+        
+        const mainIcon = iconMap[condition] || 'mdi:weather-cloudy';
+        const conditionName = conditionNames[condition] || condition;
+        
+        // Details text
+        let detailsText = '';
+        if (humidity) detailsText += `💧 ${humidity}%`;
+        if (windSpeed) detailsText += detailsText ? ` · 💨 ${windSpeed} km/h` : `💨 ${windSpeed} km/h`;
+        if (pressure) detailsText += detailsText ? ` · ${pressure} hPa` : `${pressure} hPa`;
+        
+        // Create popup
+        const popupOverlay = document.createElement('div');
+        popupOverlay.className = 'weather-popup-overlay';
+        popupOverlay.innerHTML = `
+            <div class="weather-popup">
+                <div class="weather-popup-header">
+                    <ha-icon icon="mdi:weather-partly-cloudy" style="--mdc-icon-size: 24px; color: #f59e0b;"></ha-icon>
+                    <span>Wetter</span>
+                    <button class="weather-popup-close">
+                        <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
+                    </button>
+                </div>
+                <div class="weather-popup-content">
+                    <div class="weather-current">
+                        <ha-icon icon="${mainIcon}" style="--mdc-icon-size: 56px; color: ${mainIcon.includes('sunny') ? '#f59e0b' : 'rgba(0,0,0,0.6)'};"></ha-icon>
+                        <div class="weather-current-info">
+                            <span class="weather-current-temp">${currentTemp}°C</span>
+                            <span class="weather-current-condition">${conditionName}</span>
+                            ${detailsText ? `<span class="weather-current-details">${detailsText}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${forecast.length > 0 ? `
+                        <div class="weather-forecast-title">Vorhersage</div>
+                        ${forecast.map((day, i) => {
+                            const date = day.datetime ? new Date(day.datetime) : new Date();
+                            const isToday = date.toDateString() === new Date().toDateString();
+                            const dayName = isToday ? 'Heute' : date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
+                            const icon = iconMap[day.condition?.toLowerCase()] || 'mdi:weather-cloudy';
+                            const iconColor = icon.includes('sunny') ? '#f59e0b' : 'rgba(0,0,0,0.5)';
+                            const temp = day.temperature !== undefined ? day.temperature : '0';
+                            const low = day.templow !== undefined ? day.templow : temp;
+                            
+                            return `
+                                <div class="weather-forecast-item">
+                                    <span class="weather-forecast-day">${dayName}</span>
+                                    <ha-icon icon="${icon}" class="weather-forecast-icon" style="--mdc-icon-size: 24px; color: ${iconColor};"></ha-icon>
+                                    <div class="weather-forecast-temps">
+                                        <span class="weather-forecast-high">${temp}°</span>
+                                        <span class="weather-forecast-low">${low}°</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : `
+                        <div class="weather-no-forecast">
+                            <ha-icon icon="mdi:weather-cloudy-alert" style="--mdc-icon-size: 48px; color: rgba(0,0,0,0.2);"></ha-icon>
+                            <span>Keine Vorhersage verfügbar</span>
+                        </div>
+                    `}
+                </div>
+                <div class="weather-popup-footer">
+                    <button class="weather-more-info-btn">
+                        <ha-icon icon="mdi:open-in-new" style="--mdc-icon-size: 16px;"></ha-icon>
+                        Mehr Details
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add styles (Light theme)
+        const style = document.createElement('style');
+        style.textContent = `
+            .weather-popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                animation: fadeIn 0.2s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .weather-popup {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 20px;
+                width: 90%;
+                max-width: 380px;
+                max-height: 80vh;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                animation: slideUp 0.3s ease;
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            .weather-popup-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px 20px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                color: #1a1a1a;
+                font-weight: 600;
+                font-size: 16px;
+            }
+            .weather-popup-close {
+                margin-left: auto;
+                background: rgba(0, 0, 0, 0.05);
+                border: none;
+                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(0, 0, 0, 0.4);
+                transition: all 0.2s;
+            }
+            .weather-popup-close:hover {
+                background: rgba(0, 0, 0, 0.1);
+                color: #1a1a1a;
+            }
+            .weather-popup-content {
+                padding: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            .weather-current {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+                padding: 20px;
+                background: rgba(59, 130, 246, 0.08);
+                border-radius: 12px;
+                margin-bottom: 12px;
+            }
+            .weather-current-temp {
+                font-size: 48px;
+                font-weight: 300;
+                color: #1a1a1a;
+            }
+            .weather-current-info {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .weather-current-condition {
+                font-size: 14px;
+                color: rgba(0, 0, 0, 0.6);
+                text-transform: capitalize;
+            }
+            .weather-current-details {
+                font-size: 12px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-forecast-title {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: rgba(0, 0, 0, 0.4);
+                margin-bottom: 12px;
+                padding: 0 4px;
+            }
+            .weather-forecast-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: rgba(0, 0, 0, 0.03);
+                border-radius: 10px;
+                margin-bottom: 6px;
+            }
+            .weather-forecast-item:hover {
+                background: rgba(0, 0, 0, 0.05);
+            }
+            .weather-forecast-day {
+                min-width: 60px;
+                font-size: 13px;
+                color: rgba(0, 0, 0, 0.6);
+            }
+            .weather-forecast-icon {
+                width: 28px;
+                height: 28px;
+            }
+            .weather-forecast-temps {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .weather-forecast-high {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1a1a1a;
+            }
+            .weather-forecast-low {
+                font-size: 13px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-no-forecast {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                padding: 40px 20px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-popup-footer {
+                padding: 12px 16px;
+                border-top: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            .weather-more-info-btn {
+                width: 100%;
+                padding: 10px 16px;
+                border-radius: 10px;
+                border: none;
+                background: rgba(59, 130, 246, 0.1);
+                color: #3b82f6;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.2s;
+            }
+            .weather-more-info-btn:hover {
+                background: rgba(59, 130, 246, 0.2);
+            }
+        `;
+        popupOverlay.appendChild(style);
+        
+        // Add to shadow root
+        this.shadowRoot.appendChild(popupOverlay);
+        
+        // Event listeners
+        popupOverlay.addEventListener('click', (e) => {
+            if (e.target === popupOverlay) {
+                popupOverlay.remove();
+            }
         });
-        this.dispatchEvent(event);
+        
+        const closeBtn = popupOverlay.querySelector('.weather-popup-close');
+        closeBtn?.addEventListener('click', () => popupOverlay.remove());
+        
+        const moreInfoBtn = popupOverlay.querySelector('.weather-more-info-btn');
+        moreInfoBtn?.addEventListener('click', () => {
+            popupOverlay.remove();
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+        });
     }
 
     _handleTempGraphClick() {

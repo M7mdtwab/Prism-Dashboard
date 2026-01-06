@@ -175,7 +175,7 @@ class PrismHeatSmallCard extends HTMLElement {
         .header {
             display: flex; 
             justify-content: space-between; 
-            align-items: center; 
+            align-items: flex-start; 
             margin-bottom: 16px;
         }
         .header-left { 
@@ -236,27 +236,28 @@ class PrismHeatSmallCard extends HTMLElement {
         
         /* Chip */
         .chip {
-            padding: 6px 10px; 
-            border-radius: 20px;
+            padding: 4px 8px; 
+            border-radius: 14px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.05);
             display: flex; 
             align-items: center; 
             justify-content: center;
-            gap: 6px;
-            height: 28px;
+            gap: 4px;
+            height: 22px;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         .chip ha-icon {
             display: flex;
             align-items: center;
             justify-content: center;
-            --mdc-icon-size: 12px;
+            --mdc-icon-size: 10px;
             line-height: 0;
             color: #fb923c;
         }
         .chip-text { 
-            font-size: 10px; 
+            font-size: 9px; 
             font-weight: 600; 
             text-transform: uppercase; 
             letter-spacing: 0.5px; 
@@ -328,15 +329,16 @@ class PrismHeatSmallCard extends HTMLElement {
           }
           /* Chip kleiner machen */
           .chip {
-            padding: 4px 8px;
-            height: 22px;
-            gap: 4px;
+            padding: 3px 6px;
+            height: 18px;
+            gap: 3px;
+            border-radius: 12px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 10px;
+            --mdc-icon-size: 9px;
           }
           .chip-text {
-            font-size: 8px;
+            font-size: 7px;
           }
           /* Controls anpassen */
           .controls {
@@ -370,16 +372,16 @@ class PrismHeatSmallCard extends HTMLElement {
           }
           /* Chip noch kleiner auf Mobile */
           .chip {
-            padding: 3px 6px;
-            height: 20px;
-            gap: 3px;
-            border-radius: 14px;
+            padding: 2px 5px;
+            height: 16px;
+            gap: 2px;
+            border-radius: 10px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 9px;
+            --mdc-icon-size: 8px;
           }
           .chip-text {
-            font-size: 7px;
+            font-size: 6px;
           }
           /* Controls anpassen */
           .controls {

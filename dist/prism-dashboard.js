@@ -2,8 +2,8 @@
  * Prism Dashboard - Custom Cards Collection
  * https://github.com/BangerTech/Prism-Dashboard
  * 
- * Version: 1.0.0
- * Build Date: 2026-01-06T16:26:43.015Z
+ * Version: 1.5.9
+ * Build Date: 2026-01-06T18:32:34.495Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -11,7 +11,7 @@
  */
 
 console.info(
-  '%c PRISM-DASHBOARD %c v1.0.0 ',
+  '%c PRISM-DASHBOARD %c v1.5.9 ',
   'color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-weight: bold; padding: 4px 8px; border-radius: 4px 0 0 4px;',
   'color: #667eea; background: #e8e8e8; font-weight: bold; padding: 4px 8px; border-radius: 0 4px 4px 0;'
 );
@@ -3632,7 +3632,7 @@ class PrismHeatSmallCard extends HTMLElement {
         .header {
             display: flex; 
             justify-content: space-between; 
-            align-items: center; 
+            align-items: flex-start; 
             margin-bottom: 16px;
         }
         .header-left { 
@@ -3693,27 +3693,28 @@ class PrismHeatSmallCard extends HTMLElement {
         
         /* Chip */
         .chip {
-            padding: 6px 10px; 
-            border-radius: 20px;
+            padding: 4px 8px; 
+            border-radius: 14px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.05);
             display: flex; 
             align-items: center; 
             justify-content: center;
-            gap: 6px;
-            height: 28px;
+            gap: 4px;
+            height: 22px;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         .chip ha-icon {
             display: flex;
             align-items: center;
             justify-content: center;
-            --mdc-icon-size: 12px;
+            --mdc-icon-size: 10px;
             line-height: 0;
             color: #fb923c;
         }
         .chip-text { 
-            font-size: 10px; 
+            font-size: 9px; 
             font-weight: 600; 
             text-transform: uppercase; 
             letter-spacing: 0.5px; 
@@ -3785,15 +3786,16 @@ class PrismHeatSmallCard extends HTMLElement {
           }
           /* Chip kleiner machen */
           .chip {
-            padding: 4px 8px;
-            height: 22px;
-            gap: 4px;
+            padding: 3px 6px;
+            height: 18px;
+            gap: 3px;
+            border-radius: 12px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 10px;
+            --mdc-icon-size: 9px;
           }
           .chip-text {
-            font-size: 8px;
+            font-size: 7px;
           }
           /* Controls anpassen */
           .controls {
@@ -3827,16 +3829,16 @@ class PrismHeatSmallCard extends HTMLElement {
           }
           /* Chip noch kleiner auf Mobile */
           .chip {
-            padding: 3px 6px;
-            height: 20px;
-            gap: 3px;
-            border-radius: 14px;
+            padding: 2px 5px;
+            height: 16px;
+            gap: 2px;
+            border-radius: 10px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 9px;
+            --mdc-icon-size: 8px;
           }
           .chip-text {
-            font-size: 7px;
+            font-size: 6px;
           }
           /* Controls anpassen */
           .controls {
@@ -4096,7 +4098,7 @@ class PrismHeatSmallLightCard extends HTMLElement {
         .header {
             display: flex; 
             justify-content: space-between; 
-            align-items: center; 
+            align-items: flex-start; 
             margin-bottom: 16px;
         }
         .header-left { 
@@ -4152,8 +4154,8 @@ class PrismHeatSmallLightCard extends HTMLElement {
         
         /* Chip */
         .chip {
-            padding: 6px 10px; 
-            border-radius: 20px;
+            padding: 4px 8px; 
+            border-radius: 14px;
             background: linear-gradient(145deg, #f0f0f0, #ffffff);
             border: 1px solid rgba(255,255,255,0.8);
             box-shadow: 
@@ -4162,20 +4164,21 @@ class PrismHeatSmallLightCard extends HTMLElement {
             display: flex; 
             align-items: center; 
             justify-content: center;
-            gap: 6px;
-            height: 28px;
+            gap: 4px;
+            height: 22px;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         .chip ha-icon {
             display: flex;
             align-items: center;
             justify-content: center;
-            --mdc-icon-size: 12px;
+            --mdc-icon-size: 10px;
             line-height: 0;
             color: #fb923c;
         }
         .chip-text { 
-            font-size: 10px; 
+            font-size: 9px; 
             font-weight: 600; 
             text-transform: uppercase; 
             letter-spacing: 0.5px; 
@@ -4259,15 +4262,16 @@ class PrismHeatSmallLightCard extends HTMLElement {
           }
           /* Chip kleiner machen */
           .chip {
-            padding: 4px 8px;
-            height: 22px;
-            gap: 4px;
+            padding: 3px 6px;
+            height: 18px;
+            gap: 3px;
+            border-radius: 12px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 10px;
+            --mdc-icon-size: 9px;
           }
           .chip-text {
-            font-size: 8px;
+            font-size: 7px;
           }
           /* Controls anpassen */
           .controls {
@@ -4305,16 +4309,16 @@ class PrismHeatSmallLightCard extends HTMLElement {
           }
           /* Chip noch kleiner auf Mobile */
           .chip {
-            padding: 3px 6px;
-            height: 20px;
-            gap: 3px;
-            border-radius: 14px;
+            padding: 2px 5px;
+            height: 16px;
+            gap: 2px;
+            border-radius: 10px;
           }
           .chip ha-icon {
-            --mdc-icon-size: 9px;
+            --mdc-icon-size: 8px;
           }
           .chip-text {
-            font-size: 7px;
+            font-size: 6px;
           }
           /* Controls anpassen */
           .controls {
@@ -10237,6 +10241,283 @@ class PrismVacuumSwitchbotCard extends HTMLElement {
           .level-btn.active .level-line.water { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
           .level-btn.active .level-text { color: rgba(255,255,255,0.8); }
 
+          /* Responsive: Tablet (768px - 1400px) */
+          @media (max-width: 1400px) {
+            .card {
+              padding: 16px;
+              gap: 16px;
+              border-radius: 20px;
+            }
+            .header {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 36px;
+              height: 36px;
+              min-width: 36px;
+              min-height: 36px;
+            }
+            .icon-box ha-icon {
+              width: 20px;
+              height: 20px;
+              --mdc-icon-size: 20px;
+            }
+            .title {
+              font-size: 1rem;
+            }
+            .subtitle {
+              font-size: 0.7rem;
+            }
+            .play-btn {
+              width: 36px;
+              height: 36px;
+            }
+            .play-btn ha-icon {
+              width: 18px;
+              height: 18px;
+            }
+            .vacuum-inlet {
+              height: 140px;
+              border-radius: 14px;
+            }
+            .vacuum-body {
+              width: 80px;
+              height: 80px;
+            }
+            .lidar {
+              width: 30px;
+              height: 30px;
+            }
+            .lidar-dot {
+              width: 6px;
+              height: 6px;
+            }
+            .led {
+              width: 16px;
+              height: 5px;
+              bottom: 16px;
+            }
+            .controls-row {
+              gap: 10px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 8px;
+            }
+            .tab-container {
+              padding: 2px;
+            }
+            .tab-btn {
+              width: 28px;
+              height: 24px;
+              border-radius: 14px;
+            }
+            .tab-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            /* Scene Selector auf Tablet */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+            .scene-btn {
+              padding: 4px 8px;
+              height: 24px;
+              border-radius: 8px;
+              font-size: 8px;
+            }
+            .scene-btn ha-icon {
+              width: 10px;
+              height: 10px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .home-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .speed-controls {
+              gap: 6px;
+            }
+            .level-bar {
+              height: 34px;
+              border-radius: 10px;
+            }
+            .level-text {
+              font-size: 7px;
+            }
+          }
+
+          /* Responsive: Mobile / Small Tablet (< 768px) */
+          @media (max-width: 768px) {
+            .card {
+              padding: 14px;
+              gap: 14px;
+              border-radius: 18px;
+            }
+            .header {
+              gap: 8px;
+            }
+            .header-left {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 32px;
+              height: 32px;
+              min-width: 32px;
+              min-height: 32px;
+            }
+            .icon-box ha-icon {
+              width: 18px;
+              height: 18px;
+              --mdc-icon-size: 18px;
+            }
+            .title {
+              font-size: 0.9rem;
+            }
+            .subtitle {
+              font-size: 0.65rem;
+              gap: 6px;
+            }
+            .battery-info ha-icon {
+              width: 12px;
+              height: 12px;
+            }
+            .water-base-battery ha-icon {
+              width: 10px;
+              height: 10px;
+            }
+            .status-badge {
+              padding: 2px 4px;
+              font-size: 8px;
+            }
+            .status-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .play-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .play-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .vacuum-inlet {
+              height: 120px;
+              border-radius: 12px;
+            }
+            .vacuum-body {
+              width: 70px;
+              height: 70px;
+            }
+            .lidar {
+              width: 26px;
+              height: 26px;
+            }
+            .lidar-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .led {
+              width: 14px;
+              height: 4px;
+              bottom: 14px;
+            }
+            .controls-row {
+              gap: 8px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 6px;
+            }
+            .tab-container {
+              padding: 2px;
+              border-radius: 16px;
+            }
+            .tab-btn {
+              width: 26px;
+              height: 22px;
+              border-radius: 12px;
+            }
+            .tab-btn ha-icon {
+              width: 13px;
+              height: 13px;
+            }
+            /* Scene Selector auf Mobile */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+              order: 3;
+              width: 100%;
+              margin-top: 4px;
+            }
+            .scene-btn {
+              padding: 4px 6px;
+              height: 22px;
+              border-radius: 8px;
+              font-size: 7px;
+              flex: 1;
+              min-width: 0;
+              max-width: 120px;
+            }
+            .scene-btn ha-icon {
+              width: 9px;
+              height: 9px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 28px;
+              height: 28px;
+            }
+            .home-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            .speed-controls {
+              gap: 5px;
+            }
+            .level-bar {
+              height: 30px;
+              border-radius: 8px;
+            }
+            .level-text {
+              font-size: 6px;
+            }
+          }
+
+          /* Sehr kleine Bildschirme */
+          @media (max-width: 480px) {
+            .card {
+              padding: 12px;
+              gap: 12px;
+              border-radius: 16px;
+            }
+            .vacuum-inlet {
+              height: 100px;
+            }
+            .vacuum-body {
+              width: 60px;
+              height: 60px;
+            }
+            .controls-header {
+              justify-content: space-between;
+            }
+            .scene-selector {
+              order: 3;
+              width: 100%;
+            }
+            .scene-btn {
+              flex: 1;
+            }
+          }
+
         </style>
         
         <div class="card">
@@ -11706,6 +11987,11 @@ class PrismSidebarCard extends HTMLElement {
         return {
             schema: [
                 {
+                    name: "width",
+                    label: "Sidebar width (optional, e.g. 350px)",
+                    selector: { text: {} }
+                },
+                {
                     name: "camera_entity",
                     label: "Camera entity",
                     selector: { entity: { domain: "camera" } }
@@ -11780,6 +12066,9 @@ class PrismSidebarCard extends HTMLElement {
         this.solarEntity = this.config.solar_entity || 'sensor.example';
         this.homeEntity = this.config.home_entity || 'sensor.example';
         this.calendarEntity = this.config.calendar_entity || 'calendar.example';
+        
+        // Custom width (optional)
+        this.sidebarWidth = this.config.width || null;
         
         // Build camera entities array (only include non-empty entities)
         this.cameraEntities = [];
@@ -12243,6 +12532,7 @@ class PrismSidebarCard extends HTMLElement {
             :host {
                 display: block;
                 height: 100%;
+                ${this.sidebarWidth ? `width: ${this.sidebarWidth};` : ''}
             }
             .sidebar {
                 width: 100%;
@@ -12496,6 +12786,256 @@ class PrismSidebarCard extends HTMLElement {
                 50% { opacity: 0.5; }
                 100% { opacity: 1; }
             }
+
+            /* Popup Styles */
+            .popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                animation: fadeIn 0.2s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .popup {
+                background: rgba(30, 32, 36, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                width: 90%;
+                max-width: 380px;
+                max-height: 80vh;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                animation: slideUp 0.3s ease;
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            .popup-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px 20px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                color: white;
+                font-weight: 600;
+                font-size: 16px;
+            }
+            .popup-close {
+                margin-left: auto;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.6);
+                transition: all 0.2s;
+            }
+            .popup-close:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+            }
+            .popup-content {
+                padding: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            .popup-footer {
+                padding: 12px 16px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .popup-more-info-btn {
+                width: 100%;
+                padding: 10px 16px;
+                border-radius: 10px;
+                border: none;
+                background: rgba(59, 130, 246, 0.2);
+                color: #3b82f6;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.2s;
+            }
+            .popup-more-info-btn:hover {
+                background: rgba(59, 130, 246, 0.3);
+            }
+
+            /* Calendar Popup Styles */
+            .calendar-no-events {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                padding: 40px 20px;
+                color: rgba(255, 255, 255, 0.4);
+            }
+            .calendar-event {
+                display: flex;
+                gap: 12px;
+                padding: 12px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.03);
+                margin-bottom: 8px;
+                transition: background 0.2s;
+            }
+            .calendar-event:hover {
+                background: rgba(255, 255, 255, 0.08);
+            }
+            .calendar-event.today {
+                background: rgba(59, 130, 246, 0.15);
+                border-left: 3px solid #3b82f6;
+            }
+            .calendar-event.tomorrow {
+                background: rgba(139, 92, 246, 0.1);
+                border-left: 3px solid #8b5cf6;
+            }
+            .calendar-event-date {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-width: 44px;
+                padding: 8px;
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.3);
+            }
+            .calendar-event-day {
+                font-size: 20px;
+                font-weight: 700;
+                color: white;
+                line-height: 1;
+            }
+            .calendar-event-month {
+                font-size: 10px;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.5);
+                margin-top: 2px;
+            }
+            .calendar-event-details {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                min-width: 0;
+            }
+            .calendar-event-title {
+                font-weight: 500;
+                color: white;
+                font-size: 14px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .calendar-event-time,
+            .calendar-event-location {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.5);
+            }
+            .calendar-event-location {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Weather Popup Styles */
+            .weather-current {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+                padding: 20px;
+                background: rgba(59, 130, 246, 0.1);
+                border-radius: 12px;
+                margin-bottom: 12px;
+            }
+            .weather-current-temp {
+                font-size: 48px;
+                font-weight: 300;
+                color: white;
+            }
+            .weather-current-info {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .weather-current-condition {
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.8);
+                text-transform: capitalize;
+            }
+            .weather-current-details {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.5);
+            }
+            .weather-forecast-title {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: rgba(255, 255, 255, 0.4);
+                margin-bottom: 12px;
+                padding: 0 4px;
+            }
+            .weather-forecast-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 10px;
+                margin-bottom: 6px;
+            }
+            .weather-forecast-item:hover {
+                background: rgba(255, 255, 255, 0.06);
+            }
+            .weather-forecast-day {
+                min-width: 60px;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.7);
+            }
+            .weather-forecast-icon {
+                width: 28px;
+                height: 28px;
+            }
+            .weather-forecast-temps {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .weather-forecast-high {
+                font-size: 14px;
+                font-weight: 600;
+                color: white;
+            }
+            .weather-forecast-low {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.4);
+            }
         </style>
 
         <div class="sidebar">
@@ -12706,6 +13246,7 @@ class PrismSidebarCard extends HTMLElement {
         if (!this._hass) return;
         const cameraEntity = this.getCurrentCameraEntity();
         if (!cameraEntity) return;
+        // Open native HA camera dialog (has real live stream + fullscreen)
         const event = new CustomEvent('hass-more-info', {
             bubbles: true,
             composed: true,
@@ -12743,7 +13284,7 @@ class PrismSidebarCard extends HTMLElement {
 
     _showCalendarPopup(events) {
         // Remove existing popup
-        const existingPopup = this.shadowRoot?.querySelector('.calendar-popup-overlay');
+        const existingPopup = this.shadowRoot?.querySelector('.popup-overlay');
         if (existingPopup) existingPopup.remove();
 
         // Limit to 5 events
@@ -12751,17 +13292,17 @@ class PrismSidebarCard extends HTMLElement {
         
         // Create popup
         const popupOverlay = document.createElement('div');
-        popupOverlay.className = 'calendar-popup-overlay';
+        popupOverlay.className = 'popup-overlay';
         popupOverlay.innerHTML = `
-            <div class="calendar-popup">
-                <div class="calendar-popup-header">
+            <div class="popup">
+                <div class="popup-header">
                     <ha-icon icon="mdi:calendar" style="--mdc-icon-size: 24px; color: #3b82f6;"></ha-icon>
                     <span>Kommende Termine</span>
-                    <button class="calendar-popup-close">
+                    <button class="popup-close">
                         <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
                     </button>
                 </div>
-                <div class="calendar-popup-content">
+                <div class="popup-content">
                     ${upcomingEvents.length === 0 ? `
                         <div class="calendar-no-events">
                             <ha-icon icon="mdi:calendar-blank" style="--mdc-icon-size: 48px; color: rgba(255,255,255,0.2);"></ha-icon>
@@ -12814,189 +13355,14 @@ class PrismSidebarCard extends HTMLElement {
                         `;
                     }).join('')}
                 </div>
-                <div class="calendar-popup-footer">
-                    <button class="calendar-more-info-btn">
+                <div class="popup-footer">
+                    <button class="popup-more-info-btn">
                         <ha-icon icon="mdi:open-in-new" style="--mdc-icon-size: 16px;"></ha-icon>
                         Alle Termine anzeigen
                     </button>
                 </div>
             </div>
         `;
-        
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .calendar-popup-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9999;
-                animation: fadeIn 0.2s ease;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            .calendar-popup {
-                background: rgba(30, 32, 36, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 20px;
-                width: 90%;
-                max-width: 380px;
-                max-height: 80vh;
-                overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                animation: slideUp 0.3s ease;
-            }
-            @keyframes slideUp {
-                from { transform: translateY(20px); opacity: 0; }
-                to { transform: translateY(0); opacity: 1; }
-            }
-            .calendar-popup-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 16px 20px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                color: white;
-                font-weight: 600;
-                font-size: 16px;
-            }
-            .calendar-popup-close {
-                margin-left: auto;
-                background: rgba(255, 255, 255, 0.1);
-                border: none;
-                border-radius: 8px;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                color: rgba(255, 255, 255, 0.6);
-                transition: all 0.2s;
-            }
-            .calendar-popup-close:hover {
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-            }
-            .calendar-popup-content {
-                padding: 12px;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-            .calendar-no-events {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 12px;
-                padding: 40px 20px;
-                color: rgba(255, 255, 255, 0.4);
-            }
-            .calendar-event {
-                display: flex;
-                gap: 12px;
-                padding: 12px;
-                border-radius: 12px;
-                background: rgba(255, 255, 255, 0.03);
-                margin-bottom: 8px;
-                transition: background 0.2s;
-            }
-            .calendar-event:hover {
-                background: rgba(255, 255, 255, 0.08);
-            }
-            .calendar-event.today {
-                background: rgba(59, 130, 246, 0.15);
-                border-left: 3px solid #3b82f6;
-            }
-            .calendar-event.tomorrow {
-                background: rgba(139, 92, 246, 0.1);
-                border-left: 3px solid #8b5cf6;
-            }
-            .calendar-event-date {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-width: 44px;
-                padding: 8px;
-                border-radius: 10px;
-                background: rgba(0, 0, 0, 0.3);
-            }
-            .calendar-event-day {
-                font-size: 20px;
-                font-weight: 700;
-                color: white;
-                line-height: 1;
-            }
-            .calendar-event-month {
-                font-size: 10px;
-                text-transform: uppercase;
-                color: rgba(255, 255, 255, 0.5);
-                margin-top: 2px;
-            }
-            .calendar-event-details {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                min-width: 0;
-            }
-            .calendar-event-title {
-                font-weight: 500;
-                color: white;
-                font-size: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .calendar-event-time,
-            .calendar-event-location {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.5);
-            }
-            .calendar-event-location {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .calendar-popup-footer {
-                padding: 12px 16px;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            .calendar-more-info-btn {
-                width: 100%;
-                padding: 10px 16px;
-                border-radius: 10px;
-                border: none;
-                background: rgba(59, 130, 246, 0.2);
-                color: #3b82f6;
-                font-size: 13px;
-                font-weight: 500;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                transition: all 0.2s;
-            }
-            .calendar-more-info-btn:hover {
-                background: rgba(59, 130, 246, 0.3);
-            }
-        `;
-        popupOverlay.appendChild(style);
         
         // Add to shadow root
         this.shadowRoot.appendChild(popupOverlay);
@@ -13008,10 +13374,10 @@ class PrismSidebarCard extends HTMLElement {
             }
         });
         
-        const closeBtn = popupOverlay.querySelector('.calendar-popup-close');
+        const closeBtn = popupOverlay.querySelector('.popup-close');
         closeBtn?.addEventListener('click', () => popupOverlay.remove());
         
-        const moreInfoBtn = popupOverlay.querySelector('.calendar-more-info-btn');
+        const moreInfoBtn = popupOverlay.querySelector('.popup-more-info-btn');
         moreInfoBtn?.addEventListener('click', () => {
             popupOverlay.remove();
             const event = new CustomEvent('hass-more-info', {
@@ -13035,12 +13401,168 @@ class PrismSidebarCard extends HTMLElement {
 
     _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
-        const event = new CustomEvent('hass-more-info', {
-            bubbles: true,
-            composed: true,
-            detail: { entityId: this.weatherEntity }
+        
+        // Get weather data
+        const weatherState = this._hass.states[this.weatherEntity];
+        const temperatureState = this._hass.states[this.temperatureEntity];
+        
+        if (!weatherState) {
+            // Fallback to more-info
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+            return;
+        }
+        
+        // Get forecast data
+        let forecast = [];
+        if (weatherState.attributes.forecast) {
+            forecast = weatherState.attributes.forecast.slice(0, 7);
+        }
+        
+        this._showWeatherPopup(weatherState, temperatureState, forecast);
+    }
+
+    _showWeatherPopup(weatherState, temperatureState, forecast) {
+        // Remove existing popup
+        const existingPopup = this.shadowRoot?.querySelector('.popup-overlay');
+        if (existingPopup) existingPopup.remove();
+        
+        const currentTemp = temperatureState?.state || weatherState?.attributes?.temperature || '0';
+        const condition = weatherState?.state || 'unknown';
+        const humidity = weatherState?.attributes?.humidity;
+        const windSpeed = weatherState?.attributes?.wind_speed;
+        const pressure = weatherState?.attributes?.pressure;
+        
+        // Icon map
+        const iconMap = {
+            'sunny': 'mdi:weather-sunny',
+            'partlycloudy': 'mdi:weather-partly-cloudy',
+            'cloudy': 'mdi:cloud',
+            'rainy': 'mdi:weather-rainy',
+            'snowy': 'mdi:weather-snowy',
+            'pouring': 'mdi:weather-pouring',
+            'lightning': 'mdi:weather-lightning',
+            'fog': 'mdi:weather-fog',
+            'windy': 'mdi:weather-windy',
+            'clear-night': 'mdi:weather-night',
+            'lightning-rainy': 'mdi:weather-lightning-rainy',
+            'hail': 'mdi:weather-hail',
+            'exceptional': 'mdi:alert-circle'
+        };
+        
+        // Condition translation
+        const conditionNames = {
+            'sunny': 'Sonnig',
+            'partlycloudy': 'Teilweise bewölkt',
+            'cloudy': 'Bewölkt',
+            'rainy': 'Regnerisch',
+            'snowy': 'Schnee',
+            'pouring': 'Starkregen',
+            'lightning': 'Gewitter',
+            'fog': 'Nebel',
+            'windy': 'Windig',
+            'clear-night': 'Klare Nacht',
+            'lightning-rainy': 'Gewitter mit Regen',
+            'hail': 'Hagel',
+            'exceptional': 'Außergewöhnlich'
+        };
+        
+        const mainIcon = iconMap[condition] || 'mdi:weather-cloudy';
+        const conditionName = conditionNames[condition] || condition;
+        
+        // Details text
+        let detailsText = '';
+        if (humidity) detailsText += `💧 ${humidity}%`;
+        if (windSpeed) detailsText += detailsText ? ` · 💨 ${windSpeed} km/h` : `💨 ${windSpeed} km/h`;
+        if (pressure) detailsText += detailsText ? ` · ${pressure} hPa` : `${pressure} hPa`;
+        
+        // Create popup
+        const popupOverlay = document.createElement('div');
+        popupOverlay.className = 'popup-overlay';
+        popupOverlay.innerHTML = `
+            <div class="popup">
+                <div class="popup-header">
+                    <ha-icon icon="mdi:weather-partly-cloudy" style="--mdc-icon-size: 24px; color: #f59e0b;"></ha-icon>
+                    <span>Wetter</span>
+                    <button class="popup-close">
+                        <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
+                    </button>
+                </div>
+                <div class="popup-content">
+                    <div class="weather-current">
+                        <ha-icon icon="${mainIcon}" style="--mdc-icon-size: 56px; color: ${mainIcon.includes('sunny') ? '#f59e0b' : 'rgba(255,255,255,0.8)'};"></ha-icon>
+                        <div class="weather-current-info">
+                            <span class="weather-current-temp">${currentTemp}°C</span>
+                            <span class="weather-current-condition">${conditionName}</span>
+                            ${detailsText ? `<span class="weather-current-details">${detailsText}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${forecast.length > 0 ? `
+                        <div class="weather-forecast-title">Vorhersage</div>
+                        ${forecast.map((day, i) => {
+                            const date = day.datetime ? new Date(day.datetime) : new Date();
+                            const isToday = date.toDateString() === new Date().toDateString();
+                            const dayName = isToday ? 'Heute' : date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
+                            const icon = iconMap[day.condition?.toLowerCase()] || 'mdi:weather-cloudy';
+                            const iconColor = icon.includes('sunny') ? '#f59e0b' : 'rgba(255,255,255,0.7)';
+                            const temp = day.temperature !== undefined ? day.temperature : '0';
+                            const low = day.templow !== undefined ? day.templow : temp;
+                            
+                            return `
+                                <div class="weather-forecast-item">
+                                    <span class="weather-forecast-day">${dayName}</span>
+                                    <ha-icon icon="${icon}" class="weather-forecast-icon" style="--mdc-icon-size: 24px; color: ${iconColor};"></ha-icon>
+                                    <div class="weather-forecast-temps">
+                                        <span class="weather-forecast-high">${temp}°</span>
+                                        <span class="weather-forecast-low">${low}°</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : `
+                        <div class="calendar-no-events">
+                            <ha-icon icon="mdi:weather-cloudy-alert" style="--mdc-icon-size: 48px; color: rgba(255,255,255,0.2);"></ha-icon>
+                            <span>Keine Vorhersage verfügbar</span>
+                        </div>
+                    `}
+                </div>
+                <div class="popup-footer">
+                    <button class="popup-more-info-btn">
+                        <ha-icon icon="mdi:open-in-new" style="--mdc-icon-size: 16px;"></ha-icon>
+                        Mehr Details
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add to shadow root
+        this.shadowRoot.appendChild(popupOverlay);
+        
+        // Event listeners
+        popupOverlay.addEventListener('click', (e) => {
+            if (e.target === popupOverlay) {
+                popupOverlay.remove();
+            }
         });
-        this.dispatchEvent(event);
+        
+        const closeBtn = popupOverlay.querySelector('.popup-close');
+        closeBtn?.addEventListener('click', () => popupOverlay.remove());
+        
+        const moreInfoBtn = popupOverlay.querySelector('.popup-more-info-btn');
+        moreInfoBtn?.addEventListener('click', () => {
+            popupOverlay.remove();
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+        });
     }
 
     _handleTempGraphClick() {
@@ -13357,6 +13879,11 @@ class PrismSidebarLightCard extends HTMLElement {
         return {
             schema: [
                 {
+                    name: "width",
+                    label: "Sidebar width (optional, e.g. 350px)",
+                    selector: { text: {} }
+                },
+                {
                     name: "camera_entity",
                     label: "Camera entity",
                     selector: { entity: { domain: "camera" } }
@@ -13431,6 +13958,9 @@ class PrismSidebarLightCard extends HTMLElement {
         this.solarEntity = this.config.solar_entity || 'sensor.example';
         this.homeEntity = this.config.home_entity || 'sensor.example';
         this.calendarEntity = this.config.calendar_entity || 'calendar.example';
+        
+        // Custom width (optional)
+        this.sidebarWidth = this.config.width || null;
         
         // Build camera entities array (only include non-empty entities)
         this.cameraEntities = [];
@@ -13893,6 +14423,7 @@ class PrismSidebarLightCard extends HTMLElement {
             :host {
                 display: block;
                 height: 100%;
+                ${this.sidebarWidth ? `width: ${this.sidebarWidth};` : ''}
             }
             .sidebar {
                 width: 100%;
@@ -14360,6 +14891,7 @@ class PrismSidebarLightCard extends HTMLElement {
         if (!this._hass) return;
         const cameraEntity = this.getCurrentCameraEntity();
         if (!cameraEntity) return;
+        // Open native HA camera dialog (has real live stream + fullscreen)
         const event = new CustomEvent('hass-more-info', {
             bubbles: true,
             composed: true,
@@ -14689,12 +15221,348 @@ class PrismSidebarLightCard extends HTMLElement {
 
     _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
-        const event = new CustomEvent('hass-more-info', {
-            bubbles: true,
-            composed: true,
-            detail: { entityId: this.weatherEntity }
+        
+        // Get weather data
+        const weatherState = this._hass.states[this.weatherEntity];
+        const temperatureState = this._hass.states[this.temperatureEntity];
+        
+        if (!weatherState) {
+            // Fallback to more-info
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+            return;
+        }
+        
+        // Get forecast data
+        let forecast = [];
+        if (weatherState.attributes.forecast) {
+            forecast = weatherState.attributes.forecast.slice(0, 7);
+        }
+        
+        this._showWeatherPopup(weatherState, temperatureState, forecast);
+    }
+
+    _showWeatherPopup(weatherState, temperatureState, forecast) {
+        // Remove existing popup
+        const existingPopup = this.shadowRoot?.querySelector('.weather-popup-overlay');
+        if (existingPopup) existingPopup.remove();
+        
+        const currentTemp = temperatureState?.state || weatherState?.attributes?.temperature || '0';
+        const condition = weatherState?.state || 'unknown';
+        const humidity = weatherState?.attributes?.humidity;
+        const windSpeed = weatherState?.attributes?.wind_speed;
+        const pressure = weatherState?.attributes?.pressure;
+        
+        // Icon map
+        const iconMap = {
+            'sunny': 'mdi:weather-sunny',
+            'partlycloudy': 'mdi:weather-partly-cloudy',
+            'cloudy': 'mdi:cloud',
+            'rainy': 'mdi:weather-rainy',
+            'snowy': 'mdi:weather-snowy',
+            'pouring': 'mdi:weather-pouring',
+            'lightning': 'mdi:weather-lightning',
+            'fog': 'mdi:weather-fog',
+            'windy': 'mdi:weather-windy',
+            'clear-night': 'mdi:weather-night',
+            'lightning-rainy': 'mdi:weather-lightning-rainy',
+            'hail': 'mdi:weather-hail',
+            'exceptional': 'mdi:alert-circle'
+        };
+        
+        // Condition translation
+        const conditionNames = {
+            'sunny': 'Sonnig',
+            'partlycloudy': 'Teilweise bewölkt',
+            'cloudy': 'Bewölkt',
+            'rainy': 'Regnerisch',
+            'snowy': 'Schnee',
+            'pouring': 'Starkregen',
+            'lightning': 'Gewitter',
+            'fog': 'Nebel',
+            'windy': 'Windig',
+            'clear-night': 'Klare Nacht',
+            'lightning-rainy': 'Gewitter mit Regen',
+            'hail': 'Hagel',
+            'exceptional': 'Außergewöhnlich'
+        };
+        
+        const mainIcon = iconMap[condition] || 'mdi:weather-cloudy';
+        const conditionName = conditionNames[condition] || condition;
+        
+        // Details text
+        let detailsText = '';
+        if (humidity) detailsText += `💧 ${humidity}%`;
+        if (windSpeed) detailsText += detailsText ? ` · 💨 ${windSpeed} km/h` : `💨 ${windSpeed} km/h`;
+        if (pressure) detailsText += detailsText ? ` · ${pressure} hPa` : `${pressure} hPa`;
+        
+        // Create popup
+        const popupOverlay = document.createElement('div');
+        popupOverlay.className = 'weather-popup-overlay';
+        popupOverlay.innerHTML = `
+            <div class="weather-popup">
+                <div class="weather-popup-header">
+                    <ha-icon icon="mdi:weather-partly-cloudy" style="--mdc-icon-size: 24px; color: #f59e0b;"></ha-icon>
+                    <span>Wetter</span>
+                    <button class="weather-popup-close">
+                        <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
+                    </button>
+                </div>
+                <div class="weather-popup-content">
+                    <div class="weather-current">
+                        <ha-icon icon="${mainIcon}" style="--mdc-icon-size: 56px; color: ${mainIcon.includes('sunny') ? '#f59e0b' : 'rgba(0,0,0,0.6)'};"></ha-icon>
+                        <div class="weather-current-info">
+                            <span class="weather-current-temp">${currentTemp}°C</span>
+                            <span class="weather-current-condition">${conditionName}</span>
+                            ${detailsText ? `<span class="weather-current-details">${detailsText}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${forecast.length > 0 ? `
+                        <div class="weather-forecast-title">Vorhersage</div>
+                        ${forecast.map((day, i) => {
+                            const date = day.datetime ? new Date(day.datetime) : new Date();
+                            const isToday = date.toDateString() === new Date().toDateString();
+                            const dayName = isToday ? 'Heute' : date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric' });
+                            const icon = iconMap[day.condition?.toLowerCase()] || 'mdi:weather-cloudy';
+                            const iconColor = icon.includes('sunny') ? '#f59e0b' : 'rgba(0,0,0,0.5)';
+                            const temp = day.temperature !== undefined ? day.temperature : '0';
+                            const low = day.templow !== undefined ? day.templow : temp;
+                            
+                            return `
+                                <div class="weather-forecast-item">
+                                    <span class="weather-forecast-day">${dayName}</span>
+                                    <ha-icon icon="${icon}" class="weather-forecast-icon" style="--mdc-icon-size: 24px; color: ${iconColor};"></ha-icon>
+                                    <div class="weather-forecast-temps">
+                                        <span class="weather-forecast-high">${temp}°</span>
+                                        <span class="weather-forecast-low">${low}°</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    ` : `
+                        <div class="weather-no-forecast">
+                            <ha-icon icon="mdi:weather-cloudy-alert" style="--mdc-icon-size: 48px; color: rgba(0,0,0,0.2);"></ha-icon>
+                            <span>Keine Vorhersage verfügbar</span>
+                        </div>
+                    `}
+                </div>
+                <div class="weather-popup-footer">
+                    <button class="weather-more-info-btn">
+                        <ha-icon icon="mdi:open-in-new" style="--mdc-icon-size: 16px;"></ha-icon>
+                        Mehr Details
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add styles (Light theme)
+        const style = document.createElement('style');
+        style.textContent = `
+            .weather-popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                animation: fadeIn 0.2s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .weather-popup {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 20px;
+                width: 90%;
+                max-width: 380px;
+                max-height: 80vh;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                animation: slideUp 0.3s ease;
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            .weather-popup-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px 20px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                color: #1a1a1a;
+                font-weight: 600;
+                font-size: 16px;
+            }
+            .weather-popup-close {
+                margin-left: auto;
+                background: rgba(0, 0, 0, 0.05);
+                border: none;
+                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(0, 0, 0, 0.4);
+                transition: all 0.2s;
+            }
+            .weather-popup-close:hover {
+                background: rgba(0, 0, 0, 0.1);
+                color: #1a1a1a;
+            }
+            .weather-popup-content {
+                padding: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            .weather-current {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+                padding: 20px;
+                background: rgba(59, 130, 246, 0.08);
+                border-radius: 12px;
+                margin-bottom: 12px;
+            }
+            .weather-current-temp {
+                font-size: 48px;
+                font-weight: 300;
+                color: #1a1a1a;
+            }
+            .weather-current-info {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .weather-current-condition {
+                font-size: 14px;
+                color: rgba(0, 0, 0, 0.6);
+                text-transform: capitalize;
+            }
+            .weather-current-details {
+                font-size: 12px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-forecast-title {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: rgba(0, 0, 0, 0.4);
+                margin-bottom: 12px;
+                padding: 0 4px;
+            }
+            .weather-forecast-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: rgba(0, 0, 0, 0.03);
+                border-radius: 10px;
+                margin-bottom: 6px;
+            }
+            .weather-forecast-item:hover {
+                background: rgba(0, 0, 0, 0.05);
+            }
+            .weather-forecast-day {
+                min-width: 60px;
+                font-size: 13px;
+                color: rgba(0, 0, 0, 0.6);
+            }
+            .weather-forecast-icon {
+                width: 28px;
+                height: 28px;
+            }
+            .weather-forecast-temps {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .weather-forecast-high {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1a1a1a;
+            }
+            .weather-forecast-low {
+                font-size: 13px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-no-forecast {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                padding: 40px 20px;
+                color: rgba(0, 0, 0, 0.4);
+            }
+            .weather-popup-footer {
+                padding: 12px 16px;
+                border-top: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            .weather-more-info-btn {
+                width: 100%;
+                padding: 10px 16px;
+                border-radius: 10px;
+                border: none;
+                background: rgba(59, 130, 246, 0.1);
+                color: #3b82f6;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.2s;
+            }
+            .weather-more-info-btn:hover {
+                background: rgba(59, 130, 246, 0.2);
+            }
+        `;
+        popupOverlay.appendChild(style);
+        
+        // Add to shadow root
+        this.shadowRoot.appendChild(popupOverlay);
+        
+        // Event listeners
+        popupOverlay.addEventListener('click', (e) => {
+            if (e.target === popupOverlay) {
+                popupOverlay.remove();
+            }
         });
-        this.dispatchEvent(event);
+        
+        const closeBtn = popupOverlay.querySelector('.weather-popup-close');
+        closeBtn?.addEventListener('click', () => popupOverlay.remove());
+        
+        const moreInfoBtn = popupOverlay.querySelector('.weather-more-info-btn');
+        moreInfoBtn?.addEventListener('click', () => {
+            popupOverlay.remove();
+            const event = new CustomEvent('hass-more-info', {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: this.weatherEntity }
+            });
+            this.dispatchEvent(event);
+        });
     }
 
     _handleTempGraphClick() {
@@ -30964,6 +31832,7 @@ window.customCards.push({
 /**
  * Prism Navigation Card
  * A centered navigation bar for dashboard views with glassmorphism styling
+ * Uses external DOM injection to avoid grid layout issues
  */
 
 class PrismNavigationCard extends HTMLElement {
@@ -30973,6 +31842,8 @@ class PrismNavigationCard extends HTMLElement {
     this._hass = null;
     this._config = null;
     this._currentPath = '';
+    this._externalNav = null;
+    this._navId = 'prism-nav-' + Math.random().toString(36).substr(2, 9);
   }
 
   static getStubConfig() {
@@ -30985,7 +31856,8 @@ class PrismNavigationCard extends HTMLElement {
       tab_2_icon: "",
       active_color: "#2196f3",
       show_icons: true,
-      sticky_position: true
+      sticky_position: true,
+      top_offset: 16
     };
   }
 
@@ -30996,6 +31868,11 @@ class PrismNavigationCard extends HTMLElement {
           name: "sticky_position",
           label: "Fixed position at top (recommended for grid layouts)",
           selector: { boolean: {} }
+        },
+        {
+          name: "top_offset",
+          label: "Top Offset (px) - Distance from top when sticky",
+          selector: { number: { min: 0, max: 200, step: 1, unit_of_measurement: "px", mode: "slider" } }
         },
         {
           name: "active_color",
@@ -31109,16 +31986,13 @@ class PrismNavigationCard extends HTMLElement {
     let tabs = [];
     
     if (config.tabs && Array.isArray(config.tabs)) {
-      // Legacy support: tabs array directly provided
       tabs = config.tabs;
     } else {
-      // New format: individual tab_X_name, tab_X_path, tab_X_icon fields
       for (let i = 1; i <= 8; i++) {
         const name = config[`tab_${i}_name`];
         const path = config[`tab_${i}_path`];
         const icon = config[`tab_${i}_icon`];
         
-        // Only add tab if at least name OR path is defined
         if (name || path) {
           tabs.push({
             name: name || path || `Tab ${i}`,
@@ -31139,7 +32013,8 @@ class PrismNavigationCard extends HTMLElement {
       active_color: this._normalizeColor(config.active_color) || '#2196f3',
       show_icons: config.show_icons || false,
       icon_only: config.icon_only || false,
-      sticky_position: config.sticky_position !== false // Default true
+      sticky_position: config.sticky_position !== false,
+      top_offset: config.top_offset !== undefined ? config.top_offset : 16
     };
     
     this._updateCard();
@@ -31157,7 +32032,6 @@ class PrismNavigationCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    // Get current path from URL
     this._currentPath = this._getCurrentPath();
     if (this._config) {
       this._updateCard();
@@ -31165,20 +32039,16 @@ class PrismNavigationCard extends HTMLElement {
   }
 
   _getCurrentPath() {
-    // Try to get the current view path from the URL
     const path = window.location.pathname;
-    // Extract view name from path like /lovelace/erdgeschoss or /dashboard-name/view-name
     const match = path.match(/\/([^\/]+)\/([^\/]+)$/);
-    if (match) {
-      return match[2];
-    }
-    // Fallback: try to get from hash
+    if (match) return match[2];
+    
     const hash = window.location.hash;
     if (hash) {
       const hashMatch = hash.match(/#([^\/]+)/);
       if (hashMatch) return hashMatch[1];
     }
-    // Default to first segment after lovelace
+    
     const segments = path.split('/').filter(s => s);
     if (segments.length >= 2 && segments[0].includes('lovelace')) {
       return segments[1];
@@ -31190,27 +32060,55 @@ class PrismNavigationCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 1;
+    // Return 0 when sticky to not take up grid space
+    return this._config?.sticky_position ? 0 : 1;
   }
 
   connectedCallback() {
     if (this._config) {
       this._updateCard();
+      
+      // Delayed update for sticky detection
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (this._config) {
+            this._updateCard();
+          }
+        }, 150);
+      });
     }
     
-    // Listen for URL changes to update active state
-    window.addEventListener('popstate', () => this._handlePathChange());
-    window.addEventListener('location-changed', () => this._handlePathChange());
-    
-    // Also listen for custom event from HA
-    window.addEventListener('hass-more-info', () => {
-      setTimeout(() => this._handlePathChange(), 100);
-    });
+    // Listen for URL changes
+    this._boundPathChange = () => this._handlePathChange();
+    window.addEventListener('popstate', this._boundPathChange);
+    window.addEventListener('location-changed', this._boundPathChange);
   }
 
   disconnectedCallback() {
-    window.removeEventListener('popstate', () => this._handlePathChange());
-    window.removeEventListener('location-changed', () => this._handlePathChange());
+    // Remove external navigation when card is disconnected
+    this._removeExternalNav();
+    
+    if (this._boundPathChange) {
+      window.removeEventListener('popstate', this._boundPathChange);
+      window.removeEventListener('location-changed', this._boundPathChange);
+    }
+  }
+
+  _removeExternalNav() {
+    if (this._externalNav && this._externalNav.parentNode) {
+      this._externalNav.parentNode.removeChild(this._externalNav);
+      this._externalNav = null;
+    }
+    // Also try to find and remove by ID
+    const existing = document.getElementById(this._navId);
+    if (existing) {
+      existing.remove();
+    }
+    // Remove style from head
+    const styleEl = document.getElementById(this._navId + '-style');
+    if (styleEl) {
+      styleEl.remove();
+    }
   }
 
   _handlePathChange() {
@@ -31231,7 +32129,6 @@ class PrismNavigationCard extends HTMLElement {
   _handleTabClick(tab) {
     if (!tab.path) return;
     
-    // Navigate to the view
     const event = new CustomEvent('hass-navigate', {
       bubbles: true,
       composed: true,
@@ -31239,255 +32136,280 @@ class PrismNavigationCard extends HTMLElement {
     });
     this.dispatchEvent(event);
     
-    // Fallback: direct navigation
     const currentUrl = window.location.pathname;
     const basePath = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
     const newPath = `${basePath}/${tab.path}`;
     
-    // Use History API
     history.pushState(null, '', newPath);
     window.dispatchEvent(new Event('location-changed'));
     
-    // Update state immediately
     this._currentPath = tab.path;
     this._updateCard();
   }
 
-  _isInDashboardView() {
-    // Only enable sticky if we're actually in a hui-view (real dashboard)
-    // This prevents fixed positioning in editor dialogs, card pickers, previews, etc.
-    let parent = this.parentElement;
-    let depth = 0;
-    const maxDepth = 20; // Prevent infinite loops
+  _isInEditMode() {
+    // Check if dashboard is in edit mode
+    // Method 1: Check URL for edit parameter
+    if (window.location.search.includes('edit=1')) {
+      return true;
+    }
     
-    while (parent && depth < maxDepth) {
-      const tagName = parent.tagName?.toLowerCase() || '';
-      
-      // If we find hui-view, we're in the actual dashboard
-      if (tagName === 'hui-view' || tagName === 'hui-panel-view') {
-        return true;
+    // Method 2: Check for edit mode indicators in DOM
+    const editToolbar = document.querySelector('hui-editor, hui-card-options, .edit-mode');
+    if (editToolbar) {
+      return true;
+    }
+    
+    // Method 3: Check for edit button being active
+    const root = document.querySelector('home-assistant');
+    if (root && root.shadowRoot) {
+      const panel = root.shadowRoot.querySelector('ha-panel-lovelace');
+      if (panel && panel.shadowRoot) {
+        const huiRoot = panel.shadowRoot.querySelector('hui-root');
+        if (huiRoot && huiRoot.shadowRoot) {
+          const editMode = huiRoot.shadowRoot.querySelector('.edit-mode');
+          if (editMode) return true;
+        }
       }
+    }
+    
+    return false;
+  }
+
+  _isInDashboardView() {
+    // Check if we're in a real dashboard view (not editor/preview)
+    let current = this;
+    let depth = 0;
+    const maxDepth = 50;
+    
+    while (current && depth < maxDepth) {
+      const tagName = current.tagName?.toLowerCase() || '';
+      const className = typeof current.className === 'string' ? current.className : '';
       
-      // If we find these, we're definitely NOT in the dashboard view
+      // Editor/preview contexts
       if (tagName.includes('dialog') || 
           tagName.includes('picker') ||
           tagName.includes('editor') ||
           tagName === 'hui-card-preview' ||
           tagName === 'hui-card-element-editor' ||
-          parent.classList?.contains('preview') ||
-          parent.classList?.contains('element-preview')) {
+          className.includes('preview') ||
+          className.includes('element-preview') ||
+          className.includes('card-picker')) {
         return false;
       }
       
-      parent = parent.parentElement;
+      // Dashboard view contexts
+      if (tagName === 'hui-view' || 
+          tagName === 'hui-panel-view' ||
+          tagName === 'hui-root' ||
+          tagName === 'home-assistant' ||
+          tagName === 'hui-masonry-view' ||
+          tagName === 'hui-sections-view' ||
+          tagName.includes('grid-layout')) {
+        return true;
+      }
+      
+      if (current.parentElement) {
+        current = current.parentElement;
+      } else if (current.getRootNode && current.getRootNode() instanceof ShadowRoot) {
+        current = current.getRootNode().host;
+      } else {
+        break;
+      }
+      
       depth++;
     }
     
-    // If we couldn't find hui-view, assume we're not in dashboard (safer)
+    if (current === document.body || current === document.documentElement || current === document) {
+      return true;
+    }
+    
     return false;
   }
 
-  _updateCard() {
+  _getNavStyles(topOffset, activeColor) {
+    return `
+      #${this._navId} {
+        position: fixed;
+        top: ${topOffset}px;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      
+      #${this._navId} .nav-container {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        padding: 8px 16px;
+        border-radius: 50px;
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 
+          inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+          inset -1px -1px 3px rgba(255, 255, 255, 0.08),
+          0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      
+      #${this._navId} .nav-tab {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 20px;
+        margin: 0 4px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 25px;
+        white-space: nowrap;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      #${this._navId} .nav-tab:hover {
+        color: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      
+      #${this._navId} .nav-tab.active {
+        color: ${activeColor};
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      
+      #${this._navId} .nav-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 2px;
+        background: ${activeColor};
+        border-radius: 1px;
+        box-shadow: 0 0 8px ${activeColor};
+      }
+      
+      #${this._navId} .nav-tab:active {
+        transform: scale(0.96);
+      }
+      
+      #${this._navId} .nav-tab ha-icon {
+        --mdc-icon-size: 18px;
+        transition: all 0.25s ease;
+      }
+      
+      #${this._navId} .nav-tab.active ha-icon {
+        filter: drop-shadow(0 0 4px ${activeColor});
+      }
+      
+      #${this._navId} .nav-tab-text {
+        line-height: 1;
+      }
+      
+      #${this._navId} .nav-tab.icon-only {
+        padding: 12px 16px;
+      }
+      
+      #${this._navId} .nav-tab.icon-only .nav-tab-text {
+        display: none;
+      }
+      
+      @media (max-width: 768px) {
+        #${this._navId} .nav-container {
+          padding: 6px 12px;
+        }
+        #${this._navId} .nav-tab {
+          padding: 8px 14px;
+          font-size: 11px;
+          letter-spacing: 1.5px;
+        }
+        #${this._navId} .nav-tab ha-icon {
+          --mdc-icon-size: 16px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        #${this._navId} .nav-tab {
+          padding: 8px 10px;
+          font-size: 10px;
+          letter-spacing: 1px;
+          margin: 0 2px;
+        }
+        #${this._navId} .nav-tab.icon-only {
+          padding: 10px 12px;
+        }
+      }
+    `;
+  }
+
+  _createExternalNav() {
     if (!this._config) return;
     
     const tabs = this._config.tabs || [];
     const activeColor = this._config.active_color || '#2196f3';
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
+    const topOffset = this._config.top_offset || 16;
     
-    // Only enable sticky if we're actually in the dashboard view (not editor/preview)
-    const isInDashboard = this._isInDashboardView();
-    const stickyPosition = this._config.sticky_position && isInDashboard;
+    // Remove existing
+    this._removeExternalNav();
     
-    // Re-check current path
-    this._currentPath = this._getCurrentPath();
-
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: ${stickyPosition ? 'block' : 'flex'};
-          justify-content: center;
-          width: 100%;
-          box-sizing: border-box;
-          ${stickyPosition ? `
-            height: 0 !important;
-            min-height: 0 !important;
-            max-height: 0 !important;
-            overflow: visible;
-            margin: 0 !important;
-            padding: 0 !important;
-          ` : ''}
-        }
-        
-        .nav-wrapper {
-          ${stickyPosition ? `
-            position: fixed;
-            top: 16px;
-            left: 0;
-            right: 0;
-            z-index: 999;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
-          ` : `
-            display: flex;
-            justify-content: center;
-            width: 100%;
-          `}
-        }
-        
-        .nav-container {
-          ${stickyPosition ? 'pointer-events: auto;' : ''}
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0;
-          padding: 8px 16px;
-          border-radius: 50px;
-          background: rgba(0, 0, 0, 0.25);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 
-            inset 2px 2px 5px rgba(0, 0, 0, 0.5),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.08),
-            0 8px 32px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .nav-tab {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 10px 20px;
-          margin: 0 4px;
-          border: none;
-          background: transparent;
-          color: rgba(255, 255, 255, 0.5);
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 13px;
-          font-weight: 400;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          border-radius: 25px;
-          white-space: nowrap;
-          outline: none;
-          -webkit-tap-highlight-color: transparent;
-        }
-        
-        .nav-tab:hover {
-          color: rgba(255, 255, 255, 0.85);
-          background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .nav-tab.active {
-          color: ${activeColor};
-          font-weight: 600;
-          background: rgba(255, 255, 255, 0.08);
-          box-shadow: 
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .nav-tab.active::after {
-          content: '';
-          position: absolute;
-          bottom: 4px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 20px;
-          height: 2px;
-          background: ${activeColor};
-          border-radius: 1px;
-          box-shadow: 0 0 8px ${activeColor};
-        }
-        
-        .nav-tab:active {
-          transform: scale(0.96);
-        }
-        
-        .nav-tab ha-icon {
-          --mdc-icon-size: 18px;
-          transition: all 0.25s ease;
-        }
-        
-        .nav-tab.active ha-icon {
-          filter: drop-shadow(0 0 4px ${activeColor});
-        }
-        
-        .nav-tab-text {
-          line-height: 1;
-        }
-        
-        /* Icon only mode */
-        .nav-tab.icon-only {
-          padding: 12px 16px;
-        }
-        
-        .nav-tab.icon-only .nav-tab-text {
-          display: none;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .nav-container {
-            padding: 6px 12px;
-          }
-          
-          .nav-tab {
-            padding: 8px 14px;
-            font-size: 11px;
-            letter-spacing: 1.5px;
-          }
-          
-          .nav-tab ha-icon {
-            --mdc-icon-size: 16px;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .nav-tab {
-            padding: 8px 10px;
-            font-size: 10px;
-            letter-spacing: 1px;
-            margin: 0 2px;
-          }
-          
-          .nav-tab.icon-only {
-            padding: 10px 12px;
-          }
-        }
-      </style>
+    // Create style element for nav
+    let styleEl = document.getElementById(this._navId + '-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = this._navId + '-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = this._getNavStyles(topOffset, activeColor);
+    
+    // Create nav element
+    this._externalNav = document.createElement('div');
+    this._externalNav.id = this._navId;
+    
+    const tabsHTML = tabs.map(tab => {
+      const isActive = this._isTabActive(tab);
+      const hasIcon = showIcons && tab.icon;
+      const isIconOnly = iconOnly && tab.icon;
       
-      <div class="nav-wrapper">
-        <div class="nav-container">
-          ${tabs.map(tab => {
-            const isActive = this._isTabActive(tab);
-            const hasIcon = showIcons && tab.icon;
-            const isIconOnly = iconOnly && tab.icon;
-            
-            return `
-              <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
-                      data-path="${tab.path || ''}">
-                ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
-                <span class="nav-tab-text">${tab.name || ''}</span>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-
-    // Add event listeners
-    this._setupEventListeners();
-  }
-
-  _setupEventListeners() {
-    const tabs = this.shadowRoot.querySelectorAll('.nav-tab');
-    tabs.forEach(tabElement => {
+      return `
+        <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
+                data-path="${tab.path || ''}">
+          ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
+          <span class="nav-tab-text">${tab.name || ''}</span>
+        </button>
+      `;
+    }).join('');
+    
+    this._externalNav.innerHTML = `<div class="nav-container">${tabsHTML}</div>`;
+    
+    // Append to body
+    document.body.appendChild(this._externalNav);
+    
+    // Add event listeners to external nav
+    const tabButtons = this._externalNav.querySelectorAll('.nav-tab');
+    tabButtons.forEach(tabElement => {
       tabElement.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -31499,6 +32421,204 @@ class PrismNavigationCard extends HTMLElement {
       });
     });
   }
+
+  _updateCard() {
+    if (!this._config) return;
+    
+    const isInDashboard = this._isInDashboardView();
+    const isEditMode = this._isInEditMode();
+    const stickyPosition = this._config.sticky_position && isInDashboard && !isEditMode;
+    
+    this._currentPath = this._getCurrentPath();
+    
+    // In edit mode, show a visible placeholder so user can click to edit
+    if (isEditMode && this._config.sticky_position && isInDashboard) {
+      // Remove external nav in edit mode
+      this._removeExternalNav();
+      
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: block !important;
+            width: 100%;
+          }
+          .edit-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            background: rgba(33, 150, 243, 0.15);
+            border: 2px dashed rgba(33, 150, 243, 0.5);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+          }
+          .edit-placeholder ha-icon {
+            --mdc-icon-size: 24px;
+            color: #2196f3;
+          }
+          .edit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          .edit-title {
+            font-weight: 600;
+            color: #2196f3;
+          }
+          .edit-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+          }
+        </style>
+        <div class="edit-placeholder">
+          <ha-icon icon="mdi:navigation"></ha-icon>
+          <div class="edit-info">
+            <span class="edit-title">Prism Navigation</span>
+            <span class="edit-subtitle">Klicke hier zum Bearbeiten • ${this._config.tabs?.length || 0} Tabs konfiguriert</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    if (stickyPosition) {
+      // Use external navigation (injected into body)
+      this._createExternalNav();
+      
+      // Hide the card itself completely
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: none !important;
+          }
+        </style>
+      `;
+    } else {
+      // Remove any external nav
+      this._removeExternalNav();
+      
+      // Render inline (for editor preview or non-sticky mode)
+      const tabs = this._config.tabs || [];
+      const activeColor = this._config.active_color || '#2196f3';
+      const showIcons = this._config.show_icons;
+      const iconOnly = this._config.icon_only;
+      
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          
+          .nav-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+          }
+          
+          .nav-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 
+              inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+              inset -1px -1px 3px rgba(255, 255, 255, 0.08),
+              0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          
+          .nav-tab {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            margin: 0 4px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 25px;
+            white-space: nowrap;
+            outline: none;
+          }
+          
+          .nav-tab:hover {
+            color: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.05);
+          }
+          
+          .nav-tab.active {
+            color: ${activeColor};
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.08);
+          }
+          
+          .nav-tab ha-icon {
+            --mdc-icon-size: 18px;
+          }
+          
+          .nav-tab-text {
+            line-height: 1;
+          }
+          
+          .nav-tab.icon-only .nav-tab-text {
+            display: none;
+          }
+        </style>
+        
+        <div class="nav-wrapper">
+          <div class="nav-container">
+            ${tabs.map(tab => {
+              const isActive = this._isTabActive(tab);
+              const hasIcon = showIcons && tab.icon;
+              const isIconOnly = iconOnly && tab.icon;
+              
+              return `
+                <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
+                        data-path="${tab.path || ''}">
+                  ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
+                  <span class="nav-tab-text">${tab.name || ''}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners
+      const tabButtons = this.shadowRoot.querySelectorAll('.nav-tab');
+      tabButtons.forEach(tabElement => {
+        tabElement.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const path = tabElement.dataset.path;
+          const tab = this._config.tabs.find(t => t.path === path);
+          if (tab) {
+            this._handleTabClick(tab);
+          }
+        });
+      });
+    }
+  }
 }
 
 customElements.define('prism-navigation', PrismNavigationCard);
@@ -31509,6 +32629,87 @@ window.customCards.push({
   name: "Prism Navigation",
   preview: true,
   description: "A centered navigation bar for switching between dashboard views with glassmorphism styling"
+});
+
+})();
+
+// ============================================
+// prism-spacer.js
+// ============================================
+(function() {
+/**
+ * Prism Spacer Card
+ * A simple invisible spacer/placeholder card with configurable height
+ * Perfect for creating space below navigation bars
+ */
+
+class PrismSpacerCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  static getStubConfig() {
+    return {
+      height: 60
+    };
+  }
+
+  static getConfigForm() {
+    return {
+      schema: [
+        {
+          name: "height",
+          label: "Height (px)",
+          selector: { number: { min: 0, max: 500, step: 5, unit_of_measurement: "px", mode: "slider" } }
+        }
+      ]
+    };
+  }
+
+  setConfig(config) {
+    this._config = {
+      height: config.height !== undefined ? config.height : 60
+    };
+    this._render();
+  }
+
+  set hass(hass) {
+    // Not needed, but required by HA
+  }
+
+  getCardSize() {
+    return 1;
+  }
+
+  _render() {
+    const height = this._config.height || 60;
+    
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+        }
+        .spacer {
+          height: ${height}px;
+          width: 100%;
+          background: transparent;
+          pointer-events: none;
+        }
+      </style>
+      <div class="spacer"></div>
+    `;
+  }
+}
+
+customElements.define('prism-spacer', PrismSpacerCard);
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "prism-spacer",
+  name: "Prism Spacer",
+  preview: true,
+  description: "An invisible spacer card with configurable height - perfect for creating space below navigation"
 });
 
 })();

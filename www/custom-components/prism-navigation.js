@@ -1,6 +1,7 @@
 /**
  * Prism Navigation Card
  * A centered navigation bar for dashboard views with glassmorphism styling
+ * Uses external DOM injection to avoid grid layout issues
  */
 
 class PrismNavigationCard extends HTMLElement {
@@ -10,6 +11,8 @@ class PrismNavigationCard extends HTMLElement {
     this._hass = null;
     this._config = null;
     this._currentPath = '';
+    this._externalNav = null;
+    this._navId = 'prism-nav-' + Math.random().toString(36).substr(2, 9);
   }
 
   static getStubConfig() {
@@ -22,7 +25,8 @@ class PrismNavigationCard extends HTMLElement {
       tab_2_icon: "",
       active_color: "#2196f3",
       show_icons: true,
-      sticky_position: true
+      sticky_position: true,
+      top_offset: 16
     };
   }
 
@@ -33,6 +37,11 @@ class PrismNavigationCard extends HTMLElement {
           name: "sticky_position",
           label: "Fixed position at top (recommended for grid layouts)",
           selector: { boolean: {} }
+        },
+        {
+          name: "top_offset",
+          label: "Top Offset (px) - Distance from top when sticky",
+          selector: { number: { min: 0, max: 200, step: 1, unit_of_measurement: "px", mode: "slider" } }
         },
         {
           name: "active_color",
@@ -146,16 +155,13 @@ class PrismNavigationCard extends HTMLElement {
     let tabs = [];
     
     if (config.tabs && Array.isArray(config.tabs)) {
-      // Legacy support: tabs array directly provided
       tabs = config.tabs;
     } else {
-      // New format: individual tab_X_name, tab_X_path, tab_X_icon fields
       for (let i = 1; i <= 8; i++) {
         const name = config[`tab_${i}_name`];
         const path = config[`tab_${i}_path`];
         const icon = config[`tab_${i}_icon`];
         
-        // Only add tab if at least name OR path is defined
         if (name || path) {
           tabs.push({
             name: name || path || `Tab ${i}`,
@@ -176,7 +182,8 @@ class PrismNavigationCard extends HTMLElement {
       active_color: this._normalizeColor(config.active_color) || '#2196f3',
       show_icons: config.show_icons || false,
       icon_only: config.icon_only || false,
-      sticky_position: config.sticky_position !== false // Default true
+      sticky_position: config.sticky_position !== false,
+      top_offset: config.top_offset !== undefined ? config.top_offset : 16
     };
     
     this._updateCard();
@@ -194,7 +201,6 @@ class PrismNavigationCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    // Get current path from URL
     this._currentPath = this._getCurrentPath();
     if (this._config) {
       this._updateCard();
@@ -202,20 +208,16 @@ class PrismNavigationCard extends HTMLElement {
   }
 
   _getCurrentPath() {
-    // Try to get the current view path from the URL
     const path = window.location.pathname;
-    // Extract view name from path like /lovelace/erdgeschoss or /dashboard-name/view-name
     const match = path.match(/\/([^\/]+)\/([^\/]+)$/);
-    if (match) {
-      return match[2];
-    }
-    // Fallback: try to get from hash
+    if (match) return match[2];
+    
     const hash = window.location.hash;
     if (hash) {
       const hashMatch = hash.match(/#([^\/]+)/);
       if (hashMatch) return hashMatch[1];
     }
-    // Default to first segment after lovelace
+    
     const segments = path.split('/').filter(s => s);
     if (segments.length >= 2 && segments[0].includes('lovelace')) {
       return segments[1];
@@ -227,27 +229,55 @@ class PrismNavigationCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 1;
+    // Return 0 when sticky to not take up grid space
+    return this._config?.sticky_position ? 0 : 1;
   }
 
   connectedCallback() {
     if (this._config) {
       this._updateCard();
+      
+      // Delayed update for sticky detection
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (this._config) {
+            this._updateCard();
+          }
+        }, 150);
+      });
     }
     
-    // Listen for URL changes to update active state
-    window.addEventListener('popstate', () => this._handlePathChange());
-    window.addEventListener('location-changed', () => this._handlePathChange());
-    
-    // Also listen for custom event from HA
-    window.addEventListener('hass-more-info', () => {
-      setTimeout(() => this._handlePathChange(), 100);
-    });
+    // Listen for URL changes
+    this._boundPathChange = () => this._handlePathChange();
+    window.addEventListener('popstate', this._boundPathChange);
+    window.addEventListener('location-changed', this._boundPathChange);
   }
 
   disconnectedCallback() {
-    window.removeEventListener('popstate', () => this._handlePathChange());
-    window.removeEventListener('location-changed', () => this._handlePathChange());
+    // Remove external navigation when card is disconnected
+    this._removeExternalNav();
+    
+    if (this._boundPathChange) {
+      window.removeEventListener('popstate', this._boundPathChange);
+      window.removeEventListener('location-changed', this._boundPathChange);
+    }
+  }
+
+  _removeExternalNav() {
+    if (this._externalNav && this._externalNav.parentNode) {
+      this._externalNav.parentNode.removeChild(this._externalNav);
+      this._externalNav = null;
+    }
+    // Also try to find and remove by ID
+    const existing = document.getElementById(this._navId);
+    if (existing) {
+      existing.remove();
+    }
+    // Remove style from head
+    const styleEl = document.getElementById(this._navId + '-style');
+    if (styleEl) {
+      styleEl.remove();
+    }
   }
 
   _handlePathChange() {
@@ -268,7 +298,6 @@ class PrismNavigationCard extends HTMLElement {
   _handleTabClick(tab) {
     if (!tab.path) return;
     
-    // Navigate to the view
     const event = new CustomEvent('hass-navigate', {
       bubbles: true,
       composed: true,
@@ -276,255 +305,280 @@ class PrismNavigationCard extends HTMLElement {
     });
     this.dispatchEvent(event);
     
-    // Fallback: direct navigation
     const currentUrl = window.location.pathname;
     const basePath = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
     const newPath = `${basePath}/${tab.path}`;
     
-    // Use History API
     history.pushState(null, '', newPath);
     window.dispatchEvent(new Event('location-changed'));
     
-    // Update state immediately
     this._currentPath = tab.path;
     this._updateCard();
   }
 
-  _isInDashboardView() {
-    // Only enable sticky if we're actually in a hui-view (real dashboard)
-    // This prevents fixed positioning in editor dialogs, card pickers, previews, etc.
-    let parent = this.parentElement;
-    let depth = 0;
-    const maxDepth = 20; // Prevent infinite loops
+  _isInEditMode() {
+    // Check if dashboard is in edit mode
+    // Method 1: Check URL for edit parameter
+    if (window.location.search.includes('edit=1')) {
+      return true;
+    }
     
-    while (parent && depth < maxDepth) {
-      const tagName = parent.tagName?.toLowerCase() || '';
-      
-      // If we find hui-view, we're in the actual dashboard
-      if (tagName === 'hui-view' || tagName === 'hui-panel-view') {
-        return true;
+    // Method 2: Check for edit mode indicators in DOM
+    const editToolbar = document.querySelector('hui-editor, hui-card-options, .edit-mode');
+    if (editToolbar) {
+      return true;
+    }
+    
+    // Method 3: Check for edit button being active
+    const root = document.querySelector('home-assistant');
+    if (root && root.shadowRoot) {
+      const panel = root.shadowRoot.querySelector('ha-panel-lovelace');
+      if (panel && panel.shadowRoot) {
+        const huiRoot = panel.shadowRoot.querySelector('hui-root');
+        if (huiRoot && huiRoot.shadowRoot) {
+          const editMode = huiRoot.shadowRoot.querySelector('.edit-mode');
+          if (editMode) return true;
+        }
       }
+    }
+    
+    return false;
+  }
+
+  _isInDashboardView() {
+    // Check if we're in a real dashboard view (not editor/preview)
+    let current = this;
+    let depth = 0;
+    const maxDepth = 50;
+    
+    while (current && depth < maxDepth) {
+      const tagName = current.tagName?.toLowerCase() || '';
+      const className = typeof current.className === 'string' ? current.className : '';
       
-      // If we find these, we're definitely NOT in the dashboard view
+      // Editor/preview contexts
       if (tagName.includes('dialog') || 
           tagName.includes('picker') ||
           tagName.includes('editor') ||
           tagName === 'hui-card-preview' ||
           tagName === 'hui-card-element-editor' ||
-          parent.classList?.contains('preview') ||
-          parent.classList?.contains('element-preview')) {
+          className.includes('preview') ||
+          className.includes('element-preview') ||
+          className.includes('card-picker')) {
         return false;
       }
       
-      parent = parent.parentElement;
+      // Dashboard view contexts
+      if (tagName === 'hui-view' || 
+          tagName === 'hui-panel-view' ||
+          tagName === 'hui-root' ||
+          tagName === 'home-assistant' ||
+          tagName === 'hui-masonry-view' ||
+          tagName === 'hui-sections-view' ||
+          tagName.includes('grid-layout')) {
+        return true;
+      }
+      
+      if (current.parentElement) {
+        current = current.parentElement;
+      } else if (current.getRootNode && current.getRootNode() instanceof ShadowRoot) {
+        current = current.getRootNode().host;
+      } else {
+        break;
+      }
+      
       depth++;
     }
     
-    // If we couldn't find hui-view, assume we're not in dashboard (safer)
+    if (current === document.body || current === document.documentElement || current === document) {
+      return true;
+    }
+    
     return false;
   }
 
-  _updateCard() {
+  _getNavStyles(topOffset, activeColor) {
+    return `
+      #${this._navId} {
+        position: fixed;
+        top: ${topOffset}px;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      
+      #${this._navId} .nav-container {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        padding: 8px 16px;
+        border-radius: 50px;
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 
+          inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+          inset -1px -1px 3px rgba(255, 255, 255, 0.08),
+          0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      
+      #${this._navId} .nav-tab {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 20px;
+        margin: 0 4px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 25px;
+        white-space: nowrap;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      #${this._navId} .nav-tab:hover {
+        color: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      
+      #${this._navId} .nav-tab.active {
+        color: ${activeColor};
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      
+      #${this._navId} .nav-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 2px;
+        background: ${activeColor};
+        border-radius: 1px;
+        box-shadow: 0 0 8px ${activeColor};
+      }
+      
+      #${this._navId} .nav-tab:active {
+        transform: scale(0.96);
+      }
+      
+      #${this._navId} .nav-tab ha-icon {
+        --mdc-icon-size: 18px;
+        transition: all 0.25s ease;
+      }
+      
+      #${this._navId} .nav-tab.active ha-icon {
+        filter: drop-shadow(0 0 4px ${activeColor});
+      }
+      
+      #${this._navId} .nav-tab-text {
+        line-height: 1;
+      }
+      
+      #${this._navId} .nav-tab.icon-only {
+        padding: 12px 16px;
+      }
+      
+      #${this._navId} .nav-tab.icon-only .nav-tab-text {
+        display: none;
+      }
+      
+      @media (max-width: 768px) {
+        #${this._navId} .nav-container {
+          padding: 6px 12px;
+        }
+        #${this._navId} .nav-tab {
+          padding: 8px 14px;
+          font-size: 11px;
+          letter-spacing: 1.5px;
+        }
+        #${this._navId} .nav-tab ha-icon {
+          --mdc-icon-size: 16px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        #${this._navId} .nav-tab {
+          padding: 8px 10px;
+          font-size: 10px;
+          letter-spacing: 1px;
+          margin: 0 2px;
+        }
+        #${this._navId} .nav-tab.icon-only {
+          padding: 10px 12px;
+        }
+      }
+    `;
+  }
+
+  _createExternalNav() {
     if (!this._config) return;
     
     const tabs = this._config.tabs || [];
     const activeColor = this._config.active_color || '#2196f3';
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
+    const topOffset = this._config.top_offset || 16;
     
-    // Only enable sticky if we're actually in the dashboard view (not editor/preview)
-    const isInDashboard = this._isInDashboardView();
-    const stickyPosition = this._config.sticky_position && isInDashboard;
+    // Remove existing
+    this._removeExternalNav();
     
-    // Re-check current path
-    this._currentPath = this._getCurrentPath();
-
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: ${stickyPosition ? 'block' : 'flex'};
-          justify-content: center;
-          width: 100%;
-          box-sizing: border-box;
-          ${stickyPosition ? `
-            height: 0 !important;
-            min-height: 0 !important;
-            max-height: 0 !important;
-            overflow: visible;
-            margin: 0 !important;
-            padding: 0 !important;
-          ` : ''}
-        }
-        
-        .nav-wrapper {
-          ${stickyPosition ? `
-            position: fixed;
-            top: 16px;
-            left: 0;
-            right: 0;
-            z-index: 999;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
-          ` : `
-            display: flex;
-            justify-content: center;
-            width: 100%;
-          `}
-        }
-        
-        .nav-container {
-          ${stickyPosition ? 'pointer-events: auto;' : ''}
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0;
-          padding: 8px 16px;
-          border-radius: 50px;
-          background: rgba(0, 0, 0, 0.25);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 
-            inset 2px 2px 5px rgba(0, 0, 0, 0.5),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.08),
-            0 8px 32px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .nav-tab {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 10px 20px;
-          margin: 0 4px;
-          border: none;
-          background: transparent;
-          color: rgba(255, 255, 255, 0.5);
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 13px;
-          font-weight: 400;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          border-radius: 25px;
-          white-space: nowrap;
-          outline: none;
-          -webkit-tap-highlight-color: transparent;
-        }
-        
-        .nav-tab:hover {
-          color: rgba(255, 255, 255, 0.85);
-          background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .nav-tab.active {
-          color: ${activeColor};
-          font-weight: 600;
-          background: rgba(255, 255, 255, 0.08);
-          box-shadow: 
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .nav-tab.active::after {
-          content: '';
-          position: absolute;
-          bottom: 4px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 20px;
-          height: 2px;
-          background: ${activeColor};
-          border-radius: 1px;
-          box-shadow: 0 0 8px ${activeColor};
-        }
-        
-        .nav-tab:active {
-          transform: scale(0.96);
-        }
-        
-        .nav-tab ha-icon {
-          --mdc-icon-size: 18px;
-          transition: all 0.25s ease;
-        }
-        
-        .nav-tab.active ha-icon {
-          filter: drop-shadow(0 0 4px ${activeColor});
-        }
-        
-        .nav-tab-text {
-          line-height: 1;
-        }
-        
-        /* Icon only mode */
-        .nav-tab.icon-only {
-          padding: 12px 16px;
-        }
-        
-        .nav-tab.icon-only .nav-tab-text {
-          display: none;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .nav-container {
-            padding: 6px 12px;
-          }
-          
-          .nav-tab {
-            padding: 8px 14px;
-            font-size: 11px;
-            letter-spacing: 1.5px;
-          }
-          
-          .nav-tab ha-icon {
-            --mdc-icon-size: 16px;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .nav-tab {
-            padding: 8px 10px;
-            font-size: 10px;
-            letter-spacing: 1px;
-            margin: 0 2px;
-          }
-          
-          .nav-tab.icon-only {
-            padding: 10px 12px;
-          }
-        }
-      </style>
+    // Create style element for nav
+    let styleEl = document.getElementById(this._navId + '-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = this._navId + '-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = this._getNavStyles(topOffset, activeColor);
+    
+    // Create nav element
+    this._externalNav = document.createElement('div');
+    this._externalNav.id = this._navId;
+    
+    const tabsHTML = tabs.map(tab => {
+      const isActive = this._isTabActive(tab);
+      const hasIcon = showIcons && tab.icon;
+      const isIconOnly = iconOnly && tab.icon;
       
-      <div class="nav-wrapper">
-        <div class="nav-container">
-          ${tabs.map(tab => {
-            const isActive = this._isTabActive(tab);
-            const hasIcon = showIcons && tab.icon;
-            const isIconOnly = iconOnly && tab.icon;
-            
-            return `
-              <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
-                      data-path="${tab.path || ''}">
-                ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
-                <span class="nav-tab-text">${tab.name || ''}</span>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-
-    // Add event listeners
-    this._setupEventListeners();
-  }
-
-  _setupEventListeners() {
-    const tabs = this.shadowRoot.querySelectorAll('.nav-tab');
-    tabs.forEach(tabElement => {
+      return `
+        <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
+                data-path="${tab.path || ''}">
+          ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
+          <span class="nav-tab-text">${tab.name || ''}</span>
+        </button>
+      `;
+    }).join('');
+    
+    this._externalNav.innerHTML = `<div class="nav-container">${tabsHTML}</div>`;
+    
+    // Append to body
+    document.body.appendChild(this._externalNav);
+    
+    // Add event listeners to external nav
+    const tabButtons = this._externalNav.querySelectorAll('.nav-tab');
+    tabButtons.forEach(tabElement => {
       tabElement.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -535,6 +589,204 @@ class PrismNavigationCard extends HTMLElement {
         }
       });
     });
+  }
+
+  _updateCard() {
+    if (!this._config) return;
+    
+    const isInDashboard = this._isInDashboardView();
+    const isEditMode = this._isInEditMode();
+    const stickyPosition = this._config.sticky_position && isInDashboard && !isEditMode;
+    
+    this._currentPath = this._getCurrentPath();
+    
+    // In edit mode, show a visible placeholder so user can click to edit
+    if (isEditMode && this._config.sticky_position && isInDashboard) {
+      // Remove external nav in edit mode
+      this._removeExternalNav();
+      
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: block !important;
+            width: 100%;
+          }
+          .edit-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            background: rgba(33, 150, 243, 0.15);
+            border: 2px dashed rgba(33, 150, 243, 0.5);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+          }
+          .edit-placeholder ha-icon {
+            --mdc-icon-size: 24px;
+            color: #2196f3;
+          }
+          .edit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          .edit-title {
+            font-weight: 600;
+            color: #2196f3;
+          }
+          .edit-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+          }
+        </style>
+        <div class="edit-placeholder">
+          <ha-icon icon="mdi:navigation"></ha-icon>
+          <div class="edit-info">
+            <span class="edit-title">Prism Navigation</span>
+            <span class="edit-subtitle">Klicke hier zum Bearbeiten • ${this._config.tabs?.length || 0} Tabs konfiguriert</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    if (stickyPosition) {
+      // Use external navigation (injected into body)
+      this._createExternalNav();
+      
+      // Hide the card itself completely
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: none !important;
+          }
+        </style>
+      `;
+    } else {
+      // Remove any external nav
+      this._removeExternalNav();
+      
+      // Render inline (for editor preview or non-sticky mode)
+      const tabs = this._config.tabs || [];
+      const activeColor = this._config.active_color || '#2196f3';
+      const showIcons = this._config.show_icons;
+      const iconOnly = this._config.icon_only;
+      
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          
+          .nav-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+          }
+          
+          .nav-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 
+              inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+              inset -1px -1px 3px rgba(255, 255, 255, 0.08),
+              0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          
+          .nav-tab {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            margin: 0 4px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 25px;
+            white-space: nowrap;
+            outline: none;
+          }
+          
+          .nav-tab:hover {
+            color: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.05);
+          }
+          
+          .nav-tab.active {
+            color: ${activeColor};
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.08);
+          }
+          
+          .nav-tab ha-icon {
+            --mdc-icon-size: 18px;
+          }
+          
+          .nav-tab-text {
+            line-height: 1;
+          }
+          
+          .nav-tab.icon-only .nav-tab-text {
+            display: none;
+          }
+        </style>
+        
+        <div class="nav-wrapper">
+          <div class="nav-container">
+            ${tabs.map(tab => {
+              const isActive = this._isTabActive(tab);
+              const hasIcon = showIcons && tab.icon;
+              const isIconOnly = iconOnly && tab.icon;
+              
+              return `
+                <button class="nav-tab ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}" 
+                        data-path="${tab.path || ''}">
+                  ${hasIcon || isIconOnly ? `<ha-icon icon="${tab.icon}"></ha-icon>` : ''}
+                  <span class="nav-tab-text">${tab.name || ''}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners
+      const tabButtons = this.shadowRoot.querySelectorAll('.nav-tab');
+      tabButtons.forEach(tabElement => {
+        tabElement.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const path = tabElement.dataset.path;
+          const tab = this._config.tabs.find(t => t.path === path);
+          if (tab) {
+            this._handleTabClick(tab);
+          }
+        });
+      });
+    }
   }
 }
 

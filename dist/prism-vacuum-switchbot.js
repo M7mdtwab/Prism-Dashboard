@@ -896,6 +896,283 @@ class PrismVacuumSwitchbotCard extends HTMLElement {
           .level-btn.active .level-line.water { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
           .level-btn.active .level-text { color: rgba(255,255,255,0.8); }
 
+          /* Responsive: Tablet (768px - 1400px) */
+          @media (max-width: 1400px) {
+            .card {
+              padding: 16px;
+              gap: 16px;
+              border-radius: 20px;
+            }
+            .header {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 36px;
+              height: 36px;
+              min-width: 36px;
+              min-height: 36px;
+            }
+            .icon-box ha-icon {
+              width: 20px;
+              height: 20px;
+              --mdc-icon-size: 20px;
+            }
+            .title {
+              font-size: 1rem;
+            }
+            .subtitle {
+              font-size: 0.7rem;
+            }
+            .play-btn {
+              width: 36px;
+              height: 36px;
+            }
+            .play-btn ha-icon {
+              width: 18px;
+              height: 18px;
+            }
+            .vacuum-inlet {
+              height: 140px;
+              border-radius: 14px;
+            }
+            .vacuum-body {
+              width: 80px;
+              height: 80px;
+            }
+            .lidar {
+              width: 30px;
+              height: 30px;
+            }
+            .lidar-dot {
+              width: 6px;
+              height: 6px;
+            }
+            .led {
+              width: 16px;
+              height: 5px;
+              bottom: 16px;
+            }
+            .controls-row {
+              gap: 10px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 8px;
+            }
+            .tab-container {
+              padding: 2px;
+            }
+            .tab-btn {
+              width: 28px;
+              height: 24px;
+              border-radius: 14px;
+            }
+            .tab-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            /* Scene Selector auf Tablet */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+            .scene-btn {
+              padding: 4px 8px;
+              height: 24px;
+              border-radius: 8px;
+              font-size: 8px;
+            }
+            .scene-btn ha-icon {
+              width: 10px;
+              height: 10px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .home-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .speed-controls {
+              gap: 6px;
+            }
+            .level-bar {
+              height: 34px;
+              border-radius: 10px;
+            }
+            .level-text {
+              font-size: 7px;
+            }
+          }
+
+          /* Responsive: Mobile / Small Tablet (< 768px) */
+          @media (max-width: 768px) {
+            .card {
+              padding: 14px;
+              gap: 14px;
+              border-radius: 18px;
+            }
+            .header {
+              gap: 8px;
+            }
+            .header-left {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 32px;
+              height: 32px;
+              min-width: 32px;
+              min-height: 32px;
+            }
+            .icon-box ha-icon {
+              width: 18px;
+              height: 18px;
+              --mdc-icon-size: 18px;
+            }
+            .title {
+              font-size: 0.9rem;
+            }
+            .subtitle {
+              font-size: 0.65rem;
+              gap: 6px;
+            }
+            .battery-info ha-icon {
+              width: 12px;
+              height: 12px;
+            }
+            .water-base-battery ha-icon {
+              width: 10px;
+              height: 10px;
+            }
+            .status-badge {
+              padding: 2px 4px;
+              font-size: 8px;
+            }
+            .status-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .play-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .play-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .vacuum-inlet {
+              height: 120px;
+              border-radius: 12px;
+            }
+            .vacuum-body {
+              width: 70px;
+              height: 70px;
+            }
+            .lidar {
+              width: 26px;
+              height: 26px;
+            }
+            .lidar-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .led {
+              width: 14px;
+              height: 4px;
+              bottom: 14px;
+            }
+            .controls-row {
+              gap: 8px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 6px;
+            }
+            .tab-container {
+              padding: 2px;
+              border-radius: 16px;
+            }
+            .tab-btn {
+              width: 26px;
+              height: 22px;
+              border-radius: 12px;
+            }
+            .tab-btn ha-icon {
+              width: 13px;
+              height: 13px;
+            }
+            /* Scene Selector auf Mobile */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+              order: 3;
+              width: 100%;
+              margin-top: 4px;
+            }
+            .scene-btn {
+              padding: 4px 6px;
+              height: 22px;
+              border-radius: 8px;
+              font-size: 7px;
+              flex: 1;
+              min-width: 0;
+              max-width: 120px;
+            }
+            .scene-btn ha-icon {
+              width: 9px;
+              height: 9px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 28px;
+              height: 28px;
+            }
+            .home-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            .speed-controls {
+              gap: 5px;
+            }
+            .level-bar {
+              height: 30px;
+              border-radius: 8px;
+            }
+            .level-text {
+              font-size: 6px;
+            }
+          }
+
+          /* Sehr kleine Bildschirme */
+          @media (max-width: 480px) {
+            .card {
+              padding: 12px;
+              gap: 12px;
+              border-radius: 16px;
+            }
+            .vacuum-inlet {
+              height: 100px;
+            }
+            .vacuum-body {
+              width: 60px;
+              height: 60px;
+            }
+            .controls-header {
+              justify-content: space-between;
+            }
+            .scene-selector {
+              order: 3;
+              width: 100%;
+            }
+            .scene-btn {
+              flex: 1;
+            }
+          }
+
         </style>
         
         <div class="card">

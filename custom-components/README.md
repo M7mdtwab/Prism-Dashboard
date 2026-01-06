@@ -886,9 +886,94 @@ calendar_entity: calendar.events
 
 ## Layout Components
 
-### navigation-bar
+### prism-navigation
 
-<img width="600" alt="navigation-bar" src="https://github.com/user-attachments/assets/8a2d9c3c-fa29-4fee-a9a7-068b8459e351" />
+A floating navigation bar for switching between dashboard views. The navigation hovers at the top of the screen and doesn't take up any space in the grid layout.
+
+<img width="600" alt="prism-navigation" src="https://github.com/user-attachments/assets/8a2d9c3c-fa29-4fee-a9a7-068b8459e351" />
+
+**Features:**
+- ✅ **Floating Position**: Hovers at the top, doesn't take grid space
+- ✅ **Up to 8 Tabs**: Configure tabs via visual editor
+- ✅ **Icons Support**: Optional icons next to or instead of text
+- ✅ **Active Tab Highlight**: Shows current view with accent color
+- ✅ **Glassmorphism Design**: Consistent with other Prism cards
+- ✅ **Edit Mode Support**: Shows clickable placeholder in edit mode
+- ✅ **Customizable Position**: Adjust top offset via slider
+
+**Usage:**
+```yaml
+type: custom:prism-navigation
+tab_1_name: Home
+tab_1_path: home
+tab_1_icon: mdi:home
+tab_2_name: Rooms
+tab_2_path: rooms
+tab_2_icon: mdi:door
+active_color: "#2196f3"
+show_icons: true
+sticky_position: true
+top_offset: 16
+```
+
+**Configuration Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sticky_position` | boolean | `true` | Float at top (recommended) |
+| `top_offset` | number | `16` | Distance from top in pixels |
+| `active_color` | color | `#2196f3` | Highlight color for active tab |
+| `show_icons` | boolean | `false` | Show icons next to text |
+| `icon_only` | boolean | `false` | Show only icons (hide text) |
+| `tab_X_name` | string | - | Tab display name (X = 1-8) |
+| `tab_X_path` | string | - | View path to navigate to |
+| `tab_X_icon` | icon | - | Optional icon (e.g., `mdi:home`) |
+
+**Important:** Since the navigation floats above the content, you need to add space below it so it doesn't overlap your cards. Use **prism-spacer** for this (see below).
+
+---
+
+### prism-spacer
+
+An invisible placeholder card with configurable height. Use this to create space below the floating navigation bar.
+
+**Features:**
+- ✅ **Invisible**: Completely transparent, no visual impact
+- ✅ **Configurable Height**: Slider from 0-500px
+- ✅ **Visual Editor**: Easy configuration
+
+**Usage:**
+```yaml
+type: custom:prism-spacer
+height: 60
+```
+
+**How to use with prism-navigation:**
+
+1. Add `prism-navigation` anywhere in your dashboard (it floats automatically)
+2. Add `prism-spacer` as the **first card** in each column (except sidebar)
+3. Set the spacer height to match the navigation height (~60px)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    🏠 HOME    ROOMS  (prism-navigation - floating)  │
+├──────────────┬──────────────┬──────────────┬───────────────────────│
+│  prism-      │ prism-spacer │ prism-spacer │ prism-spacer          │
+│  sidebar     │ (60px)       │ (60px)       │ (60px)                │
+│              ├──────────────┼──────────────┼───────────────────────│
+│              │ prism-room   │ prism-room   │ prism-room            │
+│              │ Küche        │ ESSEN        │ Wohnzimmer            │
+│              │ ...          │ ...          │ ...                   │
+└──────────────┴──────────────┴──────────────┴───────────────────────┘
+```
+
+**Result:**
+- ✅ Sidebar starts at top (aligned with navigation)
+- ✅ Content columns start below navigation
+- ✅ No overlap issues
+- ✅ All configurable via visual editor!
+
+---
 
 ### sidebar
 
