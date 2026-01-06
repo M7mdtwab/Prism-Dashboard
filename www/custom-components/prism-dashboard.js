@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.0.0
- * Build Date: 2026-01-06T16:21:34.351Z
+ * Build Date: 2026-01-06T16:26:43.015Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -31253,6 +31253,40 @@ class PrismNavigationCard extends HTMLElement {
     this._updateCard();
   }
 
+  _isInDashboardView() {
+    // Only enable sticky if we're actually in a hui-view (real dashboard)
+    // This prevents fixed positioning in editor dialogs, card pickers, previews, etc.
+    let parent = this.parentElement;
+    let depth = 0;
+    const maxDepth = 20; // Prevent infinite loops
+    
+    while (parent && depth < maxDepth) {
+      const tagName = parent.tagName?.toLowerCase() || '';
+      
+      // If we find hui-view, we're in the actual dashboard
+      if (tagName === 'hui-view' || tagName === 'hui-panel-view') {
+        return true;
+      }
+      
+      // If we find these, we're definitely NOT in the dashboard view
+      if (tagName.includes('dialog') || 
+          tagName.includes('picker') ||
+          tagName.includes('editor') ||
+          tagName === 'hui-card-preview' ||
+          tagName === 'hui-card-element-editor' ||
+          parent.classList?.contains('preview') ||
+          parent.classList?.contains('element-preview')) {
+        return false;
+      }
+      
+      parent = parent.parentElement;
+      depth++;
+    }
+    
+    // If we couldn't find hui-view, assume we're not in dashboard (safer)
+    return false;
+  }
+
   _updateCard() {
     if (!this._config) return;
     
@@ -31260,7 +31294,10 @@ class PrismNavigationCard extends HTMLElement {
     const activeColor = this._config.active_color || '#2196f3';
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
-    const stickyPosition = this._config.sticky_position;
+    
+    // Only enable sticky if we're actually in the dashboard view (not editor/preview)
+    const isInDashboard = this._isInDashboardView();
+    const stickyPosition = this._config.sticky_position && isInDashboard;
     
     // Re-check current path
     this._currentPath = this._getCurrentPath();
