@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.5.9
- * Build Date: 2026-01-06T18:32:34.495Z
+ * Build Date: 2026-01-06T18:50:22.925Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -13263,22 +13263,36 @@ class PrismSidebarCard extends HTMLElement {
         const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // Next 14 days
         
         try {
-            const events = await this._hass.callWS({
-                type: 'calendar/event/list',
-                entity_id: this.calendarEntity,
-                start: now.toISOString(),
-                end: endDate.toISOString()
-            });
+            // Use the correct API endpoint for calendar events
+            const response = await this._hass.callApi(
+                'GET',
+                `calendars/${this.calendarEntity}?start=${now.toISOString()}&end=${endDate.toISOString()}`
+            );
             
-            this._showCalendarPopup(events || []);
+            this._showCalendarPopup(response || []);
         } catch (error) {
-            // Fallback: show more-info dialog
-            const event = new CustomEvent('hass-more-info', {
-                bubbles: true,
-                composed: true,
-                detail: { entityId: this.calendarEntity }
-            });
-            this.dispatchEvent(event);
+            console.warn('Calendar API error, trying alternative method:', error);
+            
+            // Try alternative WS method
+            try {
+                const events = await this._hass.callWS({
+                    type: 'calendar/events',
+                    entity_id: this.calendarEntity,
+                    start_date_time: now.toISOString(),
+                    end_date_time: endDate.toISOString()
+                });
+                
+                this._showCalendarPopup(events?.events || events || []);
+            } catch (wsError) {
+                console.warn('Calendar WS error:', wsError);
+                // Fallback: show more-info dialog
+                const event = new CustomEvent('hass-more-info', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { entityId: this.calendarEntity }
+                });
+                this.dispatchEvent(event);
+            }
         }
     }
 
@@ -13399,7 +13413,7 @@ class PrismSidebarCard extends HTMLElement {
         this.dispatchEvent(event);
     }
 
-    _handleWeatherClick() {
+    async _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
         
         // Get weather data
@@ -13417,10 +13431,58 @@ class PrismSidebarCard extends HTMLElement {
             return;
         }
         
-        // Get forecast data
+        // Get forecast data - try modern subscription first, then fall back to attributes
         let forecast = [];
-        if (weatherState.attributes.forecast) {
-            forecast = weatherState.attributes.forecast.slice(0, 7);
+        
+        // Check if legacy weather (has forecast in attributes)
+        if (this.isLegacyWeather()) {
+            // Legacy: Get forecast from attributes
+            if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                forecast = weatherState.attributes.forecast.slice(0, 7);
+            }
+        } else {
+            // Modern: Use subscribeMessage to get forecast
+            try {
+                const forecastData = await new Promise((resolve, reject) => {
+                    let resolved = false;
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            reject(new Error('Timeout'));
+                        }
+                    }, 3000);
+                    
+                    this._hass.connection.subscribeMessage(
+                        (event) => {
+                            if (!resolved && event && event.forecast) {
+                                resolved = true;
+                                clearTimeout(timeout);
+                                resolve(event.forecast);
+                            }
+                        },
+                        {
+                            type: 'weather/subscribe_forecast',
+                            forecast_type: 'daily',
+                            entity_id: this.weatherEntity
+                        },
+                        { resubscribe: false }
+                    ).catch(err => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            reject(err);
+                        }
+                    });
+                });
+                
+                forecast = forecastData.slice(0, 7);
+            } catch (error) {
+                console.warn('Weather forecast subscription error:', error);
+                // Fallback to attributes if subscription fails
+                if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                    forecast = weatherState.attributes.forecast.slice(0, 7);
+                }
+            }
         }
         
         this._showWeatherPopup(weatherState, temperatureState, forecast);
@@ -14908,22 +14970,36 @@ class PrismSidebarLightCard extends HTMLElement {
         const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // Next 14 days
         
         try {
-            const events = await this._hass.callWS({
-                type: 'calendar/event/list',
-                entity_id: this.calendarEntity,
-                start: now.toISOString(),
-                end: endDate.toISOString()
-            });
+            // Use the correct API endpoint for calendar events
+            const response = await this._hass.callApi(
+                'GET',
+                `calendars/${this.calendarEntity}?start=${now.toISOString()}&end=${endDate.toISOString()}`
+            );
             
-            this._showCalendarPopup(events || []);
+            this._showCalendarPopup(response || []);
         } catch (error) {
-            // Fallback: show more-info dialog
-            const event = new CustomEvent('hass-more-info', {
-                bubbles: true,
-                composed: true,
-                detail: { entityId: this.calendarEntity }
-            });
-            this.dispatchEvent(event);
+            console.warn('Calendar API error, trying alternative method:', error);
+            
+            // Try alternative WS method
+            try {
+                const events = await this._hass.callWS({
+                    type: 'calendar/events',
+                    entity_id: this.calendarEntity,
+                    start_date_time: now.toISOString(),
+                    end_date_time: endDate.toISOString()
+                });
+                
+                this._showCalendarPopup(events?.events || events || []);
+            } catch (wsError) {
+                console.warn('Calendar WS error:', wsError);
+                // Fallback: show more-info dialog
+                const event = new CustomEvent('hass-more-info', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { entityId: this.calendarEntity }
+                });
+                this.dispatchEvent(event);
+            }
         }
     }
 
@@ -15219,7 +15295,7 @@ class PrismSidebarLightCard extends HTMLElement {
         this.dispatchEvent(event);
     }
 
-    _handleWeatherClick() {
+    async _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
         
         // Get weather data
@@ -15237,10 +15313,58 @@ class PrismSidebarLightCard extends HTMLElement {
             return;
         }
         
-        // Get forecast data
+        // Get forecast data - try modern subscription first, then fall back to attributes
         let forecast = [];
-        if (weatherState.attributes.forecast) {
-            forecast = weatherState.attributes.forecast.slice(0, 7);
+        
+        // Check if legacy weather (has forecast in attributes)
+        if (this.isLegacyWeather()) {
+            // Legacy: Get forecast from attributes
+            if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                forecast = weatherState.attributes.forecast.slice(0, 7);
+            }
+        } else {
+            // Modern: Use subscribeMessage to get forecast
+            try {
+                const forecastData = await new Promise((resolve, reject) => {
+                    let resolved = false;
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            reject(new Error('Timeout'));
+                        }
+                    }, 3000);
+                    
+                    this._hass.connection.subscribeMessage(
+                        (event) => {
+                            if (!resolved && event && event.forecast) {
+                                resolved = true;
+                                clearTimeout(timeout);
+                                resolve(event.forecast);
+                            }
+                        },
+                        {
+                            type: 'weather/subscribe_forecast',
+                            forecast_type: 'daily',
+                            entity_id: this.weatherEntity
+                        },
+                        { resubscribe: false }
+                    ).catch(err => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            reject(err);
+                        }
+                    });
+                });
+                
+                forecast = forecastData.slice(0, 7);
+            } catch (error) {
+                console.warn('Weather forecast subscription error:', error);
+                // Fallback to attributes if subscription fails
+                if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                    forecast = weatherState.attributes.forecast.slice(0, 7);
+                }
+            }
         }
         
         this._showWeatherPopup(weatherState, temperatureState, forecast);
@@ -31857,7 +31981,8 @@ class PrismNavigationCard extends HTMLElement {
       active_color: "#2196f3",
       show_icons: true,
       sticky_position: true,
-      top_offset: 16
+      top_offset: 16,
+      center_from_column: 1
     };
   }
 
@@ -31873,6 +31998,16 @@ class PrismNavigationCard extends HTMLElement {
           name: "top_offset",
           label: "Top Offset (px) - Distance from top when sticky",
           selector: { number: { min: 0, max: 200, step: 1, unit_of_measurement: "px", mode: "slider" } }
+        },
+        {
+          name: "center_from_column",
+          label: "Center from column (1 = full width, 2 = skip sidebar in column 1, etc.)",
+          selector: { number: { min: 1, max: 8, step: 1, mode: "box" } }
+        },
+        {
+          name: "total_columns",
+          label: "Total columns in dashboard (for centering calculation)",
+          selector: { number: { min: 1, max: 12, step: 1, mode: "box" } }
         },
         {
           name: "active_color",
@@ -32014,7 +32149,9 @@ class PrismNavigationCard extends HTMLElement {
       show_icons: config.show_icons || false,
       icon_only: config.icon_only || false,
       sticky_position: config.sticky_position !== false,
-      top_offset: config.top_offset !== undefined ? config.top_offset : 16
+      top_offset: config.top_offset !== undefined ? config.top_offset : 16,
+      center_from_column: config.center_from_column || 1,
+      total_columns: config.total_columns || 4
     };
     
     this._updateCard();
@@ -32227,12 +32364,17 @@ class PrismNavigationCard extends HTMLElement {
     return false;
   }
 
-  _getNavStyles(topOffset, activeColor) {
+  _getNavStyles(topOffset, activeColor, centerFromColumn = 1, totalColumns = 4) {
+    // Calculate left offset based on column settings
+    // If center_from_column is 2 and total_columns is 4, skip first 25% (1/4) of width
+    const skipColumns = Math.max(0, centerFromColumn - 1);
+    const leftOffset = totalColumns > 0 ? (skipColumns / totalColumns) * 100 : 0;
+    
     return `
       #${this._navId} {
         position: fixed;
         top: ${topOffset}px;
-        left: 0;
+        left: ${leftOffset}%;
         right: 0;
         z-index: 999;
         display: flex;
@@ -32371,6 +32513,8 @@ class PrismNavigationCard extends HTMLElement {
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
     const topOffset = this._config.top_offset || 16;
+    const centerFromColumn = this._config.center_from_column || 1;
+    const totalColumns = this._config.total_columns || 4;
     
     // Remove existing
     this._removeExternalNav();
@@ -32382,7 +32526,7 @@ class PrismNavigationCard extends HTMLElement {
       styleEl.id = this._navId + '-style';
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = this._getNavStyles(topOffset, activeColor);
+    styleEl.textContent = this._getNavStyles(topOffset, activeColor, centerFromColumn, totalColumns);
     
     // Create nav element
     this._externalNav = document.createElement('div');

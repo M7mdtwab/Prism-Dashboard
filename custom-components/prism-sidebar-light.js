@@ -1076,22 +1076,36 @@ class PrismSidebarLightCard extends HTMLElement {
         const endDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // Next 14 days
         
         try {
-            const events = await this._hass.callWS({
-                type: 'calendar/event/list',
-                entity_id: this.calendarEntity,
-                start: now.toISOString(),
-                end: endDate.toISOString()
-            });
+            // Use the correct API endpoint for calendar events
+            const response = await this._hass.callApi(
+                'GET',
+                `calendars/${this.calendarEntity}?start=${now.toISOString()}&end=${endDate.toISOString()}`
+            );
             
-            this._showCalendarPopup(events || []);
+            this._showCalendarPopup(response || []);
         } catch (error) {
-            // Fallback: show more-info dialog
-            const event = new CustomEvent('hass-more-info', {
-                bubbles: true,
-                composed: true,
-                detail: { entityId: this.calendarEntity }
-            });
-            this.dispatchEvent(event);
+            console.warn('Calendar API error, trying alternative method:', error);
+            
+            // Try alternative WS method
+            try {
+                const events = await this._hass.callWS({
+                    type: 'calendar/events',
+                    entity_id: this.calendarEntity,
+                    start_date_time: now.toISOString(),
+                    end_date_time: endDate.toISOString()
+                });
+                
+                this._showCalendarPopup(events?.events || events || []);
+            } catch (wsError) {
+                console.warn('Calendar WS error:', wsError);
+                // Fallback: show more-info dialog
+                const event = new CustomEvent('hass-more-info', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { entityId: this.calendarEntity }
+                });
+                this.dispatchEvent(event);
+            }
         }
     }
 
@@ -1387,7 +1401,7 @@ class PrismSidebarLightCard extends HTMLElement {
         this.dispatchEvent(event);
     }
 
-    _handleWeatherClick() {
+    async _handleWeatherClick() {
         if (!this._hass || !this.weatherEntity) return;
         
         // Get weather data
@@ -1405,10 +1419,58 @@ class PrismSidebarLightCard extends HTMLElement {
             return;
         }
         
-        // Get forecast data
+        // Get forecast data - try modern subscription first, then fall back to attributes
         let forecast = [];
-        if (weatherState.attributes.forecast) {
-            forecast = weatherState.attributes.forecast.slice(0, 7);
+        
+        // Check if legacy weather (has forecast in attributes)
+        if (this.isLegacyWeather()) {
+            // Legacy: Get forecast from attributes
+            if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                forecast = weatherState.attributes.forecast.slice(0, 7);
+            }
+        } else {
+            // Modern: Use subscribeMessage to get forecast
+            try {
+                const forecastData = await new Promise((resolve, reject) => {
+                    let resolved = false;
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            reject(new Error('Timeout'));
+                        }
+                    }, 3000);
+                    
+                    this._hass.connection.subscribeMessage(
+                        (event) => {
+                            if (!resolved && event && event.forecast) {
+                                resolved = true;
+                                clearTimeout(timeout);
+                                resolve(event.forecast);
+                            }
+                        },
+                        {
+                            type: 'weather/subscribe_forecast',
+                            forecast_type: 'daily',
+                            entity_id: this.weatherEntity
+                        },
+                        { resubscribe: false }
+                    ).catch(err => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            reject(err);
+                        }
+                    });
+                });
+                
+                forecast = forecastData.slice(0, 7);
+            } catch (error) {
+                console.warn('Weather forecast subscription error:', error);
+                // Fallback to attributes if subscription fails
+                if (weatherState.attributes.forecast && weatherState.attributes.forecast.length > 0) {
+                    forecast = weatherState.attributes.forecast.slice(0, 7);
+                }
+            }
         }
         
         this._showWeatherPopup(weatherState, temperatureState, forecast);

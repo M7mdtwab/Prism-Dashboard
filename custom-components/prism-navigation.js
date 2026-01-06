@@ -26,7 +26,8 @@ class PrismNavigationCard extends HTMLElement {
       active_color: "#2196f3",
       show_icons: true,
       sticky_position: true,
-      top_offset: 16
+      top_offset: 16,
+      center_from_column: 1
     };
   }
 
@@ -42,6 +43,16 @@ class PrismNavigationCard extends HTMLElement {
           name: "top_offset",
           label: "Top Offset (px) - Distance from top when sticky",
           selector: { number: { min: 0, max: 200, step: 1, unit_of_measurement: "px", mode: "slider" } }
+        },
+        {
+          name: "center_from_column",
+          label: "Center from column (1 = full width, 2 = skip sidebar in column 1, etc.)",
+          selector: { number: { min: 1, max: 8, step: 1, mode: "box" } }
+        },
+        {
+          name: "total_columns",
+          label: "Total columns in dashboard (for centering calculation)",
+          selector: { number: { min: 1, max: 12, step: 1, mode: "box" } }
         },
         {
           name: "active_color",
@@ -183,7 +194,9 @@ class PrismNavigationCard extends HTMLElement {
       show_icons: config.show_icons || false,
       icon_only: config.icon_only || false,
       sticky_position: config.sticky_position !== false,
-      top_offset: config.top_offset !== undefined ? config.top_offset : 16
+      top_offset: config.top_offset !== undefined ? config.top_offset : 16,
+      center_from_column: config.center_from_column || 1,
+      total_columns: config.total_columns || 4
     };
     
     this._updateCard();
@@ -396,12 +409,17 @@ class PrismNavigationCard extends HTMLElement {
     return false;
   }
 
-  _getNavStyles(topOffset, activeColor) {
+  _getNavStyles(topOffset, activeColor, centerFromColumn = 1, totalColumns = 4) {
+    // Calculate left offset based on column settings
+    // If center_from_column is 2 and total_columns is 4, skip first 25% (1/4) of width
+    const skipColumns = Math.max(0, centerFromColumn - 1);
+    const leftOffset = totalColumns > 0 ? (skipColumns / totalColumns) * 100 : 0;
+    
     return `
       #${this._navId} {
         position: fixed;
         top: ${topOffset}px;
-        left: 0;
+        left: ${leftOffset}%;
         right: 0;
         z-index: 999;
         display: flex;
@@ -540,6 +558,8 @@ class PrismNavigationCard extends HTMLElement {
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
     const topOffset = this._config.top_offset || 16;
+    const centerFromColumn = this._config.center_from_column || 1;
+    const totalColumns = this._config.total_columns || 4;
     
     // Remove existing
     this._removeExternalNav();
@@ -551,7 +571,7 @@ class PrismNavigationCard extends HTMLElement {
       styleEl.id = this._navId + '-style';
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = this._getNavStyles(topOffset, activeColor);
+    styleEl.textContent = this._getNavStyles(topOffset, activeColor, centerFromColumn, totalColumns);
     
     // Create nav element
     this._externalNav = document.createElement('div');
