@@ -604,18 +604,19 @@ class PrismSidebarLightCard extends HTMLElement {
             .sidebar {
                 width: 100%;
                 height: 100%;
-                min-height: 100vh;
                 display: flex;
                 flex-direction: column;
                 padding: 24px;
                 box-sizing: border-box;
-                background: rgba(255, 255, 255, 0.8);
+                background: rgba(255, 255, 255, 0.6);
                 backdrop-filter: blur(24px);
                 -webkit-backdrop-filter: blur(24px);
-                border-right: 1px solid rgba(0, 0, 0, 0.05);
-                box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-                overflow-y: auto;
-                overflow-x: hidden;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 24px;
+                box-shadow: 
+                    0 10px 40px rgba(0,0,0,0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                overflow: hidden;
                 color: #1a1a1a;
             }
 
@@ -627,6 +628,7 @@ class PrismSidebarLightCard extends HTMLElement {
                 border-radius: 16px;
                 overflow: hidden;
                 margin-bottom: 32px;
+                flex-shrink: 0;
                 border: 1px solid rgba(0, 0, 0, 0.1);
                 box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
                 cursor: pointer;
@@ -673,6 +675,7 @@ class PrismSidebarLightCard extends HTMLElement {
                 display: flex; flex-direction: column; align-items: center;
                 margin-bottom: 32px;
                 position: relative;
+                flex-shrink: 0;
             }
             .clock-glow {
                 position: absolute; top: 50%; left: 50%;
@@ -714,6 +717,7 @@ class PrismSidebarLightCard extends HTMLElement {
                 display: flex; align-items: center; gap: 16px;
                 cursor: pointer;
                 transition: background 0.3s;
+                flex-shrink: 0;
             }
             .calendar-inlet:hover { background: rgba(240, 240, 240, 0.8); }
             .cal-icon {
@@ -731,7 +735,8 @@ class PrismSidebarLightCard extends HTMLElement {
             /* Weather - Clean */
             .weather-box {
                 display: flex; flex-direction: column;
-                margin-bottom: auto; /* Push footer down */
+                flex: 1;
+                min-height: 0;
             }
             .section-title {
                 font-size: 12px; font-weight: 700; color: rgba(0, 0, 0, 0.3);
@@ -810,7 +815,8 @@ class PrismSidebarLightCard extends HTMLElement {
             /* Energy Footer */
             .energy-grid {
                 display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-                margin-top: 24px;
+                margin-top: auto;
+                flex-shrink: 0;
             }
             .energy-pill {
                 height: 72px;

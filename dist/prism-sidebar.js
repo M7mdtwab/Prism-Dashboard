@@ -604,18 +604,19 @@ class PrismSidebarCard extends HTMLElement {
             .sidebar {
                 width: 100%;
                 height: 100%;
-                min-height: 100vh;
                 display: flex;
                 flex-direction: column;
                 padding: 24px;
                 box-sizing: border-box;
-                background: rgba(30, 32, 36, 0.8);
+                background: rgba(30, 32, 36, 0.6);
                 backdrop-filter: blur(24px);
                 -webkit-backdrop-filter: blur(24px);
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
-                box-shadow: 10px 0 30px rgba(0,0,0,0.3);
-                overflow-y: auto;
-                overflow-x: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 24px;
+                box-shadow: 
+                    0 10px 40px rgba(0,0,0,0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                overflow: hidden;
                 color: white;
             }
 
@@ -631,6 +632,7 @@ class PrismSidebarCard extends HTMLElement {
                 box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
                 cursor: pointer;
                 transition: transform 0.3s;
+                flex-shrink: 0;
             }
             .camera-box:hover { transform: scale(1.02); }
             .camera-img {
@@ -673,6 +675,7 @@ class PrismSidebarCard extends HTMLElement {
                 display: flex; flex-direction: column; align-items: center;
                 margin-bottom: 32px;
                 position: relative;
+                flex-shrink: 0;
             }
             .clock-glow {
                 position: absolute; top: 50%; left: 50%;
@@ -712,6 +715,7 @@ class PrismSidebarCard extends HTMLElement {
                 display: flex; align-items: center; gap: 16px;
                 cursor: pointer;
                 transition: background 0.3s;
+                flex-shrink: 0;
             }
             .calendar-inlet:hover { background: rgba(20, 20, 20, 0.6); }
             .cal-icon {
@@ -729,7 +733,8 @@ class PrismSidebarCard extends HTMLElement {
             /* Weather - Clean */
             .weather-box {
                 display: flex; flex-direction: column;
-                margin-bottom: auto; /* Push footer down */
+                flex: 1;
+                min-height: 0;
             }
             .section-title {
                 font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.3);
@@ -808,7 +813,8 @@ class PrismSidebarCard extends HTMLElement {
             /* Energy Footer */
             .energy-grid {
                 display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-                margin-top: 24px;
+                margin-top: auto;
+                flex-shrink: 0;
             }
             .energy-pill {
                 height: 72px;

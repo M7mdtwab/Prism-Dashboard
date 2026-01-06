@@ -255,9 +255,38 @@ class PrismButtonLightCard extends HTMLElement {
   _handleTap() {
     if (!this._hass || !this._config.entity) return;
     const domain = this._config.entity.split('.')[0];
-    this._hass.callService(domain, 'toggle', {
-      entity_id: this._config.entity
-    });
+    const entity = this._hass.states[this._config.entity];
+    const state = entity ? entity.state : 'off';
+    
+    // Handle different entity types
+    if (domain === 'lock') {
+      // Locks use lock/unlock services
+      const service = state === 'locked' ? 'unlock' : 'lock';
+      this._hass.callService('lock', service, {
+        entity_id: this._config.entity
+      });
+    } else if (domain === 'cover') {
+      // Covers use open_cover/close_cover or toggle
+      const service = state === 'open' ? 'close_cover' : 'open_cover';
+      this._hass.callService('cover', service, {
+        entity_id: this._config.entity
+      });
+    } else if (domain === 'scene') {
+      // Scenes use turn_on
+      this._hass.callService('scene', 'turn_on', {
+        entity_id: this._config.entity
+      });
+    } else if (domain === 'script') {
+      // Scripts use turn_on
+      this._hass.callService('script', 'turn_on', {
+        entity_id: this._config.entity
+      });
+    } else {
+      // Default: use toggle
+      this._hass.callService(domain, 'toggle', {
+        entity_id: this._config.entity
+      });
+    }
   }
 
   _handleHold() {
@@ -638,16 +667,34 @@ class PrismButtonLightCard extends HTMLElement {
       };
       
       // Touch events
-      card.addEventListener('touchstart', handleInteractionStart, { passive: true });
-      card.addEventListener('touchmove', handleInteractionMove, { passive: false });
-      card.addEventListener('touchend', handleInteractionEnd);
+      card.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        handleInteractionStart(e);
+      }, { passive: true });
+      card.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+        handleInteractionMove(e);
+      }, { passive: false });
+      card.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+        handleInteractionEnd(e);
+      });
       
       // Mouse events
-      card.addEventListener('mousedown', handleInteractionStart);
-      card.addEventListener('mousemove', (e) => {
-        if (e.buttons === 1) handleInteractionMove(e);
+      card.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        handleInteractionStart(e);
       });
-      card.addEventListener('mouseup', handleInteractionEnd);
+      card.addEventListener('mousemove', (e) => {
+        if (e.buttons === 1) {
+          e.stopPropagation();
+          handleInteractionMove(e);
+        }
+      });
+      card.addEventListener('mouseup', (e) => {
+        e.stopPropagation();
+        handleInteractionEnd(e);
+      });
       card.addEventListener('mouseleave', () => {
         if (this._isDragging) {
           this._isDragging = false;
@@ -657,6 +704,7 @@ class PrismButtonLightCard extends HTMLElement {
       
       // Click handler as fallback (for desktop without mousedown/up)
       card.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to other cards
         // Only handle if we didn't already handle via mouseup
         if (!hasMoved && touchStart === 0) {
           this._handleTap();
@@ -667,6 +715,7 @@ class PrismButtonLightCard extends HTMLElement {
       // Context menu for hold
       card.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent event from bubbling
         this._handleHold();
       });
     }
