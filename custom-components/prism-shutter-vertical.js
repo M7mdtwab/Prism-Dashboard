@@ -230,15 +230,20 @@ class PrismShutterVerticalCard extends HTMLElement {
           }
           .icon-box {
               width: 36px; height: 36px; border-radius: 50%;
-              background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
-              color: #60a5fa;
+              background: ${isOpen 
+                  ? 'linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1))' 
+                  : 'linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1))'};
+              color: ${isOpen ? '#60a5fa' : 'rgba(255,255,255,0.4)'};
               display: flex; align-items: center; justify-content: center;
-              box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+              box-shadow: ${isOpen 
+                  ? 'inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -2px -2px 4px rgba(255, 255, 255, 0.03)' 
+                  : '4px 4px 10px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.03), inset 0 1px 2px rgba(255, 255, 255, 0.05)'};
               border: 1px solid rgba(255, 255, 255, 0.05);
+              transition: all 0.3s ease;
           }
           .icon-box ha-icon {
               width: 18px; height: 18px; --mdc-icon-size: 18px;
-              filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.6));
+              ${isOpen ? 'filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.6));' : ''}
           }
           .info {
               text-align: center; width: 100%;

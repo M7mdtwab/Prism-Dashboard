@@ -91,10 +91,48 @@ class PrismHeatSmallLightCard extends HTMLElement {
       'off': isGerman ? 'Aus' : 'Off',
       'auto': isGerman ? 'Auto' : 'Auto',
       'heating': isGerman ? 'Heizen' : 'Heating',
+      'cooling': isGerman ? 'Kühlen' : 'Cooling',
+      'dry': isGerman ? 'Entfeuchten' : 'Dry',
+      'fan': isGerman ? 'Lüfter' : 'Fan',
       'thermostat': isGerman ? 'Heizung' : 'Thermostat'
     };
     
     return translations[key] || key;
+  }
+
+  // Get state color based on HVAC mode
+  _getStateColor(state) {
+    const colors = {
+      heat: '#fb923c',
+      heating: '#fb923c',
+      cool: '#60a5fa',
+      cooling: '#60a5fa',
+      dry: '#22d3ee',
+      fan_only: '#64748b',
+      heat_cool: '#a78bfa',
+      auto: '#4ade80'
+    };
+    return colors[state] || 'rgba(0,0,0,0.4)';
+  }
+
+  // Get state background color (lighter version for light theme)
+  _getStateBgColor(state) {
+    const colors = {
+      heat: 'rgba(249, 115, 22, 0.15)',
+      heating: 'rgba(249, 115, 22, 0.15)',
+      cool: 'rgba(96, 165, 250, 0.15)',
+      cooling: 'rgba(96, 165, 250, 0.15)',
+      dry: 'rgba(34, 211, 238, 0.15)',
+      fan_only: 'rgba(100, 116, 139, 0.15)',
+      heat_cool: 'rgba(167, 139, 250, 0.15)',
+      auto: 'rgba(74, 222, 128, 0.15)'
+    };
+    return colors[state] || 'rgba(0,0,0,0.05)';
+  }
+
+  // Check if HVAC is actively doing something
+  _isActive(state) {
+    return ['heat', 'heating', 'cool', 'cooling', 'dry', 'fan_only', 'heat_cool', 'auto'].includes(state);
   }
 
   connectedCallback() {
@@ -144,7 +182,22 @@ class PrismHeatSmallLightCard extends HTMLElement {
     const name = this.config.name || (this._entity ? attr.friendly_name : null) || this._t('thermostat');
     
     const isHeating = state === 'heat' || state === 'heating';
-    const hvacMode = state === 'off' ? this._t('off') : (state === 'auto' ? this._t('auto') : this._t('heating'));
+    const isCooling = state === 'cool' || state === 'cooling';
+    const isDry = state === 'dry';
+    const isFanOnly = state === 'fan_only';
+    const isHeatCool = state === 'heat_cool';
+    const isAuto = state === 'auto';
+    const isActive = this._isActive(state);
+    const stateColor = this._getStateColor(state);
+    const stateBgColor = this._getStateBgColor(state);
+    
+    // Determine HVAC mode text
+    let hvacMode = this._t('off');
+    if (isHeating) hvacMode = this._t('heating');
+    else if (isCooling) hvacMode = this._t('cooling');
+    else if (isDry) hvacMode = this._t('dry');
+    else if (isFanOnly) hvacMode = this._t('fan');
+    else if (isHeatCool || isAuto) hvacMode = this._t('auto');
     
     // Status Text with optional humidity
     const humidityText = (this._humidity !== null && this._humidity !== undefined) ? ` · ${this._humidity.toFixed(0)}%` : '';
@@ -193,14 +246,14 @@ class PrismHeatSmallLightCard extends HTMLElement {
             min-width: 40px;
             min-height: 40px;
             border-radius: 50%;
-            background: ${isHeating ? 'rgba(249, 115, 22, 0.15)' : 'rgba(0,0,0,0.05)'}; 
-            color: ${isHeating ? '#fb923c' : 'rgba(0,0,0,0.4)'};
+            background: ${isActive ? stateBgColor : 'rgba(0,0,0,0.05)'}; 
+            color: ${isActive ? stateColor : 'rgba(0,0,0,0.4)'};
             display: flex; 
             align-items: center; 
             justify-content: center;
-            box-shadow: ${isHeating ? '0 0 15px rgba(249,115,22,0.2)' : 'none'};
+            box-shadow: ${isActive ? `0 0 15px ${stateColor}33` : 'none'};
             transition: all 0.5s ease;
-            ${isHeating ? 'filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.4));' : ''}
+            ${isActive ? `filter: drop-shadow(0 0 6px ${stateColor}66);` : ''}
         }
         .icon-box ha-icon {
             width: 22px;
@@ -255,7 +308,7 @@ class PrismHeatSmallLightCard extends HTMLElement {
             justify-content: center;
             --mdc-icon-size: 10px;
             line-height: 0;
-            color: #fb923c;
+            color: ${isActive ? stateColor : 'rgba(0,0,0,0.4)'};
         }
         .chip-text { 
             font-size: 9px; 

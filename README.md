@@ -108,13 +108,9 @@ For this dashboard to work, the following frontend integrations must be installe
    - **Repository:** `https://github.com/BangerTech/Prism-Dashboard`
    - **Type:** `Dashboard`
 4. Search for "Prism Dashboard" and click **"Download"**
-5. Go to **Settings → Dashboards** → **Resources** (top right)
-6. Click **"Add Resource"** and add:
-   - **URL:** `/hacsfiles/Prism-Dashboard/prism-dashboard.js`
-   - **Type:** `JavaScript Module`
-7. Restart Home Assistant
+5. Restart Home Assistant
 
-> **✨ That's it!** All 27 custom cards (dark + light themes) are included in this single file and will receive automatic cache updates via HACS.
+> **✨ That's it!** HACS automatically registers the resource. All 27 custom cards (dark + light themes) are included in this single file and will receive automatic cache updates via HACS.
 
 ### Option 2: Manual Installation
 

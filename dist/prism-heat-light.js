@@ -43,6 +43,10 @@ class PrismHeatLightCard extends HTMLElement {
           selector: { boolean: {} }
         },
         {
+          name: "show_fan_modes",
+          selector: { boolean: {} }
+        },
+        {
           name: "temperature_entity",
           selector: { entity: { domain: "sensor" } }
         },
@@ -73,6 +77,10 @@ class PrismHeatLightCard extends HTMLElement {
     // Set default for compact_mode
     if (this.config.compact_mode === undefined) {
       this.config.compact_mode = false;
+    }
+    // Set default for show_fan_modes
+    if (this.config.show_fan_modes === undefined) {
+      this.config.show_fan_modes = false;
     }
   }
 
@@ -160,6 +168,14 @@ class PrismHeatLightCard extends HTMLElement {
       btn.addEventListener('click', (e) => {
         const mode = e.currentTarget.dataset.mode;
         this.setMode(mode);
+      });
+    });
+
+    // Fan mode buttons
+    this.shadowRoot.querySelectorAll('.fan-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const fanMode = e.currentTarget.dataset.fanmode;
+        this.setFanMode(fanMode);
       });
     });
   }
@@ -282,6 +298,15 @@ class PrismHeatLightCard extends HTMLElement {
     }
   }
 
+  setFanMode(fanMode) {
+    if (this._hass && this.config.entity) {
+      this._hass.callService('climate', 'set_fan_mode', {
+        entity_id: this.config.entity,
+        fan_mode: fanMode
+      });
+    }
+  }
+
   // Translation helper - English default, German if HA is set to German
   _t(key) {
     const lang = this._hass?.language || this._hass?.locale?.language || 'en';
@@ -289,13 +314,50 @@ class PrismHeatLightCard extends HTMLElement {
     
     const translations = {
       'off': isGerman ? 'Aus' : 'Off',
-      'manual': isGerman ? 'Manuell' : 'Manual',
-      'auto': isGerman ? 'Auto' : 'Auto',
+      'heat': isGerman ? 'Heizen' : 'Heat',
       'cool': isGerman ? 'Kühlen' : 'Cool',
-      'heating': isGerman ? 'Heizung' : 'Thermostat'
+      'heat_cool': isGerman ? 'Auto' : 'Auto',
+      'auto': isGerman ? 'Auto' : 'Auto',
+      'dry': isGerman ? 'Entfeuchten' : 'Dry',
+      'fan_only': isGerman ? 'Lüfter' : 'Fan',
+      'heating': isGerman ? 'Heizung' : 'Thermostat',
+      // Fan mode translations
+      'fan_auto': isGerman ? 'Auto' : 'Auto',
+      'fan_low': isGerman ? 'Niedrig' : 'Low',
+      'fan_medium': isGerman ? 'Mittel' : 'Medium',
+      'fan_high': isGerman ? 'Hoch' : 'High',
+      'fan_quiet': isGerman ? 'Leise' : 'Quiet',
+      'fan_turbo': isGerman ? 'Turbo' : 'Turbo'
     };
     
     return translations[key] || key;
+  }
+
+  // Get HVAC mode configuration (icon, color)
+  _getModeConfig(mode) {
+    const configs = {
+      off: { icon: 'mdi:power', color: '#ef5350' },
+      heat: { icon: 'mdi:fire', color: '#fb923c' },
+      cool: { icon: 'mdi:snowflake', color: '#60a5fa' },
+      heat_cool: { icon: 'mdi:autorenew', color: '#a78bfa' },
+      auto: { icon: 'mdi:calendar-sync', color: '#4ade80' },
+      dry: { icon: 'mdi:water-percent', color: '#22d3ee' },
+      fan_only: { icon: 'mdi:fan', color: '#94a3b8' }
+    };
+    return configs[mode] || { icon: 'mdi:help-circle', color: '#94a3b8' };
+  }
+
+  // Get Fan mode configuration (icon)
+  _getFanModeConfig(mode) {
+    const configs = {
+      auto: { icon: 'mdi:fan-auto' },
+      low: { icon: 'mdi:fan-speed-1' },
+      medium: { icon: 'mdi:fan-speed-2' },
+      high: { icon: 'mdi:fan-speed-3' },
+      quiet: { icon: 'mdi:fan-minus' },
+      turbo: { icon: 'mdi:fan-plus' }
+    };
+    return configs[mode] || { icon: 'mdi:fan' };
   }
 
   render() {
@@ -315,22 +377,20 @@ class PrismHeatLightCard extends HTMLElement {
     const strokeDashArray = `${arcLength} ${c}`;
     const dashOffset = arcLength * (1 - percentage);
 
+    // Get available HVAC modes from entity
+    const availableHvacModes = this._entity?.attributes?.hvac_modes || ['off', 'heat', 'auto'];
+    const availableFanModes = this._entity?.attributes?.fan_modes || [];
+    const currentFanMode = this._entity?.attributes?.fan_mode || '';
+
     let currentModeText = this._t('off');
-    let iconClass = '';
+    let iconClass = 'active off';
     
-    if(this._state === 'heat') {
-        currentModeText = this._t('manual');
-        iconClass = 'active heat';
-    }
-    if(this._state === 'auto') {
-        currentModeText = this._t('auto');
-        iconClass = 'active auto';
-    }
-    if(this._state === 'cool') {
-        currentModeText = this._t('cool');
-        iconClass = 'active cool';
-    }
-    if(this._state === 'off') {
+    // Dynamic mode detection
+    const activeStates = ['heat', 'cool', 'heat_cool', 'auto', 'dry', 'fan_only'];
+    if (activeStates.includes(this._state)) {
+        currentModeText = this._t(this._state);
+        iconClass = `active ${this._state}`;
+    } else if (this._state === 'off') {
         iconClass = 'active off';
     }
 
@@ -503,6 +563,18 @@ class PrismHeatLightCard extends HTMLElement {
             background: rgba(96, 165, 250, 0.15); color: #60a5fa;
             filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.4));
         }
+        .icon-box.active.heat_cool {
+            background: rgba(167, 139, 250, 0.15); color: #a78bfa;
+            filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.4));
+        }
+        .icon-box.active.dry {
+            background: rgba(34, 211, 238, 0.15); color: #22d3ee;
+            filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.4));
+        }
+        .icon-box.active.fan_only {
+            background: rgba(148, 163, 184, 0.15); color: #64748b;
+            filter: drop-shadow(0 0 6px rgba(148, 163, 184, 0.4));
+        }
         .icon-box.active.off {
             background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.4);
             filter: none;
@@ -599,8 +671,41 @@ class PrismHeatLightCard extends HTMLElement {
             transform: scale(0.98);
         }
         .mode-btn.active.heat { color: #fb923c; }
+        .mode-btn.active.cool { color: #60a5fa; }
+        .mode-btn.active.heat_cool { color: #a78bfa; }
         .mode-btn.active.auto { color: #4ade80; }
+        .mode-btn.active.dry { color: #22d3ee; }
+        .mode-btn.active.fan_only { color: #64748b; }
         .mode-btn.active.off { color: #ef5350; }
+        
+        /* Fan mode buttons */
+        .fan-controls {
+            display: grid; gap: 8px; margin-top: 12px;
+        }
+        .fan-mode-btn {
+            height: 36px; border-radius: 10px;
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 
+              2px 2px 6px rgba(0,0,0,0.06),
+              -2px -2px 6px rgba(255,255,255,0.8);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; color: rgba(0,0,0,0.5);
+            overflow: hidden; min-width: 0;
+        }
+        .fan-mode-btn:hover:not(.active) {
+            background: linear-gradient(145deg, #e8e8e8, #f5f5f5);
+        }
+        .fan-mode-btn:active, .fan-mode-btn.active {
+            background: linear-gradient(145deg, #e6e6e6, #f0f0f0);
+            box-shadow: 
+              inset 2px 2px 5px rgba(0,0,0,0.1),
+              inset -1px -1px 4px rgba(255,255,255,0.7);
+            transform: scale(0.98);
+            color: #60a5fa;
+        }
+        .fan-mode-btn ha-icon { --mdc-icon-size: 16px; }
+        .fan-mode-btn .btn-label { font-size: 8px; }
         
         ha-icon { --mdc-icon-size: 20px; }
         .btn-label { font-size: 9px; font-weight: 700; text-transform: uppercase; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -654,20 +759,32 @@ class PrismHeatLightCard extends HTMLElement {
             </div>
         </div>
 
-        <div class="controls">
-            <div class="mode-btn ${this._state === 'off' ? 'active off' : ''}" data-mode="off">
-                <ha-icon icon="mdi:power"></ha-icon>
-                <span class="btn-label">${this._t('off')}</span>
-            </div>
-            <div class="mode-btn ${this._state === 'heat' ? 'active heat' : ''}" data-mode="heat">
-                <ha-icon icon="mdi:fire"></ha-icon>
-                <span class="btn-label">${this._t('manual')}</span>
-            </div>
-            <div class="mode-btn ${this._state === 'auto' ? 'active auto' : ''}" data-mode="auto">
-                <ha-icon icon="mdi:calendar-sync"></ha-icon>
-                <span class="btn-label">${this._t('auto')}</span>
-            </div>
+        <div class="controls" style="grid-template-columns: repeat(${availableHvacModes.length}, 1fr);">
+            ${availableHvacModes.map(mode => {
+              const modeConfig = this._getModeConfig(mode);
+              const isActive = this._state === mode;
+              return `
+                <div class="mode-btn ${isActive ? 'active ' + mode : ''}" data-mode="${mode}">
+                    <ha-icon icon="${modeConfig.icon}"></ha-icon>
+                    <span class="btn-label">${this._t(mode)}</span>
+                </div>
+              `;
+            }).join('')}
         </div>
+        ${this.config.show_fan_modes && availableFanModes.length > 0 ? `
+        <div class="fan-controls" style="grid-template-columns: repeat(${availableFanModes.length}, 1fr);">
+            ${availableFanModes.map(fanMode => {
+              const fanConfig = this._getFanModeConfig(fanMode);
+              const isActive = currentFanMode === fanMode;
+              return `
+                <div class="fan-mode-btn ${isActive ? 'active' : ''}" data-fanmode="${fanMode}">
+                    <ha-icon icon="${fanConfig.icon}"></ha-icon>
+                    <span class="btn-label">${this._t('fan_' + fanMode) !== 'fan_' + fanMode ? this._t('fan_' + fanMode) : fanMode}</span>
+                </div>
+              `;
+            }).join('')}
+        </div>
+        ` : ''}
       </div>
     `;
     

@@ -91,10 +91,33 @@ class PrismHeatSmallCard extends HTMLElement {
       'off': isGerman ? 'Aus' : 'Off',
       'auto': isGerman ? 'Auto' : 'Auto',
       'heating': isGerman ? 'Heizen' : 'Heating',
+      'cooling': isGerman ? 'Kühlen' : 'Cooling',
+      'dry': isGerman ? 'Entfeuchten' : 'Dry',
+      'fan': isGerman ? 'Lüfter' : 'Fan',
       'thermostat': isGerman ? 'Heizung' : 'Thermostat'
     };
     
     return translations[key] || key;
+  }
+
+  // Get state color based on HVAC mode
+  _getStateColor(state) {
+    const colors = {
+      heat: '#fb923c',
+      heating: '#fb923c',
+      cool: '#60a5fa',
+      cooling: '#60a5fa',
+      dry: '#22d3ee',
+      fan_only: '#94a3b8',
+      heat_cool: '#a78bfa',
+      auto: '#4ade80'
+    };
+    return colors[state] || 'rgba(255,255,255,0.4)';
+  }
+
+  // Check if HVAC is actively doing something
+  _isActive(state) {
+    return ['heat', 'heating', 'cool', 'cooling', 'dry', 'fan_only', 'heat_cool', 'auto'].includes(state);
   }
 
   connectedCallback() {
@@ -144,7 +167,21 @@ class PrismHeatSmallCard extends HTMLElement {
     const name = this.config.name || (this._entity ? attr.friendly_name : null) || this._t('thermostat');
     
     const isHeating = state === 'heat' || state === 'heating';
-    const hvacMode = state === 'off' ? this._t('off') : (state === 'auto' ? this._t('auto') : this._t('heating'));
+    const isCooling = state === 'cool' || state === 'cooling';
+    const isDry = state === 'dry';
+    const isFanOnly = state === 'fan_only';
+    const isHeatCool = state === 'heat_cool';
+    const isAuto = state === 'auto';
+    const isActive = this._isActive(state);
+    const stateColor = this._getStateColor(state);
+    
+    // Determine HVAC mode text
+    let hvacMode = this._t('off');
+    if (isHeating) hvacMode = this._t('heating');
+    else if (isCooling) hvacMode = this._t('cooling');
+    else if (isDry) hvacMode = this._t('dry');
+    else if (isFanOnly) hvacMode = this._t('fan');
+    else if (isHeatCool || isAuto) hvacMode = this._t('auto');
     
     // Status Text with optional humidity
     const humidityText = (this._humidity !== null && this._humidity !== undefined) ? ` · ${this._humidity.toFixed(0)}%` : '';
@@ -190,14 +227,14 @@ class PrismHeatSmallCard extends HTMLElement {
             min-width: 40px;
             min-height: 40px;
             border-radius: 50%;
-            background: ${isHeating 
+            background: ${isActive 
                 ? 'linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1))' 
                 : 'linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1))'}; 
-            color: ${isHeating ? '#fb923c' : 'rgba(255,255,255,0.4)'};
+            color: ${isActive ? stateColor : 'rgba(255,255,255,0.4)'};
             display: flex; 
             align-items: center; 
             justify-content: center;
-            box-shadow: ${isHeating 
+            box-shadow: ${isActive 
                 ? 'inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -2px -2px 4px rgba(255, 255, 255, 0.03)' 
                 : '4px 4px 10px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.03), inset 0 1px 2px rgba(255, 255, 255, 0.05)'};
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -211,7 +248,7 @@ class PrismHeatSmallCard extends HTMLElement {
             align-items: center;
             justify-content: center;
             line-height: 0;
-            ${isHeating ? 'filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.6));' : ''}
+            ${isActive ? `filter: drop-shadow(0 0 6px ${stateColor}99);` : ''}
         }
         
         .info { 
@@ -254,7 +291,7 @@ class PrismHeatSmallCard extends HTMLElement {
             justify-content: center;
             --mdc-icon-size: 10px;
             line-height: 0;
-            color: #fb923c;
+            color: ${isActive ? stateColor : 'rgba(255,255,255,0.4)'};
         }
         .chip-text { 
             font-size: 9px; 

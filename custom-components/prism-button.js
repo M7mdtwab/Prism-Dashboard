@@ -50,13 +50,38 @@ class PrismButtonCard extends HTMLElement {
         {
           name: "slider_entity",
           selector: { entity: {} }
+        },
+        {
+          name: "",
+          type: "divider"
+        },
+        {
+          name: "use_as_popup",
+          selector: { boolean: {} }
+        },
+        {
+          name: "popup_icon",
+          selector: { icon: {} }
+        },
+        {
+          name: "popup_title",
+          selector: { text: {} }
+        },
+        {
+          name: "status_entity",
+          selector: { entity: {} }
+        },
+        {
+          name: "popup_cards",
+          selector: { object: {} }
         }
       ]
     };
   }
 
   setConfig(config) {
-    if (!config.entity) {
+    // Entity only required if NOT in popup mode
+    if (!config.use_as_popup && !config.entity) {
       throw new Error('Please define an entity');
     }
     // Create a copy to avoid modifying read-only config object
@@ -75,6 +100,12 @@ class PrismButtonCard extends HTMLElement {
     if (this._config.active_color) {
       this._config.active_color = this._normalizeColor(this._config.active_color);
     }
+    // Popup configuration
+    this._config.use_as_popup = config.use_as_popup || false;
+    this._config.popup_icon = config.popup_icon || 'mdi:card-multiple-outline';
+    this._config.popup_title = config.popup_title || '';
+    this._config.status_entity = config.status_entity || null;
+    this._config.popup_cards = config.popup_cards || null;
     this._updateCard();
   }
 
@@ -128,24 +159,37 @@ class PrismButtonCard extends HTMLElement {
     this._card = null;
   }
 
+  // Get the entity ID to use for status display
+  _getDisplayEntityId() {
+    // In popup mode with status_entity, use that for display
+    if (this._config.use_as_popup && this._config.status_entity) {
+      return this._config.status_entity;
+    }
+    return this._config.entity;
+  }
+
   _isActive() {
-    if (!this._hass || !this._config.entity) return false;
-    const entity = this._hass.states[this._config.entity];
+    const entityId = this._getDisplayEntityId();
+    if (!this._hass || !entityId) return false;
+    const entity = this._hass.states[entityId];
     if (!entity) return false;
     
     const state = entity.state;
-    if (this._config.entity.startsWith('lock.')) {
+    if (entityId.startsWith('lock.')) {
       return state === 'locked';
-    } else if (this._config.entity.startsWith('climate.')) {
+    } else if (entityId.startsWith('climate.')) {
       return state === 'heat' || state === 'auto';
+    } else if (entityId.startsWith('vacuum.')) {
+      return state === 'cleaning' || state === 'returning';
     } else {
       return state === 'on' || state === 'open';
     }
   }
 
   _getIconColor() {
-    if (!this._hass || !this._config.entity) return null;
-    const entity = this._hass.states[this._config.entity];
+    const entityId = this._getDisplayEntityId();
+    if (!this._hass || !entityId) return null;
+    const entity = this._hass.states[entityId];
     if (!entity) return null;
     
     const state = entity.state;
@@ -153,7 +197,7 @@ class PrismButtonCard extends HTMLElement {
     const attr = entity.attributes;
     
     // For lights: PRIORITY 1 - use actual rgb_color from entity if available
-    if (isActive && this._config.entity.startsWith('light.')) {
+    if (isActive && entityId.startsWith('light.')) {
       // Check for rgb_color attribute (set by color picker) - highest priority
       if (attr.rgb_color && Array.isArray(attr.rgb_color) && attr.rgb_color.length >= 3) {
         const [r, g, b] = attr.rgb_color;
@@ -187,15 +231,21 @@ class PrismButtonCard extends HTMLElement {
     }
     
     // Otherwise use default colors based on entity type
-    if (this._config.entity.startsWith('lock.')) {
+    if (entityId.startsWith('lock.')) {
       if (state === 'locked') {
         return { color: 'rgb(76, 175, 80)', shadow: 'rgba(76, 175, 80, 0.6)' };
       } else if (state === 'unlocked') {
         return { color: 'rgb(244, 67, 54)', shadow: 'rgba(244, 67, 54, 0.6)' };
       }
-    } else if (this._config.entity.startsWith('climate.')) {
+    } else if (entityId.startsWith('climate.')) {
       if (state === 'heat' || state === 'auto') {
         return { color: 'rgb(255, 152, 0)', shadow: 'rgba(255, 152, 0, 0.6)' };
+      }
+    } else if (entityId.startsWith('vacuum.')) {
+      if (state === 'cleaning' || state === 'returning') {
+        return { color: 'rgb(74, 222, 128)', shadow: 'rgba(74, 222, 128, 0.6)' };
+      } else if (state === 'error') {
+        return { color: 'rgb(248, 113, 113)', shadow: 'rgba(248, 113, 113, 0.6)' };
       }
     } else {
       if (state === 'on' || state === 'open') {
@@ -277,6 +327,13 @@ class PrismButtonCard extends HTMLElement {
 
   _handleTap() {
     if (!this._hass || !this._config.entity) return;
+    
+    // POPUP MODE: Open popup instead of toggling
+    if (this._config.use_as_popup && this._config.popup_cards) {
+      this._openPrismPopup();
+      return;
+    }
+    
     const domain = this._config.entity.split('.')[0];
     const entity = this._hass.states[this._config.entity];
     const state = entity ? entity.state : 'off';
@@ -313,23 +370,345 @@ class PrismButtonCard extends HTMLElement {
   }
 
   _handleHold() {
-    if (!this._hass || !this._config.entity) return;
+    // In popup mode with status_entity, show more-info for that entity
+    const entityId = this._getDisplayEntityId();
+    if (!this._hass || !entityId) return;
     const event = new CustomEvent('hass-more-info', {
       bubbles: true,
       composed: true,
-      detail: { entityId: this._config.entity }
+      detail: { entityId: entityId }
     });
     this.dispatchEvent(event);
   }
 
-  _updateCard() {
-    if (!this._config || !this._config.entity) return;
+  // ==================== POPUP METHODS ====================
+  
+  _closePrismPopup() {
+    const existingOverlay = document.getElementById('prism-button-popup-overlay');
+    if (existingOverlay) {
+      existingOverlay.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
+      setTimeout(() => {
+        existingOverlay.remove();
+      }, 200);
+    }
+  }
+
+  _openPrismPopup() {
+    // Close any existing popup first
+    this._closePrismPopup();
     
-    const entity = this._hass ? this._hass.states[this._config.entity] : null;
-    const isActive = entity ? this._isActive() : false;
-    const iconColor = entity ? this._getIconColor() : null;
+    const title = this._config.popup_title || this._config.name || 'Popup';
+    const icon = this._config.popup_icon || this._config.icon || 'mdi:card-multiple-outline';
+    const iconColor = this._getIconColor();
+    const accentColor = iconColor ? iconColor.color : 'rgb(255, 200, 100)';
+    
+    // Create popup overlay in document.body (outside shadow DOM for true modal)
+    const overlay = document.createElement('div');
+    overlay.id = 'prism-button-popup-overlay';
+    overlay.innerHTML = `
+      <style>
+        #prism-button-popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          box-sizing: border-box;
+          animation: prismPopupFadeIn 0.2s ease;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        @keyframes prismPopupFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes prismPopupFadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        @keyframes prismPopupSlideIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .prism-popup {
+          position: relative;
+          min-width: 320px;
+          max-width: 500px;
+          width: 90vw;
+          max-height: 85vh;
+          background: linear-gradient(180deg, rgba(35, 38, 45, 0.98), rgba(25, 27, 32, 0.98));
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 
+            0 25px 80px rgba(0, 0, 0, 0.8),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          overflow: hidden;
+          animation: prismPopupSlideIn 0.3s ease;
+          display: flex;
+          flex-direction: column;
+        }
+        .prism-popup-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          background: linear-gradient(180deg, rgba(40, 43, 50, 0.9), rgba(30, 33, 38, 0.9));
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .prism-popup-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 16px;
+          font-weight: 600;
+        }
+        .prism-popup-title-icon {
+          width: 32px;
+          height: 32px;
+          background: linear-gradient(145deg, #2d3038, #22252b);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: ${accentColor};
+          --mdc-icon-size: 18px;
+          box-shadow: 
+            2px 2px 4px rgba(0, 0, 0, 0.4),
+            -1px -1px 3px rgba(255, 255, 255, 0.03),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+        }
+        .prism-popup-title-icon ha-icon {
+          display: flex;
+          --mdc-icon-size: 18px;
+          filter: drop-shadow(0 0 4px ${accentColor.replace('rgb', 'rgba').replace(')', ', 0.5)')});
+        }
+        .prism-popup-close {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: linear-gradient(145deg, #2d3038, #22252b);
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.4);
+          --mdc-icon-size: 18px;
+          transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+          box-shadow: 
+            2px 2px 4px rgba(0, 0, 0, 0.4),
+            -1px -1px 3px rgba(255, 255, 255, 0.03),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+        }
+        .prism-popup-close ha-icon {
+          display: flex;
+          --mdc-icon-size: 18px;
+          transition: all 0.2s ease;
+        }
+        .prism-popup-close:hover {
+          color: #f87171;
+        }
+        .prism-popup-close:hover ha-icon {
+          filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.6));
+        }
+        .prism-popup-close:active {
+          background: linear-gradient(145deg, #22252b, #2d3038);
+          box-shadow: 
+            inset 2px 2px 4px rgba(0, 0, 0, 0.5),
+            inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+        }
+        .prism-popup-content {
+          flex: 1;
+          padding: 16px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .prism-popup-content::-webkit-scrollbar {
+          width: 6px;
+        }
+        .prism-popup-content::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 3px;
+        }
+        .prism-popup-content::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 3px;
+        }
+        .prism-popup-content::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.25);
+        }
+        .prism-popup-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 14px;
+        }
+        .prism-popup-error {
+          padding: 16px;
+          background: rgba(248, 113, 113, 0.1);
+          border: 1px solid rgba(248, 113, 113, 0.3);
+          border-radius: 12px;
+          color: #f87171;
+          font-size: 13px;
+        }
+      </style>
+      <div class="prism-popup">
+        <div class="prism-popup-header">
+          <div class="prism-popup-title">
+            <div class="prism-popup-title-icon">
+              <ha-icon icon="${icon}"></ha-icon>
+            </div>
+            <span>${title}</span>
+          </div>
+          <button class="prism-popup-close">
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+        <div class="prism-popup-content">
+          <div class="prism-popup-loading">Loading cards...</div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Event listeners
+    overlay.querySelector('.prism-popup-close').onclick = () => this._closePrismPopup();
+    overlay.onclick = (e) => {
+      if (e.target === overlay) this._closePrismPopup();
+    };
+    
+    // ESC key to close
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        this._closePrismPopup();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Render the cards
+    this._renderPopupCards(overlay.querySelector('.prism-popup-content'));
+  }
+
+  async _renderPopupCards(container) {
+    const cardsConfig = this._config.popup_cards;
+    if (!cardsConfig) {
+      container.innerHTML = '<div class="prism-popup-error">No popup_cards configured</div>';
+      return;
+    }
+    
+    // Clear loading message
+    container.innerHTML = '';
+    
+    // Normalize to array
+    let cardConfigs = [];
+    if (Array.isArray(cardsConfig)) {
+      cardConfigs = cardsConfig;
+    } else if (cardsConfig.type === 'vertical-stack' || cardsConfig.type === 'horizontal-stack') {
+      // Handle stack cards
+      cardConfigs = cardsConfig.cards || [];
+    } else {
+      // Single card config
+      cardConfigs = [cardsConfig];
+    }
+    
+    // Try to get card helpers
+    let helpers = null;
+    try {
+      helpers = await window.loadCardHelpers?.();
+    } catch (e) {
+      console.warn('Prism Button Popup: Could not load card helpers', e);
+    }
+    
+    for (const cardConfig of cardConfigs) {
+      try {
+        let cardElement;
+        
+        if (helpers?.createCardElement) {
+          // Method 1: Official card helpers (preferred)
+          cardElement = await helpers.createCardElement(cardConfig);
+        } else {
+          // Method 2: Fallback - direct element creation
+          const cardType = cardConfig.type || 'entity';
+          let tag;
+          
+          if (cardType.startsWith('custom:')) {
+            tag = cardType.replace('custom:', '');
+          } else {
+            tag = `hui-${cardType}-card`;
+          }
+          
+          cardElement = document.createElement(tag);
+          if (cardElement.setConfig) {
+            cardElement.setConfig(cardConfig);
+          }
+        }
+        
+        // Set hass object
+        if (cardElement) {
+          cardElement.hass = this._hass;
+          container.appendChild(cardElement);
+        }
+      } catch (e) {
+        console.error('Prism Button Popup: Failed to create card', cardConfig, e);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'prism-popup-error';
+        errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
+        container.appendChild(errorDiv);
+      }
+    }
+    
+    // If no cards were added, show message
+    if (container.children.length === 0) {
+      container.innerHTML = '<div class="prism-popup-error">No cards could be loaded</div>';
+    }
+  }
+
+  // ==================== END POPUP METHODS ====================
+
+  _updateCard() {
+    // In popup mode, entity is not required
+    const displayEntityId = this._getDisplayEntityId();
+    if (!this._config || (!this._config.use_as_popup && !this._config.entity)) return;
+    
+    const entity = (this._hass && displayEntityId) ? this._hass.states[displayEntityId] : null;
+    const isActive = this._isActive();
+    const iconColor = this._getIconColor();
     const state = entity ? entity.state : 'off';
-    const friendlyName = this._config.name || (entity ? entity.attributes.friendly_name : null) || this._config.entity;
+    
+    // Determine display name: popup_title > name > entity friendly_name > entity_id
+    let friendlyName;
+    if (this._config.use_as_popup && this._config.popup_title) {
+      friendlyName = this._config.popup_title;
+    } else if (this._config.name) {
+      friendlyName = this._config.name;
+    } else if (entity) {
+      friendlyName = entity.attributes.friendly_name || displayEntityId;
+    } else {
+      friendlyName = this._config.popup_title || 'Popup';
+    }
+    
+    // Determine display icon: popup_icon (in popup mode) > icon > default
+    const displayIcon = this._config.use_as_popup 
+      ? (this._config.popup_icon || 'mdi:card-multiple-outline')
+      : (this._config.icon || 'mdi:lightbulb');
+    
     const layout = this._config.layout || 'horizontal';
     
     // Brightness slider logic
@@ -544,7 +923,7 @@ class PrismButtonCard extends HTMLElement {
           <div class="icon-container">
             <div class="icon-circle"></div>
             <div class="icon-wrapper">
-              <ha-icon icon="${this._config.icon}"></ha-icon>
+              <ha-icon icon="${displayIcon}"></ha-icon>
             </div>
           </div>
           <div class="info">

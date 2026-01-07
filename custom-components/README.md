@@ -914,6 +914,9 @@ active_color: "#2196f3"
 show_icons: true
 sticky_position: true
 top_offset: 16
+sidebar_width: 280      # Width of sidebar in pixels
+sidebar_gap: 16         # Grid gap between sidebar and content
+sidebar_breakpoint: 900 # Screen width where sidebar disappears
 ```
 
 **Configuration Options:**
@@ -922,12 +925,55 @@ top_offset: 16
 |--------|------|---------|-------------|
 | `sticky_position` | boolean | `true` | Float at top (recommended) |
 | `top_offset` | number | `16` | Distance from top in pixels |
+| `sidebar_width` | number | `0` | Sidebar width in pixels (navigation centers in remaining space) |
+| `sidebar_gap` | number | `0` | Grid gap between sidebar and content in pixels |
+| `sidebar_breakpoint` | number | `900` | Screen width where sidebar disappears (navigation goes full width) |
 | `active_color` | color | `#2196f3` | Highlight color for active tab |
 | `show_icons` | boolean | `false` | Show icons next to text |
 | `icon_only` | boolean | `false` | Show only icons (hide text) |
 | `tab_X_name` | string | - | Tab display name (X = 1-8) |
 | `tab_X_path` | string | - | View path to navigate to |
 | `tab_X_icon` | icon | - | Optional icon (e.g., `mdi:home`) |
+
+**Sidebar Centering:**
+
+If your dashboard has a fixed-width sidebar (e.g., 280px), set `sidebar_width` and `sidebar_gap` so the navigation centers correctly in the remaining space:
+
+```yaml
+# Your dashboard grid:
+# grid-template-columns: 280px repeat(auto-fit, minmax(220px, 1fr))
+# grid-gap: 16px
+
+type: custom:prism-navigation
+sidebar_width: 280      # Sidebar column width
+sidebar_gap: 16         # Grid gap
+sidebar_breakpoint: 900 # When sidebar is hidden (responsive)
+# ... tabs configuration ...
+```
+
+**Result:** Navigation centers in space after sidebar (280px + 16px = starts at 296px from left). On screens <900px, navigation automatically centers full width.
+
+**Active Tab Detection:**
+
+The navigation automatically highlights the current view based on the URL:
+
+| URL Pattern | Detection |
+|-------------|-----------|
+| `/dashboard-name/erdgeschoss` | Matches tab with `path: erdgeschoss` |
+| `/lovelace/0` | Matches first tab (index 0) |
+| `/lovelace/1` | Matches second tab (index 1) |
+| `/dashboard-name/` (empty) | Automatically highlights first tab |
+
+**Note:** Tab paths are compared case-insensitive and special characters are ignored. So `path: erdgeschoss` matches URLs like `/erdgeschoss`, `/Erdgeschoss`, or `/erd-geschoss`.
+
+**Responsive Behavior:**
+
+| Screen Size | Navigation Width | Sidebar | Font Size |
+|-------------|------------------|---------|-----------|
+| >1200px | Starts after sidebar | Visible | 13px (default) |
+| ≤1200px | Starts after sidebar | Visible | 11px (tablet) |
+| ≤900px | Full width (centered) | Hidden | 10px |
+| ≤480px | Full width (centered) | Hidden | 9px (mobile) |
 
 **Important:** Since the navigation floats above the content, you need to add space below it so it doesn't overlap your cards. Use **prism-spacer** for this (see below).
 

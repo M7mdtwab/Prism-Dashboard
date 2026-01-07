@@ -78,6 +78,11 @@ class PrismSidebarCard extends HTMLElement {
                     selector: { entity: { domain: "sensor" } }
                 },
                 {
+                    name: "temperature_title",
+                    label: "Temperature section title",
+                    selector: { text: {} }
+                },
+                {
                     name: "weather_entity",
                     label: "Weather entity",
                     selector: { entity: { domain: "weather" } }
@@ -107,6 +112,11 @@ class PrismSidebarCard extends HTMLElement {
                     name: "calendar_entity",
                     label: "Calendar entity",
                     selector: { entity: { domain: "calendar" } }
+                },
+                {
+                    name: "custom_card",
+                    label: "Custom card (YAML)",
+                    selector: { object: {} }
                 }
             ]
         };
@@ -126,6 +136,8 @@ class PrismSidebarCard extends HTMLElement {
         this.solarEntity = this.config.solar_entity || 'sensor.example';
         this.homeEntity = this.config.home_entity || 'sensor.example';
         this.calendarEntity = this.config.calendar_entity || 'calendar.example';
+        this.temperatureTitle = this.config.temperature_title || 'Outdoor';
+        this.customCardConfig = this.config.custom_card || null;
         
         // Custom width (optional)
         this.sidebarWidth = this.config.width || null;
@@ -214,6 +226,38 @@ class PrismSidebarCard extends HTMLElement {
             setTimeout(() => this.updateForecastGrid(), 100);
         } else {
             this.updateValues();
+        }
+        
+        // Update custom card hass
+        if (this._customCardElement && this._customCardElement.hass !== undefined) {
+            this._customCardElement.hass = hass;
+        }
+    }
+    
+    _createCustomCard() {
+        if (!this.customCardConfig) return null;
+        
+        let cardType = this.customCardConfig.type;
+        if (!cardType) return null;
+        
+        // Strip 'custom:' prefix if present (HA uses this in YAML but element name doesn't have it)
+        if (cardType.startsWith('custom:')) {
+            cardType = cardType.substring(7);
+        }
+        
+        try {
+            // Create the custom element
+            const element = document.createElement(cardType);
+            if (element.setConfig) {
+                element.setConfig(this.customCardConfig);
+            }
+            if (this._hass && element.hass !== undefined) {
+                element.hass = this._hass;
+            }
+            return element;
+        } catch (error) {
+            console.error('Error creating custom card:', error);
+            return null;
         }
     }
 
@@ -580,6 +624,20 @@ class PrismSidebarCard extends HTMLElement {
         // Get forecast (daily forecast for display)
         const forecastDays = this.forecastDays || 3;
         const forecast = weatherState?.attributes?.forecast?.slice(0, forecastDays) || [];
+        
+        // Check if elements should be shown (only if entity is configured and not default)
+        const showCamera = this.cameraEntities.length > 0 && 
+                          this.cameraEntities[0] !== 'camera.example';
+        const showCalendar = this.calendarEntity && 
+                            this.calendarEntity !== 'calendar.example';
+        const showTemperature = this.temperatureEntity && 
+                               this.temperatureEntity !== 'sensor.outdoor_temperature';
+        const showForecast = this.weatherEntity && 
+                            this.weatherEntity !== 'weather.example';
+        const showEnergy = (this.gridEntity && this.gridEntity !== 'sensor.example') ||
+                          (this.solarEntity && this.solarEntity !== 'sensor.example') ||
+                          (this.homeEntity && this.homeEntity !== 'sensor.example');
+        const showCustomCard = !!this.customCardConfig;
 
         this.shadowRoot.innerHTML = `
         <style>
@@ -733,7 +791,8 @@ class PrismSidebarCard extends HTMLElement {
             .section-title {
                 font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.3);
                 text-transform: uppercase; letter-spacing: 2px;
-                margin-bottom: 8px;
+                margin-bottom: 4px;
+                text-align: center;
             }
             .current-temp-box {
                 display: flex; align-items: center; justify-content: center;
@@ -798,11 +857,20 @@ class PrismSidebarCard extends HTMLElement {
                 display: grid; 
                 grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); 
                 gap: 8px;
+                cursor: pointer;
             }
             .forecast-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
             .day-name { font-size: 12px; color: rgba(255, 255, 255, 0.4); }
             .day-temp { font-size: 14px; font-weight: 700; color: white; }
             .day-low { font-size: 12px; color: rgba(255, 255, 255, 0.3); }
+            
+            /* Custom Card Container */
+            .custom-card-container {
+                margin-top: 24px;
+                margin-bottom: 24px;
+                border-radius: 16px;
+                overflow: hidden;
+            }
 
             /* Energy Footer */
             .energy-grid {
@@ -1101,6 +1169,7 @@ class PrismSidebarCard extends HTMLElement {
         <div class="sidebar">
             
             <!-- Camera -->
+            ${showCamera ? `
             <div class="camera-box" id="camera-box">
                 <img src="${cameraImage}" class="camera-img" />
                 <div class="camera-overlay"></div>
@@ -1109,8 +1178,9 @@ class PrismSidebarCard extends HTMLElement {
                 </div>
                 <div class="cam-name" id="cam-name">${cameraName}</div>
             </div>
+            ` : ''}
 
-            <!-- Clock -->
+            <!-- Clock - ALWAYS visible -->
             <div class="clock-box">
                 <div class="clock-glow"></div>
                 <div class="clock-time" id="clock-time">08:12</div>
@@ -1118,6 +1188,7 @@ class PrismSidebarCard extends HTMLElement {
             </div>
 
             <!-- Calendar Inlet -->
+            ${showCalendar ? `
             <div class="calendar-inlet" id="calendar-inlet">
                 <div class="cal-icon" id="cal-icon">${calendarDate}</div>
                 <div class="cal-info">
@@ -1125,10 +1196,12 @@ class PrismSidebarCard extends HTMLElement {
                     <div class="cal-sub" id="cal-sub">${calendarSub}</div>
                 </div>
             </div>
+            ` : ''}
 
             <!-- Weather -->
+            ${showTemperature || showForecast ? `
             <div class="weather-box">
-                <div class="section-title">Outdoor</div>
+                <div class="section-title">${this.temperatureTitle}</div>
                 <div class="current-temp-box" id="weather-temp-box" style="cursor: pointer;">
                     <span class="temp-val" id="val-temp">${currentTemp}</span>
                     <span class="temp-unit">°C</span>
@@ -1190,6 +1263,7 @@ class PrismSidebarCard extends HTMLElement {
                     </div>
                 </div>
 
+                ${showForecast ? `
                 <div class="forecast-grid">
                     ${forecast.map((day, i) => {
                         const date = day.datetime ? new Date(day.datetime) : new Date();
@@ -1231,9 +1305,17 @@ class PrismSidebarCard extends HTMLElement {
                         </div>
                     `}
                 </div>
+                ` : ''}
             </div>
+            ` : ''}
+            
+            <!-- Custom Card -->
+            ${showCustomCard ? `
+            <div class="custom-card-container" id="custom-card-slot"></div>
+            ` : ''}
 
             <!-- Energy Footer -->
+            ${showEnergy ? `
             <div class="energy-grid">
                 <div class="energy-pill" id="energy-grid">
                     <ha-icon icon="mdi:flash" style="width: 16px; height: 16px; color: rgba(255,255,255,0.3);"></ha-icon>
@@ -1251,12 +1333,27 @@ class PrismSidebarCard extends HTMLElement {
                     <span class="pill-label">Home</span>
                 </div>
             </div>
+            ` : ''}
 
         </div>
         `;
 
         // Setup event listeners
         this.setupListeners();
+        
+        // Insert custom card if configured
+        if (this.customCardConfig) {
+            const slot = this.shadowRoot.getElementById('custom-card-slot');
+            if (slot) {
+                // Clear previous card
+                slot.innerHTML = '';
+                const card = this._createCustomCard();
+                if (card) {
+                    this._customCardElement = card;
+                    slot.appendChild(card);
+                }
+            }
+        }
     }
 
     setupListeners() {
@@ -1299,6 +1396,12 @@ class PrismSidebarCard extends HTMLElement {
         if (graphOverlay) {
             graphOverlay.addEventListener('mousemove', (e) => this._handleGraphHover(e));
             graphOverlay.addEventListener('mouseleave', () => this._handleGraphLeave());
+        }
+        
+        // Forecast grid click - opens weather popup
+        const forecastGrid = this.shadowRoot?.querySelector('.forecast-grid');
+        if (forecastGrid) {
+            forecastGrid.addEventListener('click', () => this._handleWeatherClick());
         }
     }
 
@@ -1811,9 +1914,9 @@ class PrismSidebarCard extends HTMLElement {
                 significant_changes_only: true
             });
             
-            if (response && response.length > 0 && response[0].length > 0) {
-                // Extract temperature values with timestamps
-                const historyData = response[0];
+            // History API returns an object with entity IDs as keys
+            const historyData = response[this.temperatureEntity];
+            if (historyData && historyData.length > 0) {
                 // Sample data points (e.g., one per hour) to avoid too many points
                 const sampleRate = Math.max(1, Math.floor(historyData.length / 168));
                 const sampledDataWithTime = historyData
@@ -1837,7 +1940,13 @@ class PrismSidebarCard extends HTMLElement {
             if (this._hass.states[this.temperatureEntity]) {
                 const currentTemp = parseFloat(this._hass.states[this.temperatureEntity].state);
                 if (!isNaN(currentTemp)) {
+                    const now = new Date();
                     this.temperatureHistory = [currentTemp, currentTemp, currentTemp, currentTemp, currentTemp];
+                    // Also set temperatureHistoryWithTime for tooltip support
+                    this.temperatureHistoryWithTime = this.temperatureHistory.map((temp, i) => ({
+                        temp,
+                        time: new Date(now.getTime() - (4 - i) * 60 * 60 * 1000) // Hourly backwards
+                    }));
                 }
             }
         } finally {

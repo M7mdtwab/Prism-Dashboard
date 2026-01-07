@@ -21,6 +21,11 @@ class PrismShutterCard extends HTMLElement {
         {
           name: "name",
           selector: { text: {} }
+        },
+        {
+          name: "hide_slider",
+          label: "Slider-Linie ausblenden",
+          selector: { boolean: {} }
         }
       ]
     };
@@ -44,7 +49,8 @@ class PrismShutterCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 2;
+    // Wenn Slider ausgeblendet ist, wird die Karte kleiner
+    return this.config && this.config.hide_slider ? 1.5 : 2;
   }
 
   // Translation helper - English default, German if HA is set to German
@@ -174,6 +180,7 @@ class PrismShutterCard extends HTMLElement {
     const pos = attr.current_position !== undefined ? attr.current_position : 0;
     const state = this._entity ? this._entity.state : 'closed';
     const isOpen = pos > 0;
+    const hideSlider = this.config.hide_slider || false;
     
     // Status Text
     let statusText = this._t('closed');
@@ -209,28 +216,35 @@ class PrismShutterCard extends HTMLElement {
         }
         .icon-box {
             width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%;
-            background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
-            color: #60a5fa;
+            background: ${isOpen 
+                ? 'linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1))' 
+                : 'linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1))'};
+            color: ${isOpen ? '#60a5fa' : 'rgba(255,255,255,0.4)'};
             display: flex; align-items: center; justify-content: center;
-            box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+            box-shadow: ${isOpen 
+                ? 'inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -2px -2px 4px rgba(255, 255, 255, 0.03)' 
+                : '4px 4px 10px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.03), inset 0 1px 2px rgba(255, 255, 255, 0.05)'};
             border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
         }
         .icon-box ha-icon {
             width: 22px; height: 22px; --mdc-icon-size: 22px;
-            filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.6));
+            ${isOpen ? 'filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.6));' : ''}
         }
         .title { font-size: 1.125rem; font-weight: 700; color: rgba(255, 255, 255, 0.9); line-height: 1; }
         .subtitle { font-size: 0.75rem; font-weight: 500; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.05em; }
         
         /* Inlet Slider Display (Interactive) */
         .slider-track {
-            height: 12px; border-radius: 12px; margin-bottom: 24px;
+            height: 12px; border-radius: 12px; 
+            margin-bottom: ${hideSlider ? '0' : '24px'};
             background: rgba(20, 20, 20, 0.8);
             box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8), inset -1px -1px 2px rgba(255,255,255,0.1);
             border-bottom: 1px solid rgba(255,255,255,0.05);
             border-top: 1px solid rgba(0,0,0,0.4);
             position: relative; overflow: hidden;
             cursor: pointer; touch-action: none;
+            display: ${hideSlider ? 'none' : 'block'};
         }
         .slider-fill {
             position: absolute; top: 0; left: 0; bottom: 0;
@@ -282,7 +296,7 @@ class PrismShutterCard extends HTMLElement {
           }
           .slider-track {
             height: 10px;
-            margin-bottom: 16px;
+            margin-bottom: ${hideSlider ? '0' : '16px'};
           }
           .controls {
             gap: 10px;
@@ -307,7 +321,7 @@ class PrismShutterCard extends HTMLElement {
           }
           .slider-track {
             height: 8px;
-            margin-bottom: 12px;
+            margin-bottom: ${hideSlider ? '0' : '12px'};
             border-radius: 8px;
           }
           .slider-fill {

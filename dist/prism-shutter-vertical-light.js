@@ -233,12 +233,20 @@ class PrismShutterVerticalLightCard extends HTMLElement {
           }
           .icon-box {
               width: 36px; height: 36px; border-radius: 50%;
-              background: rgba(59, 130, 246, 0.2); color: #60a5fa;
+              background: ${isOpen 
+                  ? 'linear-gradient(145deg, #e6e6e6, #f0f0f0)' 
+                  : 'linear-gradient(145deg, #f0f0f0, #ffffff)'};
+              color: ${isOpen ? '#3b82f6' : 'rgba(0,0,0,0.35)'};
               display: flex; align-items: center; justify-content: center;
-              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+              box-shadow: ${isOpen 
+                  ? 'inset 3px 3px 8px rgba(0,0,0,0.12), inset -2px -2px 6px rgba(255,255,255,0.8)' 
+                  : '3px 3px 8px rgba(0,0,0,0.08), -3px -3px 8px rgba(255,255,255,0.9)'};
+              border: 1px solid ${isOpen ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.8)'};
+              transition: all 0.3s ease;
           }
           .icon-box ha-icon {
               width: 18px; height: 18px; --mdc-icon-size: 18px;
+              ${isOpen ? 'filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4));' : ''}
           }
           .info {
               text-align: center; width: 100%;

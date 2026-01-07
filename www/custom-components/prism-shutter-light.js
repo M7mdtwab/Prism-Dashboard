@@ -21,6 +21,11 @@ class PrismShutterLightCard extends HTMLElement {
         {
           name: "name",
           selector: { text: {} }
+        },
+        {
+          name: "hide_slider",
+          label: "Slider-Linie ausblenden",
+          selector: { boolean: {} }
         }
       ]
     };
@@ -44,7 +49,8 @@ class PrismShutterLightCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 2;
+    // Wenn Slider ausgeblendet ist, wird die Karte kleiner
+    return this.config && this.config.hide_slider ? 1.5 : 2;
   }
 
   // Translation helper - English default, German if HA is set to German
@@ -174,6 +180,7 @@ class PrismShutterLightCard extends HTMLElement {
     const pos = attr.current_position !== undefined ? attr.current_position : 0;
     const state = this._entity ? this._entity.state : 'closed';
     const isOpen = pos > 0;
+    const hideSlider = this.config.hide_slider || false;
     
     // Status Text
     let statusText = this._t('closed');
@@ -212,19 +219,28 @@ class PrismShutterLightCard extends HTMLElement {
         }
         .icon-box {
             width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%;
-            background: rgba(59, 130, 246, 0.2); color: #60a5fa;
+            background: ${isOpen 
+                ? 'linear-gradient(145deg, #e6e6e6, #f0f0f0)' 
+                : 'linear-gradient(145deg, #f0f0f0, #ffffff)'};
+            color: ${isOpen ? '#3b82f6' : 'rgba(0,0,0,0.35)'};
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: ${isOpen 
+                ? 'inset 3px 3px 8px rgba(0,0,0,0.12), inset -2px -2px 6px rgba(255,255,255,0.8)' 
+                : '3px 3px 8px rgba(0,0,0,0.08), -3px -3px 8px rgba(255,255,255,0.9)'};
+            border: 1px solid ${isOpen ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.8)'};
+            transition: all 0.3s ease;
         }
         .icon-box ha-icon {
             width: 22px; height: 22px; --mdc-icon-size: 22px;
+            ${isOpen ? 'filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4));' : ''}
         }
         .title { font-size: 1.125rem; font-weight: 700; color: #1a1a1a; line-height: 1; }
         .subtitle { font-size: 0.75rem; font-weight: 500; color: #666; text-transform: uppercase; margin-top: 4px; }
         
         /* Inlet Slider Display (Interactive) */
         .slider-track {
-            height: 12px; border-radius: 12px; margin-bottom: 24px;
+            height: 12px; border-radius: 12px; 
+            margin-bottom: ${hideSlider ? '0' : '24px'};
             background: linear-gradient(145deg, #e6e6e6, #f8f8f8);
             box-shadow: 
               inset 3px 3px 8px rgba(0,0,0,0.12),
@@ -232,6 +248,7 @@ class PrismShutterLightCard extends HTMLElement {
             border: 1px solid rgba(0,0,0,0.05);
             position: relative; overflow: hidden;
             cursor: pointer; touch-action: none;
+            display: ${hideSlider ? 'none' : 'block'};
         }
         .slider-fill {
             position: absolute; top: 0; left: 0; bottom: 0;
@@ -274,7 +291,7 @@ class PrismShutterLightCard extends HTMLElement {
           }
           .slider-track {
             height: 10px;
-            margin-bottom: 16px;
+            margin-bottom: ${hideSlider ? '0' : '16px'};
           }
           .controls {
             gap: 10px;
@@ -299,7 +316,7 @@ class PrismShutterLightCard extends HTMLElement {
           }
           .slider-track {
             height: 8px;
-            margin-bottom: 12px;
+            margin-bottom: ${hideSlider ? '0' : '12px'};
             border-radius: 8px;
           }
           .slider-fill {

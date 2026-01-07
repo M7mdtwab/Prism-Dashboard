@@ -27,7 +27,9 @@ class PrismNavigationCard extends HTMLElement {
       show_icons: true,
       sticky_position: true,
       top_offset: 16,
-      center_from_column: 1
+      sidebar_width: 280,
+      sidebar_gap: 16,
+      sidebar_breakpoint: 900
     };
   }
 
@@ -45,14 +47,19 @@ class PrismNavigationCard extends HTMLElement {
           selector: { number: { min: 0, max: 200, step: 1, unit_of_measurement: "px", mode: "slider" } }
         },
         {
-          name: "center_from_column",
-          label: "Center from column (1 = full width, 2 = skip sidebar in column 1, etc.)",
-          selector: { number: { min: 1, max: 8, step: 1, mode: "box" } }
+          name: "sidebar_width",
+          label: "Sidebar Width (px) - Navigation centers in remaining space",
+          selector: { number: { min: 0, max: 500, step: 10, unit_of_measurement: "px", mode: "slider" } }
         },
         {
-          name: "total_columns",
-          label: "Total columns in dashboard (for centering calculation)",
-          selector: { number: { min: 1, max: 12, step: 1, mode: "box" } }
+          name: "sidebar_gap",
+          label: "Sidebar Gap (px) - Grid gap between sidebar and content",
+          selector: { number: { min: 0, max: 100, step: 1, unit_of_measurement: "px", mode: "slider" } }
+        },
+        {
+          name: "sidebar_breakpoint",
+          label: "Sidebar Breakpoint (px) - Screen width where sidebar disappears",
+          selector: { number: { min: 0, max: 1600, step: 50, unit_of_measurement: "px", mode: "slider" } }
         },
         {
           name: "active_color",
@@ -195,8 +202,9 @@ class PrismNavigationCard extends HTMLElement {
       icon_only: config.icon_only || false,
       sticky_position: config.sticky_position !== false,
       top_offset: config.top_offset !== undefined ? config.top_offset : 16,
-      center_from_column: config.center_from_column || 1,
-      total_columns: config.total_columns || 4
+      sidebar_width: config.sidebar_width !== undefined ? config.sidebar_width : 0,
+      sidebar_gap: config.sidebar_gap !== undefined ? config.sidebar_gap : 0,
+      sidebar_breakpoint: config.sidebar_breakpoint !== undefined ? config.sidebar_breakpoint : 900
     };
     
     this._updateCard();
@@ -222,22 +230,38 @@ class PrismNavigationCard extends HTMLElement {
 
   _getCurrentPath() {
     const path = window.location.pathname;
-    const match = path.match(/\/([^\/]+)\/([^\/]+)$/);
-    if (match) return match[2];
+    const segments = path.split('/').filter(s => s);
     
+    // Debug: Log path for troubleshooting (can be removed later)
+    // console.log('[Prism Nav] URL path:', path, 'Segments:', segments);
+    
+    // Common Home Assistant URL patterns:
+    // /lovelace/view-name
+    // /lovelace-dashboard/view-name  
+    // /dashboard-name/view-name
+    // /lovelace/0 (numeric index)
+    
+    // Get the last segment as view identifier
+    if (segments.length >= 1) {
+      const lastSegment = segments[segments.length - 1];
+      
+      // If it's a numeric index (0, 1, 2...), return it for index-based matching
+      if (/^\d+$/.test(lastSegment)) {
+        return lastSegment;
+      }
+      
+      // Return the view name
+      return lastSegment;
+    }
+    
+    // Check hash-based routing
     const hash = window.location.hash;
     if (hash) {
       const hashMatch = hash.match(/#([^\/]+)/);
       if (hashMatch) return hashMatch[1];
     }
     
-    const segments = path.split('/').filter(s => s);
-    if (segments.length >= 2 && segments[0].includes('lovelace')) {
-      return segments[1];
-    }
-    if (segments.length >= 2) {
-      return segments[segments.length - 1];
-    }
+    // Default: return empty (will match first tab or index 0)
     return '';
   }
 
@@ -301,11 +325,28 @@ class PrismNavigationCard extends HTMLElement {
     }
   }
 
-  _isTabActive(tab) {
+  _isTabActive(tab, tabIndex) {
     if (!tab.path) return false;
-    const tabPath = tab.path.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const currentPath = this._currentPath.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return tabPath === currentPath;
+    
+    const currentPath = this._currentPath;
+    const tabs = this._config?.tabs || [];
+    
+    // If current path is empty or just "lovelace", activate first tab
+    if (!currentPath || currentPath === 'lovelace' || currentPath === '') {
+      return tabIndex === 0;
+    }
+    
+    // If current path is a number (index-based URL like /lovelace/0)
+    if (/^\d+$/.test(currentPath)) {
+      const pathIndex = parseInt(currentPath, 10);
+      return tabIndex === pathIndex;
+    }
+    
+    // Normalize and compare path names
+    const tabPath = tab.path.toLowerCase().replace(/[^a-z0-9äöüß]/g, '');
+    const normalizedCurrent = currentPath.toLowerCase().replace(/[^a-z0-9äöüß]/g, '');
+    
+    return tabPath === normalizedCurrent;
   }
 
   _handleTabClick(tab) {
@@ -409,17 +450,16 @@ class PrismNavigationCard extends HTMLElement {
     return false;
   }
 
-  _getNavStyles(topOffset, activeColor, centerFromColumn = 1, totalColumns = 4) {
-    // Calculate left offset based on column settings
-    // If center_from_column is 2 and total_columns is 4, skip first 25% (1/4) of width
-    const skipColumns = Math.max(0, centerFromColumn - 1);
-    const leftOffset = totalColumns > 0 ? (skipColumns / totalColumns) * 100 : 0;
+  _getNavStyles(topOffset, activeColor, sidebarWidth = 0, sidebarGap = 0, sidebarBreakpoint = 900) {
+    // Use fixed pixel offset for sidebar width + gap
+    const totalOffset = sidebarWidth + sidebarGap;
+    const leftOffset = totalOffset > 0 ? `${totalOffset}px` : '0';
     
     return `
       #${this._navId} {
         position: fixed;
         top: ${topOffset}px;
-        left: ${leftOffset}%;
+        left: ${leftOffset};
         right: 0;
         z-index: 999;
         display: flex;
@@ -522,7 +562,8 @@ class PrismNavigationCard extends HTMLElement {
         display: none;
       }
       
-      @media (max-width: 768px) {
+      /* Tablet landscape / small desktop */
+      @media (max-width: 1200px) {
         #${this._navId} .nav-container {
           padding: 6px 12px;
         }
@@ -530,21 +571,48 @@ class PrismNavigationCard extends HTMLElement {
           padding: 8px 14px;
           font-size: 11px;
           letter-spacing: 1.5px;
+          margin: 0 2px;
         }
         #${this._navId} .nav-tab ha-icon {
           --mdc-icon-size: 16px;
         }
       }
       
-      @media (max-width: 480px) {
+      @media (max-width: ${sidebarBreakpoint}px) {
+        #${this._navId} {
+          left: 0;
+        }
+      }
+      
+      /* Tablet portrait / large phone */
+      @media (max-width: 768px) {
+        #${this._navId} .nav-container {
+          padding: 5px 10px;
+        }
         #${this._navId} .nav-tab {
-          padding: 8px 10px;
+          padding: 6px 10px;
           font-size: 10px;
           letter-spacing: 1px;
-          margin: 0 2px;
+          margin: 0 1px;
+        }
+        #${this._navId} .nav-tab ha-icon {
+          --mdc-icon-size: 14px;
+        }
+      }
+      
+      /* Phone */
+      @media (max-width: 480px) {
+        #${this._navId} .nav-tab {
+          padding: 6px 8px;
+          font-size: 9px;
+          letter-spacing: 0.5px;
+          margin: 0;
+        }
+        #${this._navId} .nav-tab ha-icon {
+          --mdc-icon-size: 14px;
         }
         #${this._navId} .nav-tab.icon-only {
-          padding: 10px 12px;
+          padding: 8px 10px;
         }
       }
     `;
@@ -558,8 +626,9 @@ class PrismNavigationCard extends HTMLElement {
     const showIcons = this._config.show_icons;
     const iconOnly = this._config.icon_only;
     const topOffset = this._config.top_offset || 16;
-    const centerFromColumn = this._config.center_from_column || 1;
-    const totalColumns = this._config.total_columns || 4;
+    const sidebarWidth = this._config.sidebar_width || 0;
+    const sidebarGap = this._config.sidebar_gap || 0;
+    const sidebarBreakpoint = this._config.sidebar_breakpoint || 900;
     
     // Remove existing
     this._removeExternalNav();
@@ -571,14 +640,14 @@ class PrismNavigationCard extends HTMLElement {
       styleEl.id = this._navId + '-style';
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = this._getNavStyles(topOffset, activeColor, centerFromColumn, totalColumns);
+    styleEl.textContent = this._getNavStyles(topOffset, activeColor, sidebarWidth, sidebarGap, sidebarBreakpoint);
     
     // Create nav element
     this._externalNav = document.createElement('div');
     this._externalNav.id = this._navId;
     
-    const tabsHTML = tabs.map(tab => {
-      const isActive = this._isTabActive(tab);
+    const tabsHTML = tabs.map((tab, index) => {
+      const isActive = this._isTabActive(tab, index);
       const hasIcon = showIcons && tab.icon;
       const isIconOnly = iconOnly && tab.icon;
       
@@ -776,8 +845,8 @@ class PrismNavigationCard extends HTMLElement {
         
         <div class="nav-wrapper">
           <div class="nav-container">
-            ${tabs.map(tab => {
-              const isActive = this._isTabActive(tab);
+            ${tabs.map((tab, index) => {
+              const isActive = this._isTabActive(tab, index);
               const hasIcon = showIcons && tab.icon;
               const isIconOnly = iconOnly && tab.icon;
               
