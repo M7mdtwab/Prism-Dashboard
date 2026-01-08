@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.5.9
- * Build Date: 2026-01-08T10:32:20.213Z
+ * Build Date: 2026-01-08T13:26:30.179Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -439,6 +439,12 @@ class PrismButtonCard extends HTMLElement {
   // ==================== POPUP METHODS ====================
   
   _closePrismPopup() {
+    // Clean up resize handler
+    if (this._popupResizeHandler) {
+      window.removeEventListener('resize', this._popupResizeHandler);
+      this._popupResizeHandler = null;
+    }
+    
     const existingOverlay = document.getElementById('prism-button-popup-overlay');
     if (existingOverlay) {
       existingOverlay.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
@@ -497,7 +503,6 @@ class PrismButtonCard extends HTMLElement {
           min-width: 320px;
           max-width: 500px;
           width: 90vw;
-          max-height: 85vh;
           background: linear-gradient(180deg, rgba(35, 38, 45, 0.98), rgba(25, 27, 32, 0.98));
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -584,26 +589,17 @@ class PrismButtonCard extends HTMLElement {
             inset -1px -1px 3px rgba(255, 255, 255, 0.03);
         }
         .prism-popup-content {
-          flex: 1;
           padding: 16px;
-          overflow-y: auto;
+          overflow: hidden;
+          flex: 1;
           display: flex;
-          flex-direction: column;
-          gap: 12px;
+          align-items: flex-start;
+          justify-content: center;
         }
-        .prism-popup-content::-webkit-scrollbar {
-          width: 6px;
-        }
-        .prism-popup-content::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 3px;
-        }
-        .prism-popup-content::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.15);
-          border-radius: 3px;
-        }
-        .prism-popup-content::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.25);
+        /* Wrapper for scaled content - same as prism-sidebar */
+        .prism-popup-scale-wrapper {
+          transform-origin: top center;
+          width: 100%;
         }
         .prism-popup-loading {
           display: flex;
@@ -622,34 +618,65 @@ class PrismButtonCard extends HTMLElement {
           font-size: 13px;
         }
 
-        /* Popup Responsive - Tablet/Mobile */
-        @media (max-height: 700px) {
-          .prism-popup {
-            max-height: 90vh;
-          }
-          .prism-popup-content {
-            max-height: calc(90vh - 80px);
-            padding: 12px;
-          }
+        /* Responsive header styling only - scaling handled by JS */
+        @media (max-width: 1024px), (max-height: 900px) {
           .prism-popup-header {
-            padding: 12px 16px;
+            padding: 10px 14px;
+          }
+          .prism-popup-title {
+            font-size: 15px;
+            gap: 10px;
+          }
+          .prism-popup-title-icon {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-title-icon ha-icon {
+            --mdc-icon-size: 16px;
+          }
+          .prism-popup-close {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-close ha-icon {
+            --mdc-icon-size: 16px;
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 768px), (max-height: 700px) {
           .prism-popup {
             width: 95vw;
             max-width: 95vw;
-            max-height: 85vh;
           }
           .prism-popup-content {
-            max-height: calc(85vh - 80px);
+            padding: 8px;
+          }
+          .prism-popup-header {
+            padding: 8px 12px;
+          }
+          .prism-popup-title {
+            font-size: 14px;
+            gap: 8px;
+          }
+          .prism-popup-title-icon {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-title-icon ha-icon {
+            --mdc-icon-size: 14px;
+          }
+          .prism-popup-close {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-close ha-icon {
+            --mdc-icon-size: 14px;
           }
         }
 
         @media (max-width: 480px) {
           #prism-button-popup-overlay {
-            padding: 10px;
+            padding: 8px;
           }
           .prism-popup {
             width: 98vw;
@@ -657,13 +684,28 @@ class PrismButtonCard extends HTMLElement {
             border-radius: 16px;
           }
           .prism-popup-header {
-            padding: 12px 14px;
+            padding: 6px 10px;
           }
           .prism-popup-title {
-            font-size: 15px;
+            font-size: 13px;
+            gap: 6px;
+          }
+          .prism-popup-title-icon {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-title-icon ha-icon {
+            --mdc-icon-size: 13px;
+          }
+          .prism-popup-close {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-close ha-icon {
+            --mdc-icon-size: 13px;
           }
           .prism-popup-content {
-            padding: 10px;
+            padding: 6px;
           }
         }
       </style>
@@ -680,7 +722,9 @@ class PrismButtonCard extends HTMLElement {
           </button>
         </div>
         <div class="prism-popup-content">
-          <div class="prism-popup-loading">Loading cards...</div>
+          <div class="prism-popup-scale-wrapper">
+            <div class="prism-popup-loading">Loading cards...</div>
+          </div>
         </div>
       </div>
     `;
@@ -708,13 +752,21 @@ class PrismButtonCard extends HTMLElement {
 
   async _renderPopupCards(container) {
     const cardsConfig = this._config.popup_cards;
+    
+    // Get the scale wrapper inside the container
+    let scaleWrapper = container.querySelector('.prism-popup-scale-wrapper');
+    if (!scaleWrapper) {
+      // Fallback if wrapper doesn't exist
+      scaleWrapper = container;
+    }
+    
     if (!cardsConfig) {
-      container.innerHTML = '<div class="prism-popup-error">No popup_cards configured</div>';
+      scaleWrapper.innerHTML = '<div class="prism-popup-error">No popup_cards configured</div>';
       return;
     }
     
     // Clear loading message
-    container.innerHTML = '';
+    scaleWrapper.innerHTML = '';
     
     // Normalize to array
     let cardConfigs = [];
@@ -760,24 +812,62 @@ class PrismButtonCard extends HTMLElement {
           }
         }
         
-        // Set hass object
+        // Set hass and append to container (same as working prism-sidebar)
         if (cardElement) {
           cardElement.hass = this._hass;
-          container.appendChild(cardElement);
+          scaleWrapper.appendChild(cardElement);
         }
       } catch (e) {
         console.error('Prism Button Popup: Failed to create card', cardConfig, e);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'prism-popup-error';
         errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
-        container.appendChild(errorDiv);
+        scaleWrapper.appendChild(errorDiv);
       }
     }
     
     // If no cards were added, show message
-    if (container.children.length === 0) {
-      container.innerHTML = '<div class="prism-popup-error">No cards could be loaded</div>';
+    if (scaleWrapper.children.length === 0) {
+      scaleWrapper.innerHTML = '<div class="prism-popup-error">No cards could be loaded</div>';
     }
+    
+    // Scale cards to fit available height (same as working prism-sidebar)
+    this._scalePopupContent(container, scaleWrapper);
+  }
+  
+  // Scale popup content to fit available height (copied from prism-sidebar)
+  _scalePopupContent(container, scaleWrapper) {
+    // Wait for cards to render
+    setTimeout(() => {
+      if (!scaleWrapper || !container) return;
+      
+      // Get computed padding
+      const computedStyle = window.getComputedStyle(container);
+      const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+      
+      // Get available height (content area minus padding)
+      const availableHeight = container.clientHeight - paddingTop - paddingBottom;
+      
+      // Get natural height of cards
+      const naturalHeight = scaleWrapper.scrollHeight;
+      
+      if (naturalHeight > 0 && availableHeight > 0) {
+        // Calculate scale to fit
+        let scale = availableHeight / naturalHeight;
+        
+        // Cap scale at 1 (don't upscale) and minimum 0.3 (readable)
+        scale = Math.min(scale, 1);
+        scale = Math.max(scale, 0.3);
+        
+        // Apply scale
+        scaleWrapper.style.transform = `scale(${scale})`;
+        
+        // Adjust container to remove empty space
+        scaleWrapper.style.height = `${naturalHeight}px`;
+        scaleWrapper.style.marginBottom = `-${naturalHeight * (1 - scale)}px`;
+      }
+    }, 200);
   }
 
   // ==================== END POPUP METHODS ====================
@@ -1699,6 +1789,12 @@ class PrismButtonLightCard extends HTMLElement {
   // ==================== POPUP METHODS ====================
   
   _closePrismPopup() {
+    // Clean up resize handler
+    if (this._popupResizeHandler) {
+      window.removeEventListener('resize', this._popupResizeHandler);
+      this._popupResizeHandler = null;
+    }
+    
     const existingOverlay = document.getElementById('prism-button-popup-overlay-light');
     if (existingOverlay) {
       existingOverlay.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
@@ -1757,7 +1853,6 @@ class PrismButtonLightCard extends HTMLElement {
           min-width: 320px;
           max-width: 500px;
           width: 90vw;
-          max-height: 85vh;
           background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.98));
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -1838,18 +1933,23 @@ class PrismButtonLightCard extends HTMLElement {
           filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
         }
         .prism-popup-close-light:active {
-          background: linear-gradient(145deg, #f0f2f5, #ffffff);
+          background: linear-gradient(145deg, #e8eaed, #f5f7fa);
           box-shadow: 
-            inset 2px 2px 4px rgba(0, 0, 0, 0.1),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.5);
+            inset 2px 2px 4px rgba(0, 0, 0, 0.12),
+            inset -1px -1px 3px rgba(255, 255, 255, 0.6);
         }
         .prism-popup-content-light {
-          flex: 1;
           padding: 16px;
-          overflow-y: auto;
+          overflow: hidden;
+          flex: 1;
           display: flex;
-          flex-direction: column;
-          gap: 12px;
+          align-items: flex-start;
+          justify-content: center;
+        }
+        /* Wrapper for scaled content - same as prism-sidebar */
+        .prism-popup-scale-wrapper-light {
+          transform-origin: top center;
+          width: 100%;
         }
         .prism-popup-content-light::-webkit-scrollbar {
           width: 6px;
@@ -1882,34 +1982,65 @@ class PrismButtonLightCard extends HTMLElement {
           font-size: 13px;
         }
 
-        /* Popup Responsive - Tablet/Mobile */
-        @media (max-height: 700px) {
-          .prism-popup-light {
-            max-height: 90vh;
-          }
-          .prism-popup-content-light {
-            max-height: calc(90vh - 80px);
-            padding: 12px;
-          }
+        /* Responsive header styling - same as prism-button */
+        @media (max-width: 1024px), (max-height: 900px) {
           .prism-popup-header-light {
-            padding: 12px 16px;
+            padding: 10px 14px;
+          }
+          .prism-popup-title-light {
+            font-size: 15px;
+            gap: 10px;
+          }
+          .prism-popup-title-icon-light {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 16px;
+          }
+          .prism-popup-close-light {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 16px;
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 768px), (max-height: 700px) {
           .prism-popup-light {
             width: 95vw;
             max-width: 95vw;
-            max-height: 85vh;
           }
           .prism-popup-content-light {
-            max-height: calc(85vh - 80px);
+            padding: 8px;
+          }
+          .prism-popup-header-light {
+            padding: 8px 12px;
+          }
+          .prism-popup-title-light {
+            font-size: 14px;
+            gap: 8px;
+          }
+          .prism-popup-title-icon-light {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 14px;
+          }
+          .prism-popup-close-light {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 14px;
           }
         }
 
         @media (max-width: 480px) {
           #prism-button-popup-overlay-light {
-            padding: 10px;
+            padding: 8px;
           }
           .prism-popup-light {
             width: 98vw;
@@ -1917,13 +2048,28 @@ class PrismButtonLightCard extends HTMLElement {
             border-radius: 16px;
           }
           .prism-popup-header-light {
-            padding: 12px 14px;
+            padding: 6px 10px;
           }
           .prism-popup-title-light {
-            font-size: 15px;
+            font-size: 13px;
+            gap: 6px;
+          }
+          .prism-popup-title-icon-light {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 13px;
+          }
+          .prism-popup-close-light {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 13px;
           }
           .prism-popup-content-light {
-            padding: 10px;
+            padding: 6px;
           }
         }
       </style>
@@ -1940,7 +2086,9 @@ class PrismButtonLightCard extends HTMLElement {
           </button>
         </div>
         <div class="prism-popup-content-light">
-          <div class="prism-popup-loading-light">Loading cards...</div>
+          <div class="prism-popup-scale-wrapper-light">
+            <div class="prism-popup-loading-light">Loading cards...</div>
+          </div>
         </div>
       </div>
     `;
@@ -1968,13 +2116,21 @@ class PrismButtonLightCard extends HTMLElement {
 
   async _renderPopupCards(container) {
     const cardsConfig = this._config.popup_cards;
+    
+    // Get the scale wrapper inside the container
+    let scaleWrapper = container.querySelector('.prism-popup-scale-wrapper-light');
+    if (!scaleWrapper) {
+      // Fallback if wrapper doesn't exist
+      scaleWrapper = container;
+    }
+    
     if (!cardsConfig) {
-      container.innerHTML = '<div class="prism-popup-error-light">No popup_cards configured</div>';
+      scaleWrapper.innerHTML = '<div class="prism-popup-error-light">No popup_cards configured</div>';
       return;
     }
     
     // Clear loading message
-    container.innerHTML = '';
+    scaleWrapper.innerHTML = '';
     
     // Normalize to array
     let cardConfigs = [];
@@ -2020,24 +2176,62 @@ class PrismButtonLightCard extends HTMLElement {
           }
         }
         
-        // Set hass object
+        // Set hass and append to container (same as working prism-sidebar)
         if (cardElement) {
           cardElement.hass = this._hass;
-          container.appendChild(cardElement);
+          scaleWrapper.appendChild(cardElement);
         }
       } catch (e) {
         console.error('Prism Button Popup: Failed to create card', cardConfig, e);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'prism-popup-error-light';
         errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
-        container.appendChild(errorDiv);
+        scaleWrapper.appendChild(errorDiv);
       }
     }
     
     // If no cards were added, show message
-    if (container.children.length === 0) {
-      container.innerHTML = '<div class="prism-popup-error-light">No cards could be loaded</div>';
+    if (scaleWrapper.children.length === 0) {
+      scaleWrapper.innerHTML = '<div class="prism-popup-error-light">No cards could be loaded</div>';
     }
+    
+    // Scale cards to fit available height (same as working prism-sidebar)
+    this._scalePopupContent(container, scaleWrapper);
+  }
+  
+  // Scale popup content to fit available height (copied from prism-sidebar)
+  _scalePopupContent(container, scaleWrapper) {
+    // Wait for cards to render
+    setTimeout(() => {
+      if (!scaleWrapper || !container) return;
+      
+      // Get computed padding
+      const computedStyle = window.getComputedStyle(container);
+      const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+      
+      // Get available height (content area minus padding)
+      const availableHeight = container.clientHeight - paddingTop - paddingBottom;
+      
+      // Get natural height of cards
+      const naturalHeight = scaleWrapper.scrollHeight;
+      
+      if (naturalHeight > 0 && availableHeight > 0) {
+        // Calculate scale to fit
+        let scale = availableHeight / naturalHeight;
+        
+        // Cap scale at 1 (don't upscale) and minimum 0.3 (readable)
+        scale = Math.min(scale, 1);
+        scale = Math.max(scale, 0.3);
+        
+        // Apply scale
+        scaleWrapper.style.transform = `scale(${scale})`;
+        
+        // Adjust container to remove empty space
+        scaleWrapper.style.height = `${naturalHeight}px`;
+        scaleWrapper.style.marginBottom = `-${naturalHeight * (1 - scale)}px`;
+      }
+    }, 200);
   }
 
   // ==================== END POPUP METHODS ====================
@@ -14721,14 +14915,19 @@ class PrismSidebarCard extends HTMLElement {
                 to { opacity: 1; }
             }
             .popup {
-                background: rgba(30, 32, 36, 0.95);
+                background: linear-gradient(145deg, rgba(30, 32, 38, 0.98), rgba(22, 24, 28, 0.98));
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 20px;
                 width: 90%;
-                max-width: 380px;
-                max-height: 80vh;
+                max-width: 500px;
+                max-height: 85vh;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                box-shadow: 
+                    0 25px 80px rgba(0, 0, 0, 0.6),
+                    0 0 0 1px rgba(255, 255, 255, 0.08),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                display: flex;
+                flex-direction: column;
                 animation: slideUp 0.3s ease;
             }
             @keyframes slideUp {
@@ -14764,9 +14963,12 @@ class PrismSidebarCard extends HTMLElement {
                 color: white;
             }
             .popup-content {
+                flex: 1;
                 padding: 12px;
-                max-height: 400px;
-                overflow-y: auto;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
             .popup-footer {
                 padding: 12px 16px;
@@ -14793,30 +14995,164 @@ class PrismSidebarCard extends HTMLElement {
             }
 
             /* Popup Responsive - Tablet/Mobile */
-            @media (max-height: 700px) {
-                .popup {
-                    max-height: 90vh;
-                }
-                .popup-content {
-                    max-height: calc(90vh - 110px);
-                    padding: 10px;
+            @media (max-height: 1200px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.8);
+                    margin-bottom: -20%;
                 }
                 .popup-header {
-                    padding: 12px 16px;
+                    padding: 8px 12px;
+                    font-size: 15px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 20px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+            }
+
+            @media (max-height: 900px) {
+                .popup {
+                    max-height: 95vh;
+                }
+                .popup-content {
+                    max-height: calc(95vh - 50px);
+                    padding: 6px;
+                }
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.65);
+                    margin-bottom: -35%;
+                }
+                .popup-header {
+                    padding: 6px 10px;
+                    font-size: 14px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 18px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
                 }
                 .popup-footer {
-                    padding: 10px 12px;
+                    padding: 5px 8px;
+                }
+            }
+
+            @media (max-height: 700px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.55);
+                    margin-bottom: -45%;
+                }
+                .popup-header {
+                    padding: 5px 8px;
+                    font-size: 13px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 22px;
+                    height: 22px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 12px;
+                }
+                .popup-footer {
+                    padding: 4px 6px;
+                }
+            }
+
+            @media (max-height: 600px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.5);
+                    margin-bottom: -50%;
+                }
+            }
+
+            @media (max-width: 1200px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.8);
+                    margin-bottom: -20%;
+                }
+                .popup-header {
+                    padding: 8px 12px;
+                    font-size: 15px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 20px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.75);
+                    margin-bottom: -25%;
+                }
+                .popup-header {
+                    padding: 6px 10px;
+                    font-size: 14px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 18px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
                 }
             }
 
             @media (max-width: 768px) {
                 .popup {
                     width: 95%;
-                    max-height: 85vh;
+                    max-height: 95vh;
                 }
                 .popup-content {
-                    max-height: calc(85vh - 110px);
-                    padding: 10px;
+                    max-height: calc(95vh - 50px);
+                    padding: 6px;
+                }
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.65);
+                    margin-bottom: -35%;
+                }
+                .popup-header {
+                    padding: 5px 8px;
+                    font-size: 13px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 22px;
+                    height: 22px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 12px;
                 }
             }
 
@@ -14826,14 +15162,28 @@ class PrismSidebarCard extends HTMLElement {
                     border-radius: 16px;
                 }
                 .popup-header {
-                    padding: 12px 14px;
+                    padding: 4px 6px;
+                    font-size: 12px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-close {
+                    width: 20px;
+                    height: 20px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 11px;
+                }
+                .popup-header {
+                    padding: 10px 12px;
                     font-size: 15px;
                 }
                 .popup-content {
-                    padding: 8px;
+                    padding: 6px;
                 }
                 .popup-footer {
-                    padding: 8px 10px;
+                    padding: 6px 8px;
                 }
             }
 
@@ -15086,90 +15436,164 @@ class PrismSidebarCard extends HTMLElement {
             }
 
             .popup {
-                background: linear-gradient(135deg, rgba(30, 32, 36, 0.98) 0%, rgba(20, 22, 26, 0.98) 100%);
-                border-radius: 24px;
-                max-width: 600px;
-                width: 100%;
-                max-height: 80vh;
+                background: linear-gradient(145deg, rgba(30, 32, 38, 0.98), rgba(22, 24, 28, 0.98));
+                border-radius: 20px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 85vh;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 
+                    0 25px 80px rgba(0, 0, 0, 0.6),
+                    0 0 0 1px rgba(255, 255, 255, 0.08),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                display: flex;
+                flex-direction: column;
                 animation: slideUp 0.3s ease;
             }
 
             .popup-header {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                padding: 20px 24px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                background: rgba(255, 255, 255, 0.02);
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             }
 
-            .popup-header span {
-                flex: 1;
-                font-size: 18px;
-                font-weight: 700;
+            .popup-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .popup-title-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+                background: linear-gradient(145deg, rgba(122, 101, 168, 0.3), rgba(122, 101, 168, 0.15));
+                border: 1px solid rgba(122, 101, 168, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #a78bfa;
+                box-shadow: 
+                    0 2px 8px rgba(122, 101, 168, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+
+            .popup-title-icon ha-icon {
+                --mdc-icon-size: 18px;
+                filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
+            }
+
+            .popup-title span {
+                font-size: 16px;
+                font-weight: 600;
                 color: rgba(255, 255, 255, 0.9);
+                letter-spacing: -0.01em;
             }
 
             .popup-close {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 12px;
-                width: 36px;
-                height: 36px;
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+                background: linear-gradient(145deg, #2a2d35, #23262c);
+                border: 1px solid rgba(255, 255, 255, 0.06);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
+                color: rgba(255, 255, 255, 0.5);
                 transition: all 0.2s;
-                color: rgba(255, 255, 255, 0.6);
+                box-shadow: 
+                    2px 2px 6px rgba(0, 0, 0, 0.3),
+                    -1px -1px 4px rgba(255, 255, 255, 0.03);
+            }
+
+            .popup-close ha-icon {
+                --mdc-icon-size: 18px;
             }
 
             .popup-close:hover {
-                background: rgba(255, 255, 255, 0.1);
-                color: rgba(255, 255, 255, 0.9);
+                color: #f87171;
+                background: linear-gradient(145deg, #2d3038, #262930);
+                border-color: rgba(248, 113, 113, 0.3);
             }
 
             .popup-content {
-                padding: 24px;
-                overflow-y: auto;
-                max-height: calc(80vh - 80px);
+                flex: 1;
+                padding: 12px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* Wrapper for scaled content - JS will calculate optimal scale */
+            .popup-scale-wrapper {
+                transform-origin: top center;
+                transition: transform 0.2s ease;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
             }
 
             .custom-cards-container {
                 display: flex;
                 flex-direction: column;
+                align-items: center;
                 gap: 12px;
+                width: 100%;
+            }
+
+            .popup-loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                color: rgba(255, 255, 255, 0.5);
+                font-size: 14px;
+            }
+
+            .popup-error {
+                padding: 16px;
+                background: rgba(248, 113, 113, 0.1);
+                border: 1px solid rgba(248, 113, 113, 0.3);
+                border-radius: 12px;
+                color: #f87171;
+                font-size: 13px;
+                text-align: center;
             }
 
             .popup-footer {
-                padding: 16px 24px;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-                background: rgba(255, 255, 255, 0.02);
+                padding: 12px 16px;
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+                background: rgba(0, 0, 0, 0.1);
                 display: flex;
                 justify-content: flex-end;
             }
 
             .popup-more-info-btn {
-                background: rgba(122, 101, 168, 0.2);
-                border: 1px solid rgba(122, 101, 168, 0.4);
-                border-radius: 12px;
-                padding: 10px 16px;
+                background: linear-gradient(145deg, rgba(122, 101, 168, 0.25), rgba(122, 101, 168, 0.15));
+                border: 1px solid rgba(122, 101, 168, 0.3);
+                border-radius: 10px;
+                padding: 8px 14px;
                 color: #a78bfa;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 transition: all 0.2s;
+                box-shadow: 0 2px 8px rgba(122, 101, 168, 0.15);
             }
 
             .popup-more-info-btn:hover {
-                background: rgba(122, 101, 168, 0.3);
-                border-color: rgba(122, 101, 168, 0.6);
+                background: linear-gradient(145deg, rgba(122, 101, 168, 0.35), rgba(122, 101, 168, 0.25));
+                border-color: rgba(122, 101, 168, 0.5);
             }
 
             @keyframes fadeIn {
@@ -15185,6 +15609,93 @@ class PrismSidebarCard extends HTMLElement {
                 to { 
                     opacity: 1;
                     transform: translateY(0);
+                }
+            }
+
+            /* Custom Popup Responsive - Tablet/Mobile */
+            @media (max-width: 1200px), (max-height: 1200px) {
+                .popup-header {
+                    padding: 10px 14px;
+                }
+                .popup-title span {
+                    font-size: 15px;
+                }
+                .popup-title-icon {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-content {
+                    padding: 10px;
+                }
+            }
+
+            @media (max-width: 1024px), (max-height: 900px) {
+                .popup-header {
+                    padding: 8px 12px;
+                }
+                .popup-title {
+                    gap: 10px;
+                }
+                .popup-title span {
+                    font-size: 14px;
+                }
+                .popup-title-icon {
+                    width: 26px;
+                    height: 26px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-close {
+                    width: 26px;
+                    height: 26px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-content {
+                    padding: 8px;
+                }
+            }
+
+            @media (max-width: 768px), (max-height: 700px) {
+                .popup-header {
+                    padding: 6px 10px;
+                }
+                .popup-title {
+                    gap: 8px;
+                }
+                .popup-title span {
+                    font-size: 13px;
+                }
+                .popup-title-icon {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 13px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 13px;
+                }
+                .popup-content {
+                    padding: 6px;
                 }
             }
 
@@ -15980,16 +16491,33 @@ class PrismSidebarCard extends HTMLElement {
         });
     }
 
-    // Show custom popup with custom cards
-    _showCustomPopup(title, cardsConfig) {
-        // Remove existing popup
-        const existingPopup = this.shadowRoot?.querySelector('.popup-overlay');
-        if (existingPopup) existingPopup.remove();
+    // Close custom popup helper
+    _closeCustomPopup() {
+        // Remove resize handler
+        if (this._popupResizeHandler) {
+            window.removeEventListener('resize', this._popupResizeHandler);
+            this._popupResizeHandler = null;
+        }
+        
+        const existingPopup = document.getElementById('prism-sidebar-custom-popup');
+        if (existingPopup) {
+            existingPopup.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
+            setTimeout(() => {
+                existingPopup.remove();
+            }, 200);
+        }
+        this._popupCards = [];
+    }
+
+    // Show custom popup with custom cards - SAME APPROACH AS prism-button.js
+    async _showCustomPopup(title, cardsConfig) {
+        // Close any existing popup first
+        this._closeCustomPopup();
         
         // Clear previous popup cards
         this._popupCards = [];
         
-        // Parse cards config if it's an object (could be array or single card)
+        // Parse cards config
         let cards = [];
         if (Array.isArray(cardsConfig)) {
             cards = cardsConfig;
@@ -15997,100 +16525,432 @@ class PrismSidebarCard extends HTMLElement {
             cards = [cardsConfig];
         }
         
-        // Create popup - stays in shadow root so events propagate correctly to HA
-        const popupOverlay = document.createElement('div');
-        popupOverlay.className = 'popup-overlay';
-        popupOverlay.innerHTML = `
-            <div class="popup">
-                <div class="popup-header">
-                    <ha-icon icon="mdi:view-dashboard" style="--mdc-icon-size: 24px; color: #7a65a8;"></ha-icon>
-                    <span>${title}</span>
-                    <button class="popup-close">
-                        <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
+        // Create popup in document.body (OUTSIDE shadow DOM - same as prism-button)
+        const overlay = document.createElement('div');
+        overlay.id = 'prism-sidebar-custom-popup';
+        overlay.innerHTML = `
+            <style>
+                #prism-sidebar-custom-popup {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.85);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    z-index: 999; /* High enough to be above navigation */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    animation: prismPopupFadeIn 0.2s ease;
+                    font-family: system-ui, -apple-system, sans-serif;
+                    transition: z-index 0s; /* For dynamic z-index changes */
+                }
+                #prism-sidebar-custom-popup.behind-dialog {
+                    z-index: 0 !important; /* Temporarily go behind HA dialogs */
+                }
+                @keyframes prismPopupFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes prismPopupFadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+                @keyframes prismPopupSlideIn {
+                    from { transform: scale(0.9); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .prism-custom-popup {
+                    position: relative;
+                    min-width: 320px;
+                    max-width: 500px;
+                    width: 90vw;
+                    background: linear-gradient(180deg, rgba(35, 38, 45, 0.98), rgba(25, 27, 32, 0.98));
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 20px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 
+                        0 25px 80px rgba(0, 0, 0, 0.8),
+                        0 0 0 1px rgba(255, 255, 255, 0.05),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    overflow: hidden;
+                    animation: prismPopupSlideIn 0.3s ease;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .prism-custom-popup-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 20px;
+                    background: linear-gradient(180deg, rgba(40, 43, 50, 0.9), rgba(30, 33, 38, 0.9));
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .prism-custom-popup-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: rgba(255, 255, 255, 0.95);
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+                .prism-custom-popup-title-icon {
+                    width: 32px;
+                    height: 32px;
+                    background: linear-gradient(145deg, #2d3038, #22252b);
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: rgb(167, 139, 250);
+                    --mdc-icon-size: 18px;
+                    box-shadow: 
+                        2px 2px 4px rgba(0, 0, 0, 0.4),
+                        -1px -1px 3px rgba(255, 255, 255, 0.03),
+                        inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+                }
+                .prism-custom-popup-title-icon ha-icon {
+                    display: flex;
+                    --mdc-icon-size: 18px;
+                    filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.5));
+                }
+                .prism-custom-popup-close {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 10px;
+                    background: linear-gradient(145deg, #2d3038, #22252b);
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: rgba(255, 255, 255, 0.4);
+                    --mdc-icon-size: 18px;
+                    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+                    box-shadow: 
+                        2px 2px 4px rgba(0, 0, 0, 0.4),
+                        -1px -1px 3px rgba(255, 255, 255, 0.03),
+                        inset 1px 1px 2px rgba(255, 255, 255, 0.05);
+                }
+                .prism-custom-popup-close ha-icon {
+                    display: flex;
+                    --mdc-icon-size: 18px;
+                    transition: all 0.2s ease;
+                }
+                .prism-custom-popup-close:hover {
+                    color: #f87171;
+                }
+                .prism-custom-popup-close:hover ha-icon {
+                    filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.6));
+                }
+                .prism-custom-popup-close:active {
+                    background: linear-gradient(145deg, #22252b, #2d3038);
+                    box-shadow: 
+                        inset 2px 2px 4px rgba(0, 0, 0, 0.5),
+                        inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+                }
+                .prism-custom-popup-content {
+                    padding: 16px;
+                    overflow: hidden;
+                    flex: 1;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: center;
+                }
+                .prism-custom-popup-cards {
+                    transform-origin: top center;
+                    width: 100%;
+                }
+                .prism-custom-popup-loading {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 40px;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                }
+                .prism-custom-popup-error {
+                    padding: 16px;
+                    background: rgba(248, 113, 113, 0.1);
+                    border: 1px solid rgba(248, 113, 113, 0.3);
+                    border-radius: 12px;
+                    color: #f87171;
+                    font-size: 13px;
+                }
+
+                /* Responsive header styling - same as prism-button */
+                @media (max-width: 1024px), (max-height: 900px) {
+                    .prism-custom-popup-header {
+                        padding: 10px 14px;
+                    }
+                    .prism-custom-popup-title {
+                        font-size: 15px;
+                        gap: 10px;
+                    }
+                    .prism-custom-popup-title-icon {
+                        width: 28px;
+                        height: 28px;
+                    }
+                    .prism-custom-popup-title-icon ha-icon {
+                        --mdc-icon-size: 16px;
+                    }
+                    .prism-custom-popup-close {
+                        width: 28px;
+                        height: 28px;
+                    }
+                    .prism-custom-popup-close ha-icon {
+                        --mdc-icon-size: 16px;
+                    }
+                }
+
+                @media (max-width: 768px), (max-height: 700px) {
+                    .prism-custom-popup {
+                        width: 95vw;
+                        max-width: 95vw;
+                    }
+                    .prism-custom-popup-content {
+                        padding: 8px;
+                    }
+                    .prism-custom-popup-header {
+                        padding: 8px 12px;
+                    }
+                    .prism-custom-popup-title {
+                        font-size: 14px;
+                        gap: 8px;
+                    }
+                    .prism-custom-popup-title-icon {
+                        width: 26px;
+                        height: 26px;
+                    }
+                    .prism-custom-popup-title-icon ha-icon {
+                        --mdc-icon-size: 14px;
+                    }
+                    .prism-custom-popup-close {
+                        width: 26px;
+                        height: 26px;
+                    }
+                    .prism-custom-popup-close ha-icon {
+                        --mdc-icon-size: 14px;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    #prism-sidebar-custom-popup {
+                        padding: 8px;
+                    }
+                    .prism-custom-popup {
+                        width: 98vw;
+                        max-width: 98vw;
+                        border-radius: 16px;
+                    }
+                    .prism-custom-popup-header {
+                        padding: 6px 10px;
+                    }
+                    .prism-custom-popup-title {
+                        font-size: 13px;
+                        gap: 6px;
+                    }
+                    .prism-custom-popup-title-icon {
+                        width: 24px;
+                        height: 24px;
+                    }
+                    .prism-custom-popup-title-icon ha-icon {
+                        --mdc-icon-size: 13px;
+                    }
+                    .prism-custom-popup-close {
+                        width: 24px;
+                        height: 24px;
+                    }
+                    .prism-custom-popup-close ha-icon {
+                        --mdc-icon-size: 13px;
+                    }
+                    .prism-custom-popup-content {
+                        padding: 6px;
+                    }
+                }
+            </style>
+            <div class="prism-custom-popup">
+                <div class="prism-custom-popup-header">
+                    <div class="prism-custom-popup-title">
+                        <div class="prism-custom-popup-title-icon">
+                            <ha-icon icon="mdi:view-dashboard"></ha-icon>
+                        </div>
+                        <span>${title}</span>
+                    </div>
+                    <button class="prism-custom-popup-close">
+                        <ha-icon icon="mdi:close"></ha-icon>
                     </button>
                 </div>
-                <div class="popup-content custom-cards-container">
+                <div class="prism-custom-popup-content">
+                    <div class="prism-custom-popup-cards">
+                        <div class="prism-custom-popup-loading">Loading cards...</div>
+                    </div>
                 </div>
             </div>
         `;
         
-        // Add to shadow root (so hass-more-info events propagate correctly)
-        this.shadowRoot.appendChild(popupOverlay);
+        // Append to document.body (NOT shadow root - this is the key fix!)
+        document.body.appendChild(overlay);
         
-        // Insert custom cards and store references
-        const container = popupOverlay.querySelector('.custom-cards-container');
-        cards.forEach(cardConfig => {
-            const card = this._createPopupCustomCard(cardConfig);
-            if (card) {
-                container.appendChild(card);
-                // Store reference for hass updates
-                this._popupCards.push(card);
+        // IMPORTANT: Forward hass-more-info events from popup to Home Assistant
+        // Since popup is in document.body (outside HA's shadow DOM), we need to catch
+        // these events and re-dispatch them to the home-assistant element
+        overlay.addEventListener('hass-more-info', (e) => {
+            e.stopPropagation();
+            const haEl = document.querySelector('home-assistant');
+            if (haEl && e.detail?.entityId) {
+                // Temporarily lower z-index so HA dialog appears on top
+                overlay.classList.add('behind-dialog');
+                
+                const newEvent = new CustomEvent('hass-more-info', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { entityId: e.detail.entityId }
+                });
+                haEl.dispatchEvent(newEvent);
+                
+                // Restore z-index when HA dialog is closed (listen for click on HA overlay)
+                const restoreZIndex = () => {
+                    overlay.classList.remove('behind-dialog');
+                };
+                // Restore after a short delay and when user interacts
+                setTimeout(() => {
+                    document.addEventListener('click', function handler(evt) {
+                        // Check if click is outside HA dialog (dialog closed)
+                        const haDialog = document.querySelector('ha-more-info-dialog, ha-dialog');
+                        if (!haDialog || !haDialog.contains(evt.target)) {
+                            restoreZIndex();
+                            document.removeEventListener('click', handler);
+                        }
+                    });
+                }, 500);
             }
         });
         
         // Event listeners
-        const closePopup = () => {
-            popupOverlay.remove();
-            this._popupCards = []; // Clear references when popup closes
+        overlay.querySelector('.prism-custom-popup-close').onclick = () => this._closeCustomPopup();
+        overlay.onclick = (e) => {
+            if (e.target === overlay) this._closeCustomPopup();
         };
         
-        popupOverlay.addEventListener('click', (e) => {
-            if (e.target === popupOverlay) {
-                closePopup();
+        // ESC key to close
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                this._closeCustomPopup();
+                document.removeEventListener('keydown', escHandler);
             }
-        });
+        };
+        document.addEventListener('keydown', escHandler);
         
-        const closeBtn = popupOverlay.querySelector('.popup-close');
-        closeBtn?.addEventListener('click', closePopup);
+        // Render the cards
+        const cardsContainer = overlay.querySelector('.prism-custom-popup-cards');
+        const contentContainer = overlay.querySelector('.prism-custom-popup-content');
+        await this._renderCustomPopupCards(cardsContainer, cards);
+        
+        // Scale cards to fit available height
+        this._scalePopupContent(cardsContainer, contentContainer);
+    }
+    
+    // Scale popup content to fit available height
+    _scalePopupContent(cardsContainer, contentContainer) {
+        // Wait for cards to render
+        setTimeout(() => {
+            if (!cardsContainer || !contentContainer) return;
+            
+            // Get computed padding
+            const computedStyle = window.getComputedStyle(contentContainer);
+            const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+            const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+            
+            // Get available height (content area minus padding)
+            const availableHeight = contentContainer.clientHeight - paddingTop - paddingBottom;
+            
+            // Get natural height of cards
+            const naturalHeight = cardsContainer.scrollHeight;
+            
+            if (naturalHeight > 0 && availableHeight > 0) {
+                // Calculate scale to fit
+                let scale = availableHeight / naturalHeight;
+                
+                // Cap scale at 1 (don't upscale) and minimum 0.3 (readable)
+                scale = Math.min(scale, 1);
+                scale = Math.max(scale, 0.3);
+                
+                // Apply scale
+                cardsContainer.style.transform = `scale(${scale})`;
+                
+                // Adjust container to remove empty space
+                cardsContainer.style.height = `${naturalHeight}px`;
+                cardsContainer.style.marginBottom = `-${naturalHeight * (1 - scale)}px`;
+            }
+        }, 200);
     }
 
-    // Create a custom card for popup
-    _createPopupCustomCard(config) {
-        if (!config || !config.type) return null;
-        
-        let cardType = config.type;
-        
-        // Strip 'custom:' prefix if present
-        if (cardType.startsWith('custom:')) {
-            cardType = cardType.substring(7);
+    // Render custom cards in popup using HA's official card helpers (like prism-button)
+    async _renderCustomPopupCards(container, cardConfigs) {
+        if (!cardConfigs || cardConfigs.length === 0) {
+            container.innerHTML = '<div class="prism-custom-popup-error">No cards configured</div>';
+            return;
         }
         
-        // Check if element is registered
-        if (!customElements.get(cardType)) {
-            console.warn(`Custom card ${cardType} not found. Make sure it's installed.`);
-            
-            // Create error placeholder
-            const errorCard = document.createElement('div');
-            errorCard.style.cssText = 'padding: 16px; background: rgba(255,0,0,0.1); border-radius: 8px; color: rgba(255,255,255,0.8); text-align: center;';
-            errorCard.innerHTML = `
-                <ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 24px; display: block; margin: 0 auto 8px;"></ha-icon>
-                <div>Card "${cardType}" not found</div>
-                <div style="font-size: 12px; opacity: 0.6; margin-top: 4px;">Make sure it's installed via HACS</div>
-            `;
-            return errorCard;
-        }
+        // Clear loading message
+        container.innerHTML = '';
         
+        // Try to get card helpers (official HA method)
+        let helpers = null;
         try {
-            const element = document.createElement(cardType);
-            
-            // Set config
-            if (element.setConfig) {
-                element.setConfig(config);
-            }
-            
-            // Set hass - always try to set it (most cards have a hass setter)
-            if (this._hass) {
-                try {
-                    element.hass = this._hass;
-                } catch (e) {
-                    // Card doesn't support hass
+            helpers = await window.loadCardHelpers?.();
+        } catch (e) {
+            console.warn('Prism Sidebar Custom Popup: Could not load card helpers', e);
+        }
+        
+        for (const cardConfig of cardConfigs) {
+            try {
+                let cardElement;
+                
+                if (helpers?.createCardElement) {
+                    // Method 1: Official card helpers (preferred) - same as prism-button
+                    cardElement = await helpers.createCardElement(cardConfig);
+                } else {
+                    // Method 2: Fallback - direct element creation
+                    const cardType = cardConfig.type || 'entity';
+                    let tag;
+                    
+                    if (cardType.startsWith('custom:')) {
+                        tag = cardType.replace('custom:', '');
+                    } else {
+                        tag = `hui-${cardType}-card`;
+                    }
+                    
+                    cardElement = document.createElement(tag);
+                    if (cardElement.setConfig) {
+                        cardElement.setConfig(cardConfig);
+                    }
                 }
+                
+                // Set hass and append to container
+                if (cardElement) {
+                    cardElement.hass = this._hass;
+                    container.appendChild(cardElement);
+                    this._popupCards.push(cardElement);
+                }
+            } catch (e) {
+                console.error('Prism Sidebar Custom Popup: Failed to create card', cardConfig, e);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'prism-custom-popup-error';
+                errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
+                container.appendChild(errorDiv);
             }
-            
-            return element;
-        } catch (error) {
-            console.error(`Error creating card ${cardType}:`, error);
-            return null;
+        }
+        
+        // If no cards were added, show message
+        if (container.children.length === 0) {
+            container.innerHTML = '<div class="prism-custom-popup-error">No cards could be loaded</div>';
         }
     }
 
@@ -16105,6 +16965,76 @@ class PrismSidebarCard extends HTMLElement {
         };
         
         return translations[key] || key;
+    }
+
+    // Apply optimal scale to popup content based on available space
+    _applyOptimalScale(popupContent, scaleWrapper, overlay) {
+        // Wait for cards to fully render
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const popup = popupContent?.closest('.popup');
+                const header = popup?.querySelector('.popup-header');
+                
+                if (!popup || !header || !scaleWrapper || !overlay) return;
+                
+                // Get available space
+                const overlayPadding = 40;
+                const availableHeight = window.innerHeight - overlayPadding;
+                const availableWidth = window.innerWidth - overlayPadding;
+                const headerHeight = header.offsetHeight;
+                const contentPadding = 24;
+                
+                // Maximum space for content
+                const maxContentHeight = availableHeight - headerHeight - contentPadding;
+                const maxContentWidth = availableWidth - contentPadding;
+                
+                // Reset scale to measure natural size
+                scaleWrapper.style.transform = 'scale(1)';
+                
+                // Get natural content size
+                const naturalHeight = scaleWrapper.scrollHeight;
+                const naturalWidth = scaleWrapper.scrollWidth;
+                
+                // Calculate optimal scale
+                const scaleHeight = maxContentHeight / naturalHeight;
+                const scaleWidth = maxContentWidth / naturalWidth;
+                
+                // Use the smaller scale to fit both dimensions, but cap at 1 (no upscaling)
+                let optimalScale = Math.min(scaleHeight, scaleWidth, 1);
+                
+                // Minimum scale to keep content readable
+                optimalScale = Math.max(optimalScale, 0.4);
+                
+                // Apply scale
+                scaleWrapper.style.transform = `scale(${optimalScale})`;
+                
+                // Adjust wrapper height to match scaled content (removes empty space)
+                const scaledHeight = naturalHeight * optimalScale;
+                scaleWrapper.style.height = `${naturalHeight}px`;
+                popupContent.style.height = `${scaledHeight}px`;
+                
+                // Set popup to fit content
+                popup.style.height = 'auto';
+                popup.style.maxHeight = `${availableHeight}px`;
+                
+                // Handle window resize
+                const resizeHandler = () => {
+                    if (!this.shadowRoot?.querySelector('.popup-overlay')) {
+                        window.removeEventListener('resize', resizeHandler);
+                        return;
+                    }
+                    this._applyOptimalScale(popupContent, scaleWrapper, overlay);
+                };
+                
+                // Remove any existing resize handler and add new one
+                if (this._popupResizeHandler) {
+                    window.removeEventListener('resize', this._popupResizeHandler);
+                }
+                this._popupResizeHandler = resizeHandler;
+                window.addEventListener('resize', resizeHandler);
+                
+            }, 100); // Small delay to ensure cards are fully rendered
+        });
     }
 
     getCardSize() {
@@ -17428,63 +18358,128 @@ class PrismSidebarLightCard extends HTMLElement {
                 border-radius: 24px;
                 max-width: 600px;
                 width: 100%;
-                max-height: 80vh;
+                max-height: 85vh;
                 overflow: hidden;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
                 border: 1px solid rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
                 animation: slideUp 0.3s ease;
             }
 
             .popup-header {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                padding: 20px 24px;
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-                background: rgba(0, 0, 0, 0.02);
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, transparent 100%);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
             }
 
-            .popup-header span {
-                flex: 1;
-                font-size: 18px;
-                font-weight: 700;
-                color: rgba(0, 0, 0, 0.9);
+            .popup-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .popup-title-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+                background: linear-gradient(145deg, rgba(122, 101, 168, 0.2), rgba(122, 101, 168, 0.1));
+                border: 1px solid rgba(122, 101, 168, 0.25);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #7a65a8;
+                box-shadow: 0 2px 8px rgba(122, 101, 168, 0.15);
+            }
+
+            .popup-title-icon ha-icon {
+                --mdc-icon-size: 18px;
+            }
+
+            .popup-title span {
+                font-size: 16px;
+                font-weight: 600;
+                color: rgba(0, 0, 0, 0.85);
+                letter-spacing: -0.01em;
             }
 
             .popup-close {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
                 background: rgba(0, 0, 0, 0.05);
-                border: 1px solid rgba(0, 0, 0, 0.1);
-                border-radius: 12px;
-                width: 36px;
-                height: 36px;
+                border: 1px solid rgba(0, 0, 0, 0.08);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
+                color: rgba(0, 0, 0, 0.4);
                 transition: all 0.2s;
-                color: rgba(0, 0, 0, 0.6);
+            }
+
+            .popup-close ha-icon {
+                --mdc-icon-size: 18px;
             }
 
             .popup-close:hover {
-                background: rgba(0, 0, 0, 0.1);
-                color: rgba(0, 0, 0, 0.9);
+                color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+                border-color: rgba(239, 68, 68, 0.2);
             }
 
             .popup-content {
-                padding: 24px;
-                overflow-y: auto;
-                max-height: calc(80vh - 80px);
+                flex: 1;
+                padding: 12px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            /* Wrapper for scaled content - JS will calculate optimal scale */
+            .popup-scale-wrapper {
+                transform-origin: top center;
+                transition: transform 0.2s ease;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
             }
 
             .custom-cards-container {
                 display: flex;
                 flex-direction: column;
+                align-items: center;
                 gap: 12px;
+                width: 100%;
+            }
+
+            .popup-loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                color: rgba(0, 0, 0, 0.4);
+                font-size: 14px;
+            }
+
+            .popup-error {
+                padding: 16px;
+                background: rgba(248, 113, 113, 0.1);
+                border: 1px solid rgba(248, 113, 113, 0.3);
+                border-radius: 12px;
+                color: #dc2626;
+                font-size: 13px;
+                text-align: center;
             }
 
             .popup-footer {
-                padding: 16px 24px;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
+                padding: 12px 16px;
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
                 background: rgba(0, 0, 0, 0.02);
                 display: flex;
                 justify-content: flex-end;
@@ -17492,16 +18487,16 @@ class PrismSidebarLightCard extends HTMLElement {
 
             .popup-more-info-btn {
                 background: rgba(122, 101, 168, 0.1);
-                border: 1px solid rgba(122, 101, 168, 0.3);
-                border-radius: 12px;
-                padding: 10px 16px;
+                border: 1px solid rgba(122, 101, 168, 0.25);
+                border-radius: 10px;
+                padding: 8px 14px;
                 color: #7a65a8;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 transition: all 0.2s;
             }
 
@@ -17511,30 +18506,176 @@ class PrismSidebarLightCard extends HTMLElement {
             }
 
             /* Popup Responsive - Tablet/Mobile */
-            @media (max-height: 700px) {
-                .popup {
-                    max-height: 90vh;
-                }
-                .popup-content {
-                    max-height: calc(90vh - 100px);
-                    padding: 16px;
+            @media (max-height: 1200px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.8);
+                    margin-bottom: -20%;
                 }
                 .popup-header {
-                    padding: 14px 18px;
+                    padding: 8px 12px;
+                }
+                .popup-header span {
+                    font-size: 15px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 20px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+            }
+
+            @media (max-height: 900px) {
+                .popup {
+                    max-height: 95vh;
+                }
+                .popup-content {
+                    max-height: calc(95vh - 50px);
+                    padding: 6px;
+                }
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.65);
+                    margin-bottom: -35%;
+                }
+                .popup-header {
+                    padding: 6px 10px;
+                }
+                .popup-header span {
+                    font-size: 14px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 18px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
                 }
                 .popup-footer {
-                    padding: 12px 18px;
+                    padding: 5px 8px;
+                }
+            }
+
+            @media (max-height: 700px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.55);
+                    margin-bottom: -45%;
+                }
+                .popup-header {
+                    padding: 5px 8px;
+                }
+                .popup-header span {
+                    font-size: 13px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 22px;
+                    height: 22px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 12px;
+                }
+                .popup-footer {
+                    padding: 4px 6px;
+                }
+            }
+
+            @media (max-height: 600px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.5);
+                    margin-bottom: -50%;
+                }
+            }
+
+            @media (max-width: 1200px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.8);
+                    margin-bottom: -20%;
+                }
+                .popup-header {
+                    padding: 8px 12px;
+                }
+                .popup-header span {
+                    font-size: 15px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 20px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.75);
+                    margin-bottom: -25%;
+                }
+                .popup-header {
+                    padding: 6px 10px;
+                }
+                .popup-header span {
+                    font-size: 14px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 18px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
                 }
             }
 
             @media (max-width: 768px) {
                 .popup {
                     width: 95%;
-                    max-height: 85vh;
+                    max-height: 95vh;
                 }
                 .popup-content {
-                    max-height: calc(85vh - 100px);
-                    padding: 16px;
+                    max-height: calc(95vh - 50px);
+                    padding: 6px;
+                }
+                .popup-content > *,
+                .custom-cards-container > * {
+                    transform: scale(0.65);
+                    margin-bottom: -35%;
+                }
+                .popup-header {
+                    padding: 5px 8px;
+                }
+                .popup-header span {
+                    font-size: 13px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 22px;
+                    height: 22px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 12px;
                 }
             }
 
@@ -17544,16 +18685,32 @@ class PrismSidebarLightCard extends HTMLElement {
                     border-radius: 16px;
                 }
                 .popup-header {
-                    padding: 14px 16px;
+                    padding: 4px 6px;
+                }
+                .popup-header span {
+                    font-size: 12px;
+                }
+                .popup-header ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-close {
+                    width: 20px;
+                    height: 20px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 11px;
+                }
+                .popup-header {
+                    padding: 12px 14px;
                 }
                 .popup-header span {
                     font-size: 16px;
                 }
                 .popup-content {
-                    padding: 12px;
+                    padding: 8px;
                 }
                 .popup-footer {
-                    padding: 10px 14px;
+                    padding: 8px 12px;
                 }
             }
 
@@ -17570,6 +18727,93 @@ class PrismSidebarLightCard extends HTMLElement {
                 to { 
                     opacity: 1;
                     transform: translateY(0);
+                }
+            }
+
+            /* Custom Popup Responsive - Tablet/Mobile */
+            @media (max-width: 1200px), (max-height: 1200px) {
+                .popup-header {
+                    padding: 10px 14px;
+                }
+                .popup-title span {
+                    font-size: 15px;
+                }
+                .popup-title-icon {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-close {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 16px;
+                }
+                .popup-content {
+                    padding: 10px;
+                }
+            }
+
+            @media (max-width: 1024px), (max-height: 900px) {
+                .popup-header {
+                    padding: 8px 12px;
+                }
+                .popup-title {
+                    gap: 10px;
+                }
+                .popup-title span {
+                    font-size: 14px;
+                }
+                .popup-title-icon {
+                    width: 26px;
+                    height: 26px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-close {
+                    width: 26px;
+                    height: 26px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 14px;
+                }
+                .popup-content {
+                    padding: 8px;
+                }
+            }
+
+            @media (max-width: 768px), (max-height: 700px) {
+                .popup-header {
+                    padding: 6px 10px;
+                }
+                .popup-title {
+                    gap: 8px;
+                }
+                .popup-title span {
+                    font-size: 13px;
+                }
+                .popup-title-icon {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-title-icon ha-icon {
+                    --mdc-icon-size: 13px;
+                }
+                .popup-close {
+                    width: 24px;
+                    height: 24px;
+                }
+                .popup-close ha-icon {
+                    --mdc-icon-size: 13px;
+                }
+                .popup-content {
+                    padding: 6px;
                 }
             }
 
@@ -18635,16 +19879,33 @@ class PrismSidebarLightCard extends HTMLElement {
         });
     }
 
-    // Show custom popup with custom cards
-    _showCustomPopup(title, cardsConfig) {
-        // Remove existing popup
-        const existingPopup = this.shadowRoot?.querySelector('.popup-overlay');
-        if (existingPopup) existingPopup.remove();
+    // Close custom popup helper
+    _closeCustomPopup() {
+        // Remove resize handler
+        if (this._popupResizeHandler) {
+            window.removeEventListener('resize', this._popupResizeHandler);
+            this._popupResizeHandler = null;
+        }
+        
+        const existingPopup = document.getElementById('prism-sidebar-custom-popup');
+        if (existingPopup) {
+            existingPopup.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
+            setTimeout(() => {
+                existingPopup.remove();
+            }, 200);
+        }
+        this._popupCards = [];
+    }
+
+    // Show custom popup with custom cards - SAME APPROACH AS prism-button.js
+    async _showCustomPopup(title, cardsConfig) {
+        // Close any existing popup first
+        this._closeCustomPopup();
         
         // Clear previous popup cards
         this._popupCards = [];
         
-        // Parse cards config if it's an object (could be array or single card)
+        // Parse cards config
         let cards = [];
         if (Array.isArray(cardsConfig)) {
             cards = cardsConfig;
@@ -18652,100 +19913,340 @@ class PrismSidebarLightCard extends HTMLElement {
             cards = [cardsConfig];
         }
         
-        // Create popup - stays in shadow root so events propagate correctly to HA
-        const popupOverlay = document.createElement('div');
-        popupOverlay.className = 'popup-overlay';
-        popupOverlay.innerHTML = `
-            <div class="popup">
-                <div class="popup-header">
-                    <ha-icon icon="mdi:view-dashboard" style="--mdc-icon-size: 24px; color: #7a65a8;"></ha-icon>
-                    <span>${title}</span>
-                    <button class="popup-close">
-                        <ha-icon icon="mdi:close" style="--mdc-icon-size: 20px;"></ha-icon>
+        // Create popup in document.body (OUTSIDE shadow DOM - same as prism-button)
+        const overlay = document.createElement('div');
+        overlay.id = 'prism-sidebar-custom-popup';
+        overlay.innerHTML = `
+            <style>
+                #prism-sidebar-custom-popup {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(255, 255, 255, 0.85);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    z-index: 999; /* High enough to be above navigation */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    animation: prismPopupFadeIn 0.2s ease;
+                    font-family: system-ui, -apple-system, sans-serif;
+                    transition: z-index 0s; /* For dynamic z-index changes */
+                }
+                #prism-sidebar-custom-popup.behind-dialog {
+                    z-index: 0 !important; /* Temporarily go behind HA dialogs */
+                }
+                @keyframes prismPopupFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes prismPopupFadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+                @keyframes prismPopupSlideIn {
+                    from { transform: scale(0.9); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .prism-custom-popup {
+                    position: relative;
+                    min-width: 320px;
+                    max-width: 600px;
+                    width: 90vw;
+                    max-height: 90vh;
+                    background: linear-gradient(145deg, #e6ebf2, #d1d9e6);
+                    border-radius: 20px;
+                    box-shadow: 
+                        8px 8px 20px rgba(163, 177, 198, 0.6),
+                        -8px -8px 20px rgba(255, 255, 255, 0.8),
+                        inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+                    overflow: hidden;
+                    animation: prismPopupSlideIn 0.3s ease;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .prism-custom-popup-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 20px;
+                    background: linear-gradient(145deg, #e2e8f0, #d8dee6);
+                    border-bottom: 1px solid rgba(163, 177, 198, 0.3);
+                }
+                .prism-custom-popup-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: #2d3748;
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+                .prism-custom-popup-title-icon {
+                    width: 32px;
+                    height: 32px;
+                    background: linear-gradient(145deg, #e6ebf2, #d1d9e6);
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #7c3aed;
+                    --mdc-icon-size: 18px;
+                    box-shadow: 
+                        3px 3px 6px rgba(163, 177, 198, 0.5),
+                        -3px -3px 6px rgba(255, 255, 255, 0.8);
+                }
+                .prism-custom-popup-title-icon ha-icon {
+                    display: flex;
+                    --mdc-icon-size: 18px;
+                    filter: drop-shadow(0 0 3px rgba(124, 58, 237, 0.4));
+                }
+                .prism-custom-popup-close {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 10px;
+                    background: linear-gradient(145deg, #e6ebf2, #d1d9e6);
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: rgba(45, 55, 72, 0.5);
+                    --mdc-icon-size: 18px;
+                    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+                    box-shadow: 
+                        3px 3px 6px rgba(163, 177, 198, 0.5),
+                        -3px -3px 6px rgba(255, 255, 255, 0.8);
+                }
+                .prism-custom-popup-close ha-icon {
+                    display: flex;
+                    --mdc-icon-size: 18px;
+                    transition: all 0.2s ease;
+                }
+                .prism-custom-popup-close:hover {
+                    color: #dc2626;
+                }
+                .prism-custom-popup-close:hover ha-icon {
+                    filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.5));
+                }
+                .prism-custom-popup-content {
+                    padding: 16px;
+                    overflow: hidden;
+                    flex: 1;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: center;
+                }
+                .prism-custom-popup-cards {
+                    transform-origin: top center;
+                    width: 100%;
+                    flex: 1;
+                    height: 100%;
+                }
+                /* Make embedded cards fill available space */
+                .prism-custom-popup-cards > * {
+                    flex: 1;
+                    min-height: 0;
+                    height: 100%;
+                }
+                .prism-custom-popup-loading {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 40px;
+                    color: rgba(45, 55, 72, 0.5);
+                    font-size: 14px;
+                }
+                .prism-custom-popup-error {
+                    padding: 16px;
+                    background: rgba(220, 38, 38, 0.1);
+                    border: 1px solid rgba(220, 38, 38, 0.3);
+                    border-radius: 12px;
+                    color: #dc2626;
+                    font-size: 13px;
+                    text-align: center;
+                }
+            </style>
+            <div class="prism-custom-popup">
+                <div class="prism-custom-popup-header">
+                    <div class="prism-custom-popup-title">
+                        <div class="prism-custom-popup-title-icon">
+                            <ha-icon icon="mdi:view-dashboard"></ha-icon>
+                        </div>
+                        <span>${title}</span>
+                    </div>
+                    <button class="prism-custom-popup-close">
+                        <ha-icon icon="mdi:close"></ha-icon>
                     </button>
                 </div>
-                <div class="popup-content custom-cards-container">
+                <div class="prism-custom-popup-content">
+                    <div class="prism-custom-popup-cards">
+                        <div class="prism-custom-popup-loading">Loading cards...</div>
+                    </div>
                 </div>
             </div>
         `;
         
-        // Add to shadow root (so hass-more-info events propagate correctly)
-        this.shadowRoot.appendChild(popupOverlay);
+        // Append to document.body (NOT shadow root - this is the key fix!)
+        document.body.appendChild(overlay);
         
-        // Insert custom cards and store references
-        const container = popupOverlay.querySelector('.custom-cards-container');
-        cards.forEach(cardConfig => {
-            const card = this._createPopupCustomCard(cardConfig);
-            if (card) {
-                container.appendChild(card);
-                // Store reference for hass updates
-                this._popupCards.push(card);
+        // IMPORTANT: Forward hass-more-info events from popup to Home Assistant
+        // Since popup is in document.body (outside HA's shadow DOM), we need to catch
+        // these events and re-dispatch them to the home-assistant element
+        overlay.addEventListener('hass-more-info', (e) => {
+            e.stopPropagation();
+            const haEl = document.querySelector('home-assistant');
+            if (haEl && e.detail?.entityId) {
+                // Temporarily lower z-index so HA dialog appears on top
+                overlay.classList.add('behind-dialog');
+                
+                const newEvent = new CustomEvent('hass-more-info', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { entityId: e.detail.entityId }
+                });
+                haEl.dispatchEvent(newEvent);
+                
+                // Restore z-index when HA dialog is closed (listen for click on HA overlay)
+                const restoreZIndex = () => {
+                    overlay.classList.remove('behind-dialog');
+                };
+                // Restore after a short delay and when user interacts
+                setTimeout(() => {
+                    document.addEventListener('click', function handler(evt) {
+                        // Check if click is outside HA dialog (dialog closed)
+                        const haDialog = document.querySelector('ha-more-info-dialog, ha-dialog');
+                        if (!haDialog || !haDialog.contains(evt.target)) {
+                            restoreZIndex();
+                            document.removeEventListener('click', handler);
+                        }
+                    });
+                }, 500);
             }
         });
         
         // Event listeners
-        const closePopup = () => {
-            popupOverlay.remove();
-            this._popupCards = []; // Clear references when popup closes
+        overlay.querySelector('.prism-custom-popup-close').onclick = () => this._closeCustomPopup();
+        overlay.onclick = (e) => {
+            if (e.target === overlay) this._closeCustomPopup();
         };
         
-        popupOverlay.addEventListener('click', (e) => {
-            if (e.target === popupOverlay) {
-                closePopup();
+        // ESC key to close
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                this._closeCustomPopup();
+                document.removeEventListener('keydown', escHandler);
             }
-        });
+        };
+        document.addEventListener('keydown', escHandler);
         
-        const closeBtn = popupOverlay.querySelector('.popup-close');
-        closeBtn?.addEventListener('click', closePopup);
+        // Render the cards
+        const cardsContainer = overlay.querySelector('.prism-custom-popup-cards');
+        const contentContainer = overlay.querySelector('.prism-custom-popup-content');
+        await this._renderCustomPopupCards(cardsContainer, cards);
+        
+        // Scale cards to fit available height
+        this._scalePopupContent(cardsContainer, contentContainer);
+    }
+    
+    // Scale popup content to fit available height
+    _scalePopupContent(cardsContainer, contentContainer) {
+        // Wait for cards to render
+        setTimeout(() => {
+            if (!cardsContainer || !contentContainer) return;
+            
+            // Get computed padding
+            const computedStyle = window.getComputedStyle(contentContainer);
+            const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+            const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+            
+            // Get available height (content area minus padding)
+            const availableHeight = contentContainer.clientHeight - paddingTop - paddingBottom;
+            
+            // Get natural height of cards
+            const naturalHeight = cardsContainer.scrollHeight;
+            
+            if (naturalHeight > 0 && availableHeight > 0) {
+                // Calculate scale to fit
+                let scale = availableHeight / naturalHeight;
+                
+                // Cap scale at 1 (don't upscale) and minimum 0.3 (readable)
+                scale = Math.min(scale, 1);
+                scale = Math.max(scale, 0.3);
+                
+                // Apply scale
+                cardsContainer.style.transform = `scale(${scale})`;
+                
+                // Adjust container to remove empty space
+                cardsContainer.style.height = `${naturalHeight}px`;
+                cardsContainer.style.marginBottom = `-${naturalHeight * (1 - scale)}px`;
+            }
+        }, 200);
     }
 
-    // Create a custom card for popup
-    _createPopupCustomCard(config) {
-        if (!config || !config.type) return null;
-        
-        let cardType = config.type;
-        
-        // Strip 'custom:' prefix if present
-        if (cardType.startsWith('custom:')) {
-            cardType = cardType.substring(7);
+    // Render custom cards in popup using HA's official card helpers (like prism-button)
+    async _renderCustomPopupCards(container, cardConfigs) {
+        if (!cardConfigs || cardConfigs.length === 0) {
+            container.innerHTML = '<div class="prism-custom-popup-error">No cards configured</div>';
+            return;
         }
         
-        // Check if element is registered
-        if (!customElements.get(cardType)) {
-            console.warn(`Custom card ${cardType} not found. Make sure it's installed.`);
-            
-            // Create error placeholder
-            const errorCard = document.createElement('div');
-            errorCard.style.cssText = 'padding: 16px; background: rgba(255,0,0,0.1); border-radius: 8px; color: rgba(0,0,0,0.8); text-align: center;';
-            errorCard.innerHTML = `
-                <ha-icon icon="mdi:alert-circle" style="--mdc-icon-size: 24px; display: block; margin: 0 auto 8px;"></ha-icon>
-                <div>Card "${cardType}" not found</div>
-                <div style="font-size: 12px; opacity: 0.6; margin-top: 4px;">Make sure it's installed via HACS</div>
-            `;
-            return errorCard;
-        }
+        // Clear loading message
+        container.innerHTML = '';
         
+        // Try to get card helpers (official HA method)
+        let helpers = null;
         try {
-            const element = document.createElement(cardType);
-            
-            // Set config
-            if (element.setConfig) {
-                element.setConfig(config);
-            }
-            
-            // Set hass - always try to set it (most cards have a hass setter)
-            if (this._hass) {
-                try {
-                    element.hass = this._hass;
-                } catch (e) {
-                    // Card doesn't support hass
+            helpers = await window.loadCardHelpers?.();
+        } catch (e) {
+            console.warn('Prism Sidebar Custom Popup: Could not load card helpers', e);
+        }
+        
+        for (const cardConfig of cardConfigs) {
+            try {
+                let cardElement;
+                
+                if (helpers?.createCardElement) {
+                    // Method 1: Official card helpers (preferred) - same as prism-button
+                    cardElement = await helpers.createCardElement(cardConfig);
+                } else {
+                    // Method 2: Fallback - direct element creation
+                    const cardType = cardConfig.type || 'entity';
+                    let tag;
+                    
+                    if (cardType.startsWith('custom:')) {
+                        tag = cardType.replace('custom:', '');
+                    } else {
+                        tag = `hui-${cardType}-card`;
+                    }
+                    
+                    cardElement = document.createElement(tag);
+                    if (cardElement.setConfig) {
+                        cardElement.setConfig(cardConfig);
+                    }
                 }
+                
+                // Set hass and append to container
+                if (cardElement) {
+                    cardElement.hass = this._hass;
+                    container.appendChild(cardElement);
+                    this._popupCards.push(cardElement);
+                }
+            } catch (e) {
+                console.error('Prism Sidebar Custom Popup: Failed to create card', cardConfig, e);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'prism-custom-popup-error';
+                errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
+                container.appendChild(errorDiv);
             }
-            
-            return element;
-        } catch (error) {
-            console.error(`Error creating card ${cardType}:`, error);
-            return null;
+        }
+        
+        // If no cards were added, show message
+        if (container.children.length === 0) {
+            container.innerHTML = '<div class="prism-custom-popup-error">No cards could be loaded</div>';
         }
     }
 
@@ -18760,6 +20261,76 @@ class PrismSidebarLightCard extends HTMLElement {
         };
         
         return translations[key] || key;
+    }
+
+    // Apply optimal scale to popup content based on available space
+    _applyOptimalScale(popupContent, scaleWrapper, overlay) {
+        // Wait for cards to fully render
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const popup = popupContent?.closest('.popup');
+                const header = popup?.querySelector('.popup-header');
+                
+                if (!popup || !header || !scaleWrapper || !overlay) return;
+                
+                // Get available space
+                const overlayPadding = 40;
+                const availableHeight = window.innerHeight - overlayPadding;
+                const availableWidth = window.innerWidth - overlayPadding;
+                const headerHeight = header.offsetHeight;
+                const contentPadding = 24;
+                
+                // Maximum space for content
+                const maxContentHeight = availableHeight - headerHeight - contentPadding;
+                const maxContentWidth = availableWidth - contentPadding;
+                
+                // Reset scale to measure natural size
+                scaleWrapper.style.transform = 'scale(1)';
+                
+                // Get natural content size
+                const naturalHeight = scaleWrapper.scrollHeight;
+                const naturalWidth = scaleWrapper.scrollWidth;
+                
+                // Calculate optimal scale
+                const scaleHeight = maxContentHeight / naturalHeight;
+                const scaleWidth = maxContentWidth / naturalWidth;
+                
+                // Use the smaller scale to fit both dimensions, but cap at 1 (no upscaling)
+                let optimalScale = Math.min(scaleHeight, scaleWidth, 1);
+                
+                // Minimum scale to keep content readable
+                optimalScale = Math.max(optimalScale, 0.4);
+                
+                // Apply scale
+                scaleWrapper.style.transform = `scale(${optimalScale})`;
+                
+                // Adjust wrapper height to match scaled content (removes empty space)
+                const scaledHeight = naturalHeight * optimalScale;
+                scaleWrapper.style.height = `${naturalHeight}px`;
+                popupContent.style.height = `${scaledHeight}px`;
+                
+                // Set popup to fit content
+                popup.style.height = 'auto';
+                popup.style.maxHeight = `${availableHeight}px`;
+                
+                // Handle window resize
+                const resizeHandler = () => {
+                    if (!this.shadowRoot?.querySelector('.popup-overlay')) {
+                        window.removeEventListener('resize', resizeHandler);
+                        return;
+                    }
+                    this._applyOptimalScale(popupContent, scaleWrapper, overlay);
+                };
+                
+                // Remove any existing resize handler and add new one
+                if (this._popupResizeHandler) {
+                    window.removeEventListener('resize', this._popupResizeHandler);
+                }
+                this._popupResizeHandler = resizeHandler;
+                window.addEventListener('resize', resizeHandler);
+                
+            }, 100); // Small delay to ensure cards are fully rendered
+        });
     }
 
     getCardSize() {
@@ -19495,11 +21066,12 @@ class PrismEnergyCard extends HTMLElement {
   _openMoreInfo(entityId) {
     if (!entityId || !this._hass) return;
     
-    const event = new Event('hass-more-info', {
+    // Use CustomEvent (not Event) to properly pass detail through Shadow DOM boundaries
+    const event = new CustomEvent('hass-more-info', {
       bubbles: true,
-      composed: true
+      composed: true,
+      detail: { entityId: entityId }
     });
-    event.detail = { entityId: entityId };
     this.dispatchEvent(event);
   }
 
@@ -21994,11 +23566,12 @@ class PrismEnergyHorizontalCard extends HTMLElement {
   _openMoreInfo(entityId) {
     if (!entityId || !this._hass) return;
     
-    const event = new Event('hass-more-info', {
+    // Use CustomEvent (not Event) to properly pass detail through Shadow DOM boundaries
+    const event = new CustomEvent('hass-more-info', {
       bubbles: true,
-      composed: true
+      composed: true,
+      detail: { entityId: entityId }
     });
-    event.detail = { entityId: entityId };
     this.dispatchEvent(event);
   }
 
@@ -34773,30 +36346,122 @@ class PrismRoomCard extends HTMLElement {
       }
 
       /* Popup Responsive - Tablet/Mobile */
-      @media (max-height: 700px) {
+      @media (max-height: 800px) {
         .prism-room-popup {
-          max-height: 90vh;
+          max-height: 95vh;
         }
         .prism-room-popup-content {
-          max-height: calc(90vh - 140px);
-          padding: 12px;
+          max-height: calc(95vh - 120px);
+          padding: 10px;
         }
         .prism-room-popup-header {
-          padding: 14px;
+          padding: 10px 12px;
+        }
+        .prism-room-popup-icon {
+          width: 36px;
+          height: 36px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 20px;
+        }
+        .prism-room-popup-title {
+          font-size: 1rem;
+        }
+        .prism-room-popup-close {
+          width: 28px;
+          height: 28px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 16px;
         }
         .prism-room-popup-climate {
-          padding: 12px 16px;
-          gap: 16px;
+          padding: 10px 14px;
+          gap: 14px;
+        }
+      }
+
+      @media (max-height: 700px) {
+        .prism-room-popup-header {
+          padding: 8px 10px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.9rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
+        }
+        .prism-room-popup-content {
+          max-height: calc(95vh - 100px);
+          padding: 8px;
+        }
+        .prism-room-popup-climate {
+          padding: 8px 12px;
+          gap: 12px;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .prism-room-popup-header {
+          padding: 8px 12px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.95rem;
+        }
+        .prism-room-popup-close {
+          width: 26px;
+          height: 26px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 15px;
         }
       }
 
       @media (max-width: 768px) {
         .prism-room-popup {
           max-width: 95vw;
-          max-height: 85vh;
+          max-height: 95vh;
+        }
+        .prism-room-popup-header {
+          padding: 6px 10px;
+        }
+        .prism-room-popup-icon {
+          width: 28px;
+          height: 28px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 16px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.85rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
         }
         .prism-room-popup-content {
-          max-height: calc(85vh - 140px);
+          max-height: calc(95vh - 80px);
+          padding: 6px;
         }
       }
 
@@ -34808,20 +36473,47 @@ class PrismRoomCard extends HTMLElement {
           border-radius: 18px;
         }
         .prism-room-popup-header {
-          padding: 12px 14px;
+          padding: 5px 8px;
         }
         .prism-room-popup-icon {
-          width: 40px;
-          height: 40px;
+          width: 24px;
+          height: 24px;
         }
         .prism-room-popup-icon ha-icon {
-          --mdc-icon-size: 22px;
+          --mdc-icon-size: 14px;
         }
         .prism-room-popup-title {
-          font-size: 1.1rem;
+          font-size: 0.8rem;
+        }
+        .prism-room-popup-close {
+          width: 22px;
+          height: 22px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 12px;
         }
         .prism-room-popup-content {
-          padding: 10px;
+          padding: 5px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.9rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
+        }
+        .prism-room-popup-content {
+          padding: 8px;
         }
         .prism-room-entity-grid {
           gap: 8px;

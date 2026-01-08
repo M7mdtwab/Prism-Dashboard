@@ -415,6 +415,12 @@ class PrismButtonLightCard extends HTMLElement {
   // ==================== POPUP METHODS ====================
   
   _closePrismPopup() {
+    // Clean up resize handler
+    if (this._popupResizeHandler) {
+      window.removeEventListener('resize', this._popupResizeHandler);
+      this._popupResizeHandler = null;
+    }
+    
     const existingOverlay = document.getElementById('prism-button-popup-overlay-light');
     if (existingOverlay) {
       existingOverlay.style.animation = 'prismPopupFadeOut 0.2s ease forwards';
@@ -473,7 +479,6 @@ class PrismButtonLightCard extends HTMLElement {
           min-width: 320px;
           max-width: 500px;
           width: 90vw;
-          max-height: 85vh;
           background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.98));
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -554,18 +559,23 @@ class PrismButtonLightCard extends HTMLElement {
           filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.5));
         }
         .prism-popup-close-light:active {
-          background: linear-gradient(145deg, #f0f2f5, #ffffff);
+          background: linear-gradient(145deg, #e8eaed, #f5f7fa);
           box-shadow: 
-            inset 2px 2px 4px rgba(0, 0, 0, 0.1),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.5);
+            inset 2px 2px 4px rgba(0, 0, 0, 0.12),
+            inset -1px -1px 3px rgba(255, 255, 255, 0.6);
         }
         .prism-popup-content-light {
-          flex: 1;
           padding: 16px;
-          overflow-y: auto;
+          overflow: hidden;
+          flex: 1;
           display: flex;
-          flex-direction: column;
-          gap: 12px;
+          align-items: flex-start;
+          justify-content: center;
+        }
+        /* Wrapper for scaled content - same as prism-sidebar */
+        .prism-popup-scale-wrapper-light {
+          transform-origin: top center;
+          width: 100%;
         }
         .prism-popup-content-light::-webkit-scrollbar {
           width: 6px;
@@ -598,34 +608,65 @@ class PrismButtonLightCard extends HTMLElement {
           font-size: 13px;
         }
 
-        /* Popup Responsive - Tablet/Mobile */
-        @media (max-height: 700px) {
-          .prism-popup-light {
-            max-height: 90vh;
-          }
-          .prism-popup-content-light {
-            max-height: calc(90vh - 80px);
-            padding: 12px;
-          }
+        /* Responsive header styling - same as prism-button */
+        @media (max-width: 1024px), (max-height: 900px) {
           .prism-popup-header-light {
-            padding: 12px 16px;
+            padding: 10px 14px;
+          }
+          .prism-popup-title-light {
+            font-size: 15px;
+            gap: 10px;
+          }
+          .prism-popup-title-icon-light {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 16px;
+          }
+          .prism-popup-close-light {
+            width: 28px;
+            height: 28px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 16px;
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 768px), (max-height: 700px) {
           .prism-popup-light {
             width: 95vw;
             max-width: 95vw;
-            max-height: 85vh;
           }
           .prism-popup-content-light {
-            max-height: calc(85vh - 80px);
+            padding: 8px;
+          }
+          .prism-popup-header-light {
+            padding: 8px 12px;
+          }
+          .prism-popup-title-light {
+            font-size: 14px;
+            gap: 8px;
+          }
+          .prism-popup-title-icon-light {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 14px;
+          }
+          .prism-popup-close-light {
+            width: 26px;
+            height: 26px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 14px;
           }
         }
 
         @media (max-width: 480px) {
           #prism-button-popup-overlay-light {
-            padding: 10px;
+            padding: 8px;
           }
           .prism-popup-light {
             width: 98vw;
@@ -633,13 +674,28 @@ class PrismButtonLightCard extends HTMLElement {
             border-radius: 16px;
           }
           .prism-popup-header-light {
-            padding: 12px 14px;
+            padding: 6px 10px;
           }
           .prism-popup-title-light {
-            font-size: 15px;
+            font-size: 13px;
+            gap: 6px;
+          }
+          .prism-popup-title-icon-light {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-title-icon-light ha-icon {
+            --mdc-icon-size: 13px;
+          }
+          .prism-popup-close-light {
+            width: 24px;
+            height: 24px;
+          }
+          .prism-popup-close-light ha-icon {
+            --mdc-icon-size: 13px;
           }
           .prism-popup-content-light {
-            padding: 10px;
+            padding: 6px;
           }
         }
       </style>
@@ -656,7 +712,9 @@ class PrismButtonLightCard extends HTMLElement {
           </button>
         </div>
         <div class="prism-popup-content-light">
-          <div class="prism-popup-loading-light">Loading cards...</div>
+          <div class="prism-popup-scale-wrapper-light">
+            <div class="prism-popup-loading-light">Loading cards...</div>
+          </div>
         </div>
       </div>
     `;
@@ -684,13 +742,21 @@ class PrismButtonLightCard extends HTMLElement {
 
   async _renderPopupCards(container) {
     const cardsConfig = this._config.popup_cards;
+    
+    // Get the scale wrapper inside the container
+    let scaleWrapper = container.querySelector('.prism-popup-scale-wrapper-light');
+    if (!scaleWrapper) {
+      // Fallback if wrapper doesn't exist
+      scaleWrapper = container;
+    }
+    
     if (!cardsConfig) {
-      container.innerHTML = '<div class="prism-popup-error-light">No popup_cards configured</div>';
+      scaleWrapper.innerHTML = '<div class="prism-popup-error-light">No popup_cards configured</div>';
       return;
     }
     
     // Clear loading message
-    container.innerHTML = '';
+    scaleWrapper.innerHTML = '';
     
     // Normalize to array
     let cardConfigs = [];
@@ -736,24 +802,62 @@ class PrismButtonLightCard extends HTMLElement {
           }
         }
         
-        // Set hass object
+        // Set hass and append to container (same as working prism-sidebar)
         if (cardElement) {
           cardElement.hass = this._hass;
-          container.appendChild(cardElement);
+          scaleWrapper.appendChild(cardElement);
         }
       } catch (e) {
         console.error('Prism Button Popup: Failed to create card', cardConfig, e);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'prism-popup-error-light';
         errorDiv.textContent = `Failed to load card: ${cardConfig.type || 'unknown'}`;
-        container.appendChild(errorDiv);
+        scaleWrapper.appendChild(errorDiv);
       }
     }
     
     // If no cards were added, show message
-    if (container.children.length === 0) {
-      container.innerHTML = '<div class="prism-popup-error-light">No cards could be loaded</div>';
+    if (scaleWrapper.children.length === 0) {
+      scaleWrapper.innerHTML = '<div class="prism-popup-error-light">No cards could be loaded</div>';
     }
+    
+    // Scale cards to fit available height (same as working prism-sidebar)
+    this._scalePopupContent(container, scaleWrapper);
+  }
+  
+  // Scale popup content to fit available height (copied from prism-sidebar)
+  _scalePopupContent(container, scaleWrapper) {
+    // Wait for cards to render
+    setTimeout(() => {
+      if (!scaleWrapper || !container) return;
+      
+      // Get computed padding
+      const computedStyle = window.getComputedStyle(container);
+      const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+      
+      // Get available height (content area minus padding)
+      const availableHeight = container.clientHeight - paddingTop - paddingBottom;
+      
+      // Get natural height of cards
+      const naturalHeight = scaleWrapper.scrollHeight;
+      
+      if (naturalHeight > 0 && availableHeight > 0) {
+        // Calculate scale to fit
+        let scale = availableHeight / naturalHeight;
+        
+        // Cap scale at 1 (don't upscale) and minimum 0.3 (readable)
+        scale = Math.min(scale, 1);
+        scale = Math.max(scale, 0.3);
+        
+        // Apply scale
+        scaleWrapper.style.transform = `scale(${scale})`;
+        
+        // Adjust container to remove empty space
+        scaleWrapper.style.height = `${naturalHeight}px`;
+        scaleWrapper.style.marginBottom = `-${naturalHeight * (1 - scale)}px`;
+      }
+    }, 200);
   }
 
   // ==================== END POPUP METHODS ====================

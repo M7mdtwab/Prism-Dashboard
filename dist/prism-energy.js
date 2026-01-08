@@ -709,11 +709,12 @@ class PrismEnergyCard extends HTMLElement {
   _openMoreInfo(entityId) {
     if (!entityId || !this._hass) return;
     
-    const event = new Event('hass-more-info', {
+    // Use CustomEvent (not Event) to properly pass detail through Shadow DOM boundaries
+    const event = new CustomEvent('hass-more-info', {
       bubbles: true,
-      composed: true
+      composed: true,
+      detail: { entityId: entityId }
     });
-    event.detail = { entityId: entityId };
     this.dispatchEvent(event);
   }
 

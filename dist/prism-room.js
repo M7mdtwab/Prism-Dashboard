@@ -1462,30 +1462,122 @@ class PrismRoomCard extends HTMLElement {
       }
 
       /* Popup Responsive - Tablet/Mobile */
-      @media (max-height: 700px) {
+      @media (max-height: 800px) {
         .prism-room-popup {
-          max-height: 90vh;
+          max-height: 95vh;
         }
         .prism-room-popup-content {
-          max-height: calc(90vh - 140px);
-          padding: 12px;
+          max-height: calc(95vh - 120px);
+          padding: 10px;
         }
         .prism-room-popup-header {
-          padding: 14px;
+          padding: 10px 12px;
+        }
+        .prism-room-popup-icon {
+          width: 36px;
+          height: 36px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 20px;
+        }
+        .prism-room-popup-title {
+          font-size: 1rem;
+        }
+        .prism-room-popup-close {
+          width: 28px;
+          height: 28px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 16px;
         }
         .prism-room-popup-climate {
-          padding: 12px 16px;
-          gap: 16px;
+          padding: 10px 14px;
+          gap: 14px;
+        }
+      }
+
+      @media (max-height: 700px) {
+        .prism-room-popup-header {
+          padding: 8px 10px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.9rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
+        }
+        .prism-room-popup-content {
+          max-height: calc(95vh - 100px);
+          padding: 8px;
+        }
+        .prism-room-popup-climate {
+          padding: 8px 12px;
+          gap: 12px;
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .prism-room-popup-header {
+          padding: 8px 12px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.95rem;
+        }
+        .prism-room-popup-close {
+          width: 26px;
+          height: 26px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 15px;
         }
       }
 
       @media (max-width: 768px) {
         .prism-room-popup {
           max-width: 95vw;
-          max-height: 85vh;
+          max-height: 95vh;
+        }
+        .prism-room-popup-header {
+          padding: 6px 10px;
+        }
+        .prism-room-popup-icon {
+          width: 28px;
+          height: 28px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 16px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.85rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
         }
         .prism-room-popup-content {
-          max-height: calc(85vh - 140px);
+          max-height: calc(95vh - 80px);
+          padding: 6px;
         }
       }
 
@@ -1497,20 +1589,47 @@ class PrismRoomCard extends HTMLElement {
           border-radius: 18px;
         }
         .prism-room-popup-header {
-          padding: 12px 14px;
+          padding: 5px 8px;
         }
         .prism-room-popup-icon {
-          width: 40px;
-          height: 40px;
+          width: 24px;
+          height: 24px;
         }
         .prism-room-popup-icon ha-icon {
-          --mdc-icon-size: 22px;
+          --mdc-icon-size: 14px;
         }
         .prism-room-popup-title {
-          font-size: 1.1rem;
+          font-size: 0.8rem;
+        }
+        .prism-room-popup-close {
+          width: 22px;
+          height: 22px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 12px;
         }
         .prism-room-popup-content {
-          padding: 10px;
+          padding: 5px;
+        }
+        .prism-room-popup-icon {
+          width: 32px;
+          height: 32px;
+        }
+        .prism-room-popup-icon ha-icon {
+          --mdc-icon-size: 18px;
+        }
+        .prism-room-popup-title {
+          font-size: 0.9rem;
+        }
+        .prism-room-popup-close {
+          width: 24px;
+          height: 24px;
+        }
+        .prism-room-popup-close ha-icon {
+          --mdc-icon-size: 14px;
+        }
+        .prism-room-popup-content {
+          padding: 8px;
         }
         .prism-room-entity-grid {
           gap: 8px;
