@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.5.9
- * Build Date: 2026-01-09T08:15:57.197Z
+ * Build Date: 2026-01-09T13:16:25.104Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -25657,6 +25657,7 @@ class PrismBambuCard extends HTMLElement {
     this.showCamera = false;
     this.hasRendered = false;
     this._deviceEntities = {}; // Cache for device entities
+    this._lastPrintStatus = null; // Track last status for notifications
     this._lastStatus = null; // Track status for re-render decisions
     this._updateThrottleTimer = null; // Throttle updates to prevent excessive re-renders
     this._snapshotInterval = null; // Interval for snapshot mode camera updates
@@ -25923,6 +25924,50 @@ class PrismBambuCard extends HTMLElement {
               selector: { text: {} }
             }
           ]
+        },
+        // Notifications section
+        {
+          type: 'expandable',
+          name: '',
+          title: 'Notifications',
+          schema: [
+            {
+              name: 'enable_notifications',
+              label: 'Enable status change notifications',
+              selector: { boolean: {} }
+            },
+            {
+              name: 'notification_target',
+              label: 'Notification target (select devices)',
+              selector: { 
+                target: {
+                  device: {
+                    integration: 'mobile_app'
+                  }
+                }
+              }
+            },
+            {
+              name: 'notify_on_complete',
+              label: 'Notify when print completes',
+              selector: { boolean: {} }
+            },
+            {
+              name: 'notify_on_pause',
+              label: 'Notify when print pauses',
+              selector: { boolean: {} }
+            },
+            {
+              name: 'notify_on_failed',
+              label: 'Notify when print fails',
+              selector: { boolean: {} }
+            },
+            {
+              name: 'notify_on_filament_change',
+              label: 'Notify on filament change',
+              selector: { boolean: {} }
+            }
+          ]
         }
       ]
     };
@@ -26054,18 +26099,36 @@ class PrismBambuCard extends HTMLElement {
     }
 
     const progress = this.getEntityValueForDevice(deviceEntities, 'print_progress');
-    const stateStr = this.getEntityStateForDevice(deviceEntities, 'print_status') || 
-                     this.getEntityStateForDevice(deviceEntities, 'stage') || 'unavailable';
+    // Smart status detection: Combine print_status and stage for accurate state
+    const printStatus = (this.getEntityStateForDevice(deviceEntities, 'print_status') || '').toLowerCase();
+    const stageStatus = (this.getEntityStateForDevice(deviceEntities, 'stage') || '').toLowerCase();
+    
+    // print_status overrides stage for these important states
+    const printStatusPriority = ['pause', 'paused', 'failed', 'finish', 'idle', 'offline', 'init'];
+    let stateStr = 'unavailable';
+    
+    if (printStatusPriority.includes(printStatus)) {
+      // Use print_status for important overarching states
+      stateStr = printStatus;
+    } else if (stageStatus && stageStatus !== 'unknown' && stageStatus !== 'idle') {
+      // Use stage for detailed states (filament_change, auto_bed_leveling, etc.)
+      stateStr = stageStatus;
+    } else {
+      // Fallback to print_status
+      stateStr = printStatus || stageStatus || 'unavailable';
+    }
     
     const statusLower = stateStr.toLowerCase();
     
-    // Extended pause states - includes layer pause, user pause, waiting states
+    // Extended pause states - includes layer pause, user pause, waiting states, filament operations
     const pauseStates = ['paused', 'pause', 'pausiert', 'waiting', 'user_pause', 'user pause', 
                          'layer_pause', 'layer pause', 'filament_change', 'filament change',
+                         'changing_filament', 'filament_loading', 'filament_unloading',
+                         'paused_user', 'paused_user_gcode', 'paused_filament_runout',
                          'suspended', 'on hold', 'halted', 'm400_pause'];
     const printingStates = ['printing', 'prepare', 'running', 'druckt', 'vorbereiten', 'busy'];
     const idleStates = ['idle', 'standby', 'ready', 'finished', 'complete', 'stopped', 'cancelled', 
-                        'error', 'offline', 'unavailable', 'slicing', 'unknown'];
+                        'finish', 'failed', 'error', 'offline', 'unavailable', 'slicing', 'unknown'];
     
     let isPrinting = printingStates.includes(statusLower);
     let isPaused = pauseStates.includes(statusLower);
@@ -26215,7 +26278,15 @@ class PrismBambuCard extends HTMLElement {
 
   setConfig(config) {
     // Don't throw error if printer is empty - show preview instead
-    this.config = { ...config };
+    this.config = { 
+      ...config,
+      // Default notification settings
+      enable_notifications: config.enable_notifications ?? false,
+      notify_on_complete: config.notify_on_complete ?? true,
+      notify_on_pause: config.notify_on_pause ?? true,
+      notify_on_failed: config.notify_on_failed ?? true,
+      notify_on_filament_change: config.notify_on_filament_change ?? true
+    };
     this._deviceEntities = {}; // Reset cache
     if (!this.hasRendered) {
       this.render();
@@ -26258,6 +26329,11 @@ class PrismBambuCard extends HTMLElement {
     // Get current status to detect changes
     const data = this.getPrinterData();
     const newStatus = `${data.isIdle}-${data.isPrinting}-${data.isPaused}-${!!data.chamberLightEntity}-${!!data.cameraEntity}-${!!data.powerSwitch}-${data.isPowerOn}`;
+    
+    // Check for status changes and send notifications
+    if (!firstTime) {
+      this.checkStatusChangeNotification(data.stateStr, data.name);
+    }
     
     // Re-render if: first time, status changed, or never rendered
     if (!this.hasRendered || firstTime || oldStatus !== newStatus) {
@@ -26398,7 +26474,7 @@ class PrismBambuCard extends HTMLElement {
       }
     }
     
-    // Update cover image progress
+    // Update cover image progress (now using <img> element with clip-path)
     const coverProgress = this.shadowRoot.querySelector('.cover-image-progress');
     if (coverProgress) {
       coverProgress.style.setProperty('--progress-height', `${data.progress}%`);
@@ -26683,10 +26759,19 @@ class PrismBambuCard extends HTMLElement {
     const brand = slotElement.dataset.brand || '';
     const tempMin = slotElement.dataset.tempMin;
     const tempMax = slotElement.dataset.tempMax;
+    const isTransparent = slotElement.dataset.transparent === 'true';
     
     // Update popup content
     const colorEl = overlay.querySelector('.filament-popup-color');
-    if (colorEl) colorEl.style.backgroundColor = color;
+    if (colorEl) {
+      colorEl.style.backgroundColor = color;
+      // Add/remove transparent class for pattern display
+      if (isTransparent) {
+        colorEl.classList.add('transparent');
+      } else {
+        colorEl.classList.remove('transparent');
+      }
+    }
     
     const setValue = (field, value) => {
       const el = overlay.querySelector(`[data-field="${field}"]`);
@@ -26724,6 +26809,227 @@ class PrismBambuCard extends HTMLElement {
     if (overlay) {
       overlay.style.display = 'none';
     }
+  }
+  
+  // Get list of available mobile_app notify services
+  getAvailableNotifyServices() {
+    if (!this._hass?.services?.notify) return [];
+    
+    return Object.keys(this._hass.services.notify)
+      .filter(service => service.startsWith('mobile_app_'))
+      .sort();
+  }
+  
+  // Convert device_id to mobile_app service name
+  _deviceIdToNotifyService(deviceId) {
+    // Get all available mobile_app notify services
+    const availableServices = Object.keys(this._hass.services?.notify || {})
+      .filter(s => s.startsWith('mobile_app_'));
+    
+    PrismBambuCard.log('Available notify services:', availableServices);
+    
+    // Try to find device info
+    const device = this._hass.devices?.[deviceId];
+    if (!device) {
+      // Fallback: maybe it's already a service name
+      if (availableServices.includes(deviceId)) {
+        return deviceId;
+      }
+      // Try with mobile_app_ prefix
+      if (availableServices.includes('mobile_app_' + deviceId)) {
+        return 'mobile_app_' + deviceId;
+      }
+      PrismBambuCard.log('Device not found:', deviceId);
+      return null;
+    }
+    
+    PrismBambuCard.log('Found device:', device.name, device.name_by_user, device.identifiers);
+    
+    // Try different name variations
+    const namesToTry = [
+      device.name_by_user,
+      device.name,
+      device.model
+    ].filter(Boolean);
+    
+    for (const name of namesToTry) {
+      // Convert to service name format (lowercase, replace non-alphanumeric with _)
+      const serviceName = 'mobile_app_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      
+      if (availableServices.includes(serviceName)) {
+        PrismBambuCard.log('Matched device to service:', deviceId, '->', serviceName);
+        return serviceName;
+      }
+    }
+    
+    // Try identifiers
+    const identifiers = device.identifiers || [];
+    for (const identifier of identifiers) {
+      if (Array.isArray(identifier) && identifier.length >= 2) {
+        const [domain, id] = identifier;
+        if (domain === 'mobile_app') {
+          const serviceName = 'mobile_app_' + id.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+          if (availableServices.includes(serviceName)) {
+            PrismBambuCard.log('Matched via identifier:', serviceName);
+            return serviceName;
+          }
+        }
+      }
+    }
+    
+    // Last resort: fuzzy match by partial name
+    const deviceNameLower = (device.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const service of availableServices) {
+      const serviceNamePart = service.replace('mobile_app_', '').replace(/_/g, '');
+      if (deviceNameLower.includes(serviceNamePart) || serviceNamePart.includes(deviceNameLower)) {
+        PrismBambuCard.log('Fuzzy matched device to service:', deviceId, '->', service);
+        return service;
+      }
+    }
+    
+    PrismBambuCard.log('Could not match device to notify service:', deviceId, device.name);
+    return null;
+  }
+  
+  // Send notification via Home Assistant notify service
+  sendNotification(message, title, data = {}) {
+    if (!this.config?.enable_notifications) {
+      return;
+    }
+    
+    // Collect all notification targets
+    let serviceNames = [];
+    
+    // New target selector format (device picker)
+    const target = this.config.notification_target;
+    if (target) {
+      // Target can have device_id array
+      if (target.device_id) {
+        const deviceIds = Array.isArray(target.device_id) ? target.device_id : [target.device_id];
+        deviceIds.forEach(deviceId => {
+          const serviceName = this._deviceIdToNotifyService(deviceId);
+          if (serviceName && !serviceNames.includes(serviceName)) {
+            serviceNames.push(serviceName);
+          }
+        });
+      }
+    }
+    
+    // Legacy: comma-separated string or array
+    const legacyDevices = this.config.notification_devices || this.config.notification_service;
+    if (legacyDevices) {
+      let devices = [];
+      if (typeof legacyDevices === 'string') {
+        devices = legacyDevices.split(',').map(d => d.trim()).filter(d => d);
+      } else if (Array.isArray(legacyDevices)) {
+        devices = legacyDevices;
+      }
+      
+      devices.forEach(device => {
+        let serviceName = device.trim();
+        if (serviceName.startsWith('device_tracker.')) {
+          serviceName = 'mobile_app_' + serviceName.replace('device_tracker.', '');
+        }
+        if (serviceName.startsWith('notify.')) {
+          serviceName = serviceName.replace('notify.', '');
+        }
+        if (serviceName && !serviceNames.includes(serviceName)) {
+          serviceNames.push(serviceName);
+        }
+      });
+    }
+    
+    if (serviceNames.length === 0) {
+      PrismBambuCard.log('No notification devices configured');
+      return;
+    }
+    
+    const notificationData = {
+      message: message,
+      title: title || 'Bambu Lab Printer',
+      data: {
+        ...data,
+        tag: `bambu_${this.config.printer}`,
+        group: 'bambu_lab_notifications'
+      }
+    };
+    
+    // Send to each device
+    PrismBambuCard.log('Sending notifications to:', serviceNames);
+    
+    serviceNames.forEach(serviceName => {
+      // Verify service exists before calling
+      if (!this._hass.services?.notify?.[serviceName]) {
+        console.warn(`[Prism Bambu] Notify service '${serviceName}' not found. Available services:`, 
+          Object.keys(this._hass.services?.notify || {}).filter(s => s.startsWith('mobile_app_')));
+        return;
+      }
+      
+      try {
+        this._hass.callService('notify', serviceName, notificationData);
+        PrismBambuCard.log('✅ Notification sent to', serviceName, ':', title, message);
+      } catch (error) {
+        console.error('[Prism Bambu] Failed to send notification to', serviceName, ':', error);
+      }
+    });
+  }
+  
+  // Check for status changes and send notifications
+  checkStatusChangeNotification(currentStatus, printerName) {
+    if (!this.config?.enable_notifications) return;
+    
+    // First time or no change
+    if (!this._lastPrintStatus || this._lastPrintStatus === currentStatus) {
+      this._lastPrintStatus = currentStatus;
+      return;
+    }
+    
+    const oldStatus = this._lastPrintStatus.toLowerCase();
+    const newStatus = currentStatus.toLowerCase();
+    const name = printerName || 'Printer';
+    
+    // Notify on completion
+    if (this.config.notify_on_complete && 
+        (newStatus === 'finish' || newStatus === 'finished' || newStatus === 'complete')) {
+      this.sendNotification(
+        `${name} has finished printing! 🎉`,
+        'Print Complete',
+        { priority: 'high', notification_icon: 'mdi:printer-3d-nozzle-check' }
+      );
+    }
+    
+    // Notify on pause
+    else if (this.config.notify_on_pause && 
+             (newStatus === 'pause' || newStatus === 'paused' || newStatus === 'paused_user')) {
+      this.sendNotification(
+        `${name} has paused printing. ⏸️`,
+        'Print Paused',
+        { priority: 'default', notification_icon: 'mdi:pause-circle' }
+      );
+    }
+    
+    // Notify on failed
+    else if (this.config.notify_on_failed && newStatus === 'failed') {
+      this.sendNotification(
+        `${name} print failed! ❌`,
+        'Print Failed',
+        { priority: 'high', notification_icon: 'mdi:alert-circle' }
+      );
+    }
+    
+    // Notify on filament change
+    else if (this.config.notify_on_filament_change && 
+             (newStatus === 'changing_filament' || newStatus === 'filament_loading' || 
+              newStatus === 'filament_unloading' || newStatus === 'paused_filament_runout')) {
+      this.sendNotification(
+        `${name} requires filament change. 🔄`,
+        'Filament Change',
+        { priority: 'high', notification_icon: 'mdi:swap-vertical' }
+      );
+    }
+    
+    // Update last status
+    this._lastPrintStatus = currentStatus;
   }
   
   handlePowerToggle() {
@@ -28779,7 +29085,24 @@ class PrismBambuCard extends HTMLElement {
     
     // Read values using translation keys (how ha-bambulab organizes entities)
     const progress = this.getEntityValue('print_progress');
-    const stateStr = this.getEntityState('print_status') || this.getEntityState('stage') || 'unavailable';
+    // Smart status detection: Combine print_status and stage for accurate state
+    const printStatus = (this.getEntityState('print_status') || '').toLowerCase();
+    const stageStatus = (this.getEntityState('stage') || '').toLowerCase();
+    
+    // print_status overrides stage for these important states
+    const printStatusPriority = ['pause', 'paused', 'failed', 'finish', 'idle', 'offline', 'init'];
+    let stateStr = 'unavailable';
+    
+    if (printStatusPriority.includes(printStatus)) {
+      // Use print_status for important overarching states
+      stateStr = printStatus;
+    } else if (stageStatus && stageStatus !== 'unknown' && stageStatus !== 'idle') {
+      // Use stage for detailed states (filament_change, auto_bed_leveling, etc.)
+      stateStr = stageStatus;
+    } else {
+      // Fallback to print_status
+      stateStr = printStatus || stageStatus || 'unavailable';
+    }
     
     // Debug: Log the current status
     PrismBambuCard.log('Current status:', stateStr, 'Progress:', progress);
@@ -28787,13 +29110,15 @@ class PrismBambuCard extends HTMLElement {
     // Determine if printer is actively printing (support German status names too)
     const statusLower = stateStr.toLowerCase();
     
-    // Extended pause states - includes layer pause, user pause, waiting states
+    // Extended pause states - includes layer pause, user pause, waiting states, filament operations
     const pauseStates = ['paused', 'pause', 'pausiert', 'waiting', 'user_pause', 'user pause', 
                          'layer_pause', 'layer pause', 'filament_change', 'filament change',
+                         'changing_filament', 'filament_loading', 'filament_unloading',
+                         'paused_user', 'paused_user_gcode', 'paused_filament_runout',
                          'suspended', 'on hold', 'halted', 'm400_pause'];
     const printingStates = ['printing', 'prepare', 'running', 'druckt', 'vorbereiten', 'busy'];
     const idleStates = ['idle', 'standby', 'ready', 'finished', 'complete', 'stopped', 'cancelled', 
-                        'error', 'offline', 'unavailable', 'slicing', 'unknown'];
+                        'finish', 'failed', 'error', 'offline', 'unavailable', 'slicing', 'unknown'];
     
     let isPrinting = printingStates.includes(statusLower);
     let isPaused = pauseStates.includes(statusLower);
@@ -29132,17 +29457,37 @@ class PrismBambuCard extends HTMLElement {
           type = typeStr || stateStr || '';
         }
         
-        // Get color - may be 8 chars with alpha (#RRGGBBAA), convert to 6 (#RRGGBB)
+        // Get color - may be 8 chars with alpha (#RRGGBBAA)
         let color = attr.color || attr.tray_color || '#666666';
+        let alphaHex = 'FF'; // Default: fully opaque
+        let isTransparent = false;
+        
         if (color && typeof color === 'string') {
           // Add # if missing
           if (!color.startsWith('#') && !color.startsWith('rgb')) {
             color = '#' + color;
           }
-          // Remove alpha channel if present (8 char -> 6 char)
+          // Extract alpha channel if present (8 char format)
           if (color.length === 9) {
-            color = color.substring(0, 7);
+            alphaHex = color.substring(7, 9); // Get last 2 chars (alpha)
+            color = color.substring(0, 7); // RGB part
+            
+            // Check if transparent (alpha < 128 = 50%)
+            const alphaDecimal = parseInt(alphaHex, 16);
+            if (alphaDecimal < 128) {
+              isTransparent = true;
+            }
           }
+        }
+        
+        // Bambu Lab doesn't always use alpha channel for transparency
+        // Check name/type for transparency keywords (nameStr and typeStr already defined above)
+        const transparencyKeywords = ['transparent', 'clear', 'translucent', 'durchsichtig', 'klar'];
+        const nameLower = nameStr.toLowerCase();
+        const typeLower = typeStr.toLowerCase();
+        
+        if (transparencyKeywords.some(keyword => nameLower.includes(keyword) || typeLower.includes(keyword))) {
+          isTransparent = true;
         }
         
         // Get remaining percentage
@@ -29170,6 +29515,7 @@ class PrismBambuCard extends HTMLElement {
           remainEnabled: remainEnabled,
           active,
           empty: isEmpty,
+          transparent: isEmpty ? false : isTransparent,
           // Full filament info for popup
           fullName: attr.name || '',
           brand: attr.brand || attr.manufacturer || '',
@@ -29186,6 +29532,7 @@ class PrismBambuCard extends HTMLElement {
           remaining: 0,
           active: false,
           empty: true,
+          transparent: false,
           fullName: '',
           brand: '',
           nozzleTempMin: null,
@@ -29729,6 +30076,21 @@ class PrismBambuCard extends HTMLElement {
             overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
+        /* Transparent filament pattern (checkerboard background) */
+        .ams-slot.transparent .filament::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.15) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.15) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.15) 75%);
+            background-size: 8px 8px;
+            background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+            z-index: -1;
+            border-radius: 50%;
+        }
         .spool-center {
             position: absolute;
             width: 20%;
@@ -29815,6 +30177,23 @@ class PrismBambuCard extends HTMLElement {
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Transparent filament pattern in popup */
+        .filament-popup-color.transparent::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.2) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.2) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.2) 75%);
+            background-size: 8px 8px;
+            background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+            z-index: -1;
+            border-radius: 50%;
         }
         .filament-popup-title {
             flex: 1;
@@ -30151,11 +30530,11 @@ class PrismBambuCard extends HTMLElement {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            /* Subtle shadow to make it "sit" on the bed */
-            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
-                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-                    brightness(1.0) contrast(1.1);
-            transition: filter 0.3s ease, transform 0.3s ease;
+            /* Transparent "ghost" image as background - more visible */
+            opacity: 0.45;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) 
+                    grayscale(0.3) brightness(0.75);
+            transition: filter 0.3s ease, opacity 0.3s ease;
         }
         /* Reflection/shadow on the bed */
         .cover-image-wrapper::after {
@@ -30169,68 +30548,67 @@ class PrismBambuCard extends HTMLElement {
             border-radius: 50%;
             filter: blur(4px);
         }
-        /* Progress overlay - fills from bottom to top with green tint */
+        /* Progress overlay - actual IMG element so drop-shadow follows the model shape! */
         .cover-image-progress {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
-            right: 0;
-            height: var(--progress-height, 0%);
-            background: linear-gradient(
-                to top,
-                rgba(74, 222, 128, 0.6) 0%,
-                rgba(34, 197, 94, 0.4) 40%,
-                rgba(34, 197, 94, 0.15) 100%
-            );
-            mix-blend-mode: hard-light;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Clip from bottom to top based on progress
+               Added 12% base offset so model starts showing earlier
+               (accounts for empty space at bottom of preview images) */
+            clip-path: inset(calc(88% - var(--progress-height, 0%)) 0 0 0);
+            /* drop-shadow on <img> follows the actual alpha shape of the image! */
+            filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6))
+                    drop-shadow(0 0 4px rgba(74, 222, 128, 0.8))
+                    brightness(1.1) contrast(1.15);
             pointer-events: none;
-            transition: height 0.5s ease-out;
-            border-radius: 4px;
+            transition: clip-path 0.5s ease-out, filter 0.3s ease;
         }
-        /* Glow effect when printing - affects the image directly */
-        .cover-image-wrapper.printing .cover-image {
-            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
-                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-                    drop-shadow(0 0 20px rgba(74, 222, 128, 0.4))
-                    brightness(1.1) contrast(1.1);
-            animation: modelGlow 2s ease-in-out infinite;
+        /* Glow effect when printing - follows the actual model shape! */
+        .cover-image-wrapper.printing .cover-image-progress {
+            filter: drop-shadow(0 0 12px rgba(74, 222, 128, 0.7))
+                    drop-shadow(0 0 6px rgba(74, 222, 128, 0.9))
+                    drop-shadow(0 0 3px rgba(255, 255, 255, 0.5))
+                    brightness(1.15) contrast(1.2);
+            animation: modelBuildGlow 2s ease-in-out infinite;
         }
-        @keyframes modelGlow {
+        @keyframes modelBuildGlow {
             0%, 100% { 
-                filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
-                        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-                        drop-shadow(0 0 15px rgba(74, 222, 128, 0.3))
-                        brightness(1.05) contrast(1.1);
+                filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.6))
+                        drop-shadow(0 0 5px rgba(74, 222, 128, 0.8))
+                        drop-shadow(0 0 2px rgba(255, 255, 255, 0.4))
+                        brightness(1.1) contrast(1.15);
             }
             50% { 
-                filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
-                        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-                        drop-shadow(0 0 30px rgba(74, 222, 128, 0.5))
-                        brightness(1.15) contrast(1.1);
+                filter: drop-shadow(0 0 20px rgba(74, 222, 128, 0.8))
+                        drop-shadow(0 0 10px rgba(74, 222, 128, 1))
+                        drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))
+                        brightness(1.2) contrast(1.25);
             }
         }
-        /* Idle state - dim and grayscale */
+        /* Idle state - dimmer ghost image, no progress visible */
         .cover-image-wrapper.idle .cover-image {
+            opacity: 0.3;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) 
-                    brightness(0.5) contrast(0.9) grayscale(0.6);
+                    grayscale(0.3) brightness(0.5);
+            /* contrast at 1.0 (default) and grayscale 0.3 so black models remain visible */
+        }
+        .cover-image-wrapper.idle .cover-image-progress {
+            opacity: 0;
         }
         .cover-image-wrapper.idle::after {
-            opacity: 0.3;
+            opacity: 0.2;
         }
-        /* Paused state - yellow tint */
+        /* Paused state - yellow glow following model shape */
         .cover-image-wrapper.paused .cover-image-progress {
-            background: linear-gradient(
-                to top,
-                rgba(251, 191, 36, 0.6) 0%,
-                rgba(245, 158, 11, 0.4) 40%,
-                rgba(245, 158, 11, 0.15) 100%
-            );
-        }
-        .cover-image-wrapper.paused .cover-image {
-            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6)) 
-                    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))
-                    drop-shadow(0 0 15px rgba(251, 191, 36, 0.4))
-                    brightness(1.0) contrast(1.1);
+            filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.7))
+                    drop-shadow(0 0 6px rgba(251, 191, 36, 0.9))
+                    drop-shadow(0 0 3px rgba(255, 255, 255, 0.4))
+                    brightness(1.1) contrast(1.15);
+            animation: none;
         }
         /* Progress percentage badge - positioned below model */
         .cover-progress-badge {
@@ -30536,7 +30914,7 @@ class PrismBambuCard extends HTMLElement {
         ${data.amsData.length > 0 ? `
         <div class="ams-grid ${data.amsData.length <= 3 ? 'slots-' + data.amsData.length : ''}">
             ${data.amsData.map(slot => `
-                <div class="ams-slot ${slot.active ? 'active' : ''} ${!slot.empty ? 'clickable' : ''}"
+                <div class="ams-slot ${slot.active ? 'active' : ''} ${!slot.empty ? 'clickable' : ''} ${slot.transparent ? 'transparent' : ''}"
                      ${!slot.empty ? `data-slot-id="${slot.id}"
                      data-full-name="${(slot.fullName || '').replace(/"/g, '&quot;')}"
                      data-type="${slot.type}"
@@ -30545,6 +30923,7 @@ class PrismBambuCard extends HTMLElement {
                      data-brand="${(slot.brand || '').replace(/"/g, '&quot;')}"
                      data-temp-min="${slot.nozzleTempMin || ''}"
                      data-temp-max="${slot.nozzleTempMax || ''}"
+                     data-transparent="${slot.transparent || false}"
                      data-entity-id="${slot.entityId || ''}"` : ''}>
                     <div class="spool-visual">
                         ${!slot.empty ? `
@@ -30641,8 +31020,8 @@ class PrismBambuCard extends HTMLElement {
                 ${data.showCoverImage ? `
                 <div class="cover-image-container">
                     <div class="cover-image-wrapper ${data.isPrinting ? 'printing' : ''} ${data.isPaused ? 'paused' : ''} ${data.isIdle ? 'idle' : ''}">
-                        <img src="${data.coverImageUrl}" class="cover-image" alt="3D Model" />
-                        <div class="cover-image-progress" style="--progress-height: ${data.progress}%;"></div>
+                        <img src="${data.coverImageUrl}" class="cover-image" alt="3D Model Ghost" />
+                        <img src="${data.coverImageUrl}" class="cover-image-progress" style="--progress-height: ${data.progress}%;" alt="3D Model" />
                         <div class="cover-progress-badge">${Math.round(data.progress)}%</div>
                     </div>
                 </div>

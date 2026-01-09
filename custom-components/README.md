@@ -314,21 +314,39 @@ A Bambu Lab 3D printer card with AMS (Automatic Material System) support, glassm
   image: /hacsfiles/Prism-Dashboard/images/printer-blank.jpg  # Optional: Printer image (default is automatically used)
 ```
 
-**Advanced Configuration (with AMS and Camera):**
+**Advanced Configuration (with AMS, Camera and Notifications):**
 ```yaml
 - type: custom:prism-bambu
   printer: <device_id>  # Bambu Lab printer device
   ams_device: <ams_device_id>  # Optional: AMS device (if multiple AMS present)
   name: Bambu Lab Printer
   camera_entity: camera.x1c_1_kamera  # Optional: Camera Entity
+  camera_live_stream: true  # Optional: Enable live camera stream
+  show_cover_image: true  # Optional: Show 3D model preview with build-up effect
+  cover_image_entity: image.x1c_1_titelbild  # Optional: Entity for 3D model preview
   image: /local/custom-components/images/prism-bambu-pic.png  # Optional: .png or .jpg
+  # Push Notifications (optional)
+  enable_notifications: true
+  notification_target:
+    device_id:
+      - <device_id_1>  # First mobile device
+      - <device_id_2>  # Second mobile device
+      - <device_id_3>  # Third mobile device
+  notify_on_complete: true
+  notify_on_pause: true
+  notify_on_failed: true
+  notify_on_filament_change: true
 ```
 
 **Note:** The card uses Home Assistant's **Device Registry** and automatically filters all relevant entities based on the selected printer device. This works exactly like the official [ha-bambulab Cards](https://github.com/greghesp/ha-bambulab-cards).
 
 **Features:**
+- ✅ **Real-Time 3D Model Build-Up**: Model preview builds up from bottom to top during printing with transparent ghost image in background
+- ✅ **Smart Status Detection**: Intelligently combines `print_status` and `stage` entities for accurate status (e.g., "Filament Change", "Pause", "Printing")
+- ✅ **Push Notifications**: Configurable notifications for print complete, pause, failed, and filament change events (multi-device support)
 - ✅ **AMS Support**: Shows all 4 AMS slots with color visualization
 - ✅ **Filament Type Detection**: Supports PCTG, PETG, PLA, ABS, TPU, ASA, PA-CF, PA, PC, PVA, HIPS, PP
+- ✅ **Transparent Filament Display**: Detects transparent filaments via alpha channel or keywords (e.g., "clear", "transparent") with chessboard pattern
 - ✅ **Remaining Amount Display**: Shows `?` if RFID tracking is not active, otherwise percentage
 - ✅ **Active Slot**: Automatically highlighted
 - ✅ **Live Camera Stream**: Toggle between printer image and live video stream
@@ -348,7 +366,18 @@ A Bambu Lab 3D printer card with AMS (Automatic Material System) support, glassm
 2. **AMS Device** (optional): If multiple AMS present, select the desired AMS device
 3. **Name** (optional): Custom name for the card
 4. **Camera Entity** (optional): Camera entity for live stream
-5. **Image** (optional): Path to printer image (`.png` or `.jpg`)
+5. **Show Cover Image** (optional): Enable 3D model preview with real-time build-up effect
+6. **Cover Image Entity** (optional): Select entity for 3D model preview (e.g., `image.x1c_1_titelbild`)
+7. **Image** (optional): Path to printer image (`.png` or `.jpg`)
+
+**Notifications Configuration (Expandable Section):**
+
+1. **Enable notifications**: Master switch to enable/disable all notifications
+2. **Notification target**: Device picker to select mobile devices (supports multiple devices)
+3. **Notify when print completes**: Send push notification when print finishes successfully
+4. **Notify when print pauses**: Send push notification when print pauses or filament change needed
+5. **Notify when print fails**: Send push notification when print fails
+6. **Notify on filament change**: Send push notification when filament change is required
 
 **Automatic Entity Detection:**
 
@@ -381,11 +410,54 @@ The card reads AMS data from tray entities (`sensor.*_slot_1`, `sensor.*_slot_2`
 - The card supports both `.png` and `.jpg` formats
 4. As a last fallback, a printer icon is displayed
 
+**3D Model Preview with Real-Time Build-Up:**
+
+The card features a unique visual enhancement that shows the actual 3D model preview building up in real-time as the print progresses:
+
+- **Ghost Image**: Semi-transparent model preview in the background (visible when idle)
+- **Progressive Build-Up**: The model "builds" from bottom to top matching print progress (0-100%)
+- **Shape-Conforming Glow**: Active printing shows a glow effect that follows the actual model shape (not rectangular)
+- **Automatic Detection**: Uses `image.printer_titelbild` entity from Bambu Lab integration
+- **Idle State**: Ghost image becomes darker when printer is idle
+
+**Smart Status Detection:**
+
+The card intelligently combines multiple status entities for accurate state reporting:
+
+- **Priority Logic**: `stage` entity (detailed status) is checked before `print_status` (coarse status)
+- **Detailed States**: Detects "Filament Change", "Filament Loading", "Paused User", "Heating", "Calibrating", etc.
+- **Accurate Display**: Shows exactly what the printer is doing (e.g., "Changing Filament" instead of just "Running")
+- **Supported States**: 
+  - **Printing**: `printing`, `prepare`, `running`
+  - **Paused**: `pause`, `paused_user`, `changing_filament`, `filament_loading`, `filament_unloading`, `paused_filament_runout`
+  - **Idle**: `idle`, `finish`, `failed`, `offline`
+
+**Transparent Filament Detection:**
+
+The AMS filament slots automatically detect and display transparent filaments:
+
+- **Alpha Channel Detection**: Analyzes the alpha value in hex color codes (`#RRGGBBAA`)
+- **Keyword Detection**: Recognizes keywords like "transparent", "clear", "durchsichtig", "translucent" in filament name/type
+- **Visual Indicator**: Transparent filaments show a chessboard pattern background
+- **Accurate Colors**: Properly distinguishes between `#000000FF` (black opaque) and truly transparent filaments
+
+**Push Notifications:**
+
+Receive instant notifications on your mobile devices when printer status changes:
+
+- 🎉 **Print Complete**: "Bambu H2D has finished printing!"
+- ⏸️ **Print Paused**: "Bambu H2D has paused printing."
+- ❌ **Print Failed**: "Bambu H2D print failed!"
+- 🔄 **Filament Change**: "Bambu H2D requires filament change."
+
+**Multi-Device Support**: Send notifications to multiple devices simultaneously via the device picker in the visual editor.
+
 **Interactions:**
 
 - **Light Button**: Toggle Chamber Light on/off (button shows immediate feedback)
 - **Camera Button**: Switches between printer image and live camera stream
 - **Click Camera Image**: Opens large More-Info popup (like HA image entities)
+- **Click AMS Slot**: Opens popup with detailed filament information for all 4 slots
 - **Pause Button**: Opens More-Info dialog for print status (only active when printer is printing/paused)
 
 **ha-bambulab Integration:**

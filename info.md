@@ -20,7 +20,7 @@ This repository contains the following custom cards:
 - **prism-vacuum-switchbot** - Specialized card for SwitchBot vacuums (S10, S1, K10+)
 - **prism-led** - Light card with color wheel and temperature control
 - **prism-3dprinter** - 3D printer card with glassmorphism design
-- **prism-bambu** - Bambu Lab 3D printer card with AMS support
+- **prism-bambu** - Bambu Lab 3D printer card with AMS support, real-time 3D model build-up, transparent filament detection, and push notifications
 - **prism-creality** - Creality 3D printer card (K1, K1 Max, K1 SE) - supports Moonraker/Klipper
 - **prism-energy** - Energy flow card for solar, battery, grid and EV
 - **prism-energy-horizontal** - Horizontal energy flow card
