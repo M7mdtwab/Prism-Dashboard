@@ -345,6 +345,7 @@ A Bambu Lab 3D printer card with AMS (Automatic Material System) support, glassm
 - ✅ **Smart Status Detection**: Intelligently combines `print_status` and `stage` entities for accurate status (e.g., "Filament Change", "Pause", "Printing")
 - ✅ **Push Notifications**: Configurable notifications for print complete, pause, failed, and filament change events (multi-device support)
 - ✅ **AMS Support**: Shows all 4 AMS slots with color visualization
+- ✅ **AMS Humidity Display**: Supports both numeric values (newer systems) and A-E levels (older systems without real sensors)
 - ✅ **Filament Type Detection**: Supports PCTG, PETG, PLA, ABS, TPU, ASA, PA-CF, PA, PC, PVA, HIPS, PP
 - ✅ **Transparent Filament Display**: Detects transparent filaments via alpha channel or keywords (e.g., "clear", "transparent") with chessboard pattern
 - ✅ **Remaining Amount Display**: Shows `?` if RFID tracking is not active, otherwise percentage

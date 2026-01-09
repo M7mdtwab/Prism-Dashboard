@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.5.9
- * Build Date: 2026-01-09T13:16:25.104Z
+ * Build Date: 2026-01-09T15:37:01.250Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -26417,7 +26417,11 @@ class PrismBambuCard extends HTMLElement {
     }
     if (data.amsHumidity !== null) {
       const amsHumidPill = this.shadowRoot.querySelector('[data-pill="ams-humidity"] .ams-pill-content .ams-pill-value');
-      if (amsHumidPill) amsHumidPill.textContent = `${Math.round(data.amsHumidity)}%`;
+      if (amsHumidPill) {
+        amsHumidPill.textContent = typeof data.amsHumidity === 'number' 
+          ? `${Math.round(data.amsHumidity)}%` 
+          : data.amsHumidity;
+      }
     }
     
     // Update temperatures
@@ -29579,10 +29583,17 @@ class PrismBambuCard extends HTMLElement {
           
           // Check for humidity sensor
           if (entityIdLower.includes('humidity') || translationKey.includes('humidity')) {
-            const humValue = parseFloat(state?.state);
-            if (!isNaN(humValue) && state?.state !== 'unavailable' && state?.state !== 'unknown') {
-              amsHumidity = humValue;
-              PrismBambuCard.log('Found AMS humidity:', amsHumidity, 'from', entityId);
+            const stateValue = state?.state;
+            // Try parsing as number first (newer AMS systems with real sensors)
+            const humValue = parseFloat(stateValue);
+            if (!isNaN(humValue) && stateValue !== 'unavailable' && stateValue !== 'unknown') {
+              amsHumidity = humValue; // Numeric value (e.g. 45)
+              PrismBambuCard.log('Found AMS humidity (numeric):', amsHumidity, 'from', entityId);
+            } 
+            // If not numeric, check for A-E levels (older AMS systems)
+            else if (/^[A-E]$/i.test(stateValue)) {
+              amsHumidity = stateValue.toUpperCase(); // String: "A", "B", "C", "D", "E"
+              PrismBambuCard.log('Found AMS humidity (level):', amsHumidity, 'from', entityId);
             }
           }
         }
@@ -30954,7 +30965,7 @@ class PrismBambuCard extends HTMLElement {
             <div class="ams-info-pill humidity" data-pill="ams-humidity">
                 <div class="ams-pill-icon"><ha-icon icon="mdi:water-percent"></ha-icon></div>
                 <div class="ams-pill-content">
-                    <span class="ams-pill-value">${Math.round(data.amsHumidity)}%</span>
+                    <span class="ams-pill-value">${typeof data.amsHumidity === 'number' ? Math.round(data.amsHumidity) + '%' : data.amsHumidity}</span>
                     <span class="ams-pill-label">AMS</span>
                 </div>
             </div>
