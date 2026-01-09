@@ -3,7 +3,7 @@
  * https://github.com/BangerTech/Prism-Dashboard
  * 
  * Version: 1.5.9
- * Build Date: 2026-01-09T15:37:01.250Z
+ * Build Date: 2026-01-09T16:15:59.440Z
  * 
  * This file contains all Prism custom cards bundled together.
  * Just add this single file as a resource in Lovelace:
@@ -29584,16 +29584,35 @@ class PrismBambuCard extends HTMLElement {
           // Check for humidity sensor
           if (entityIdLower.includes('humidity') || translationKey.includes('humidity')) {
             const stateValue = state?.state;
-            // Try parsing as number first (newer AMS systems with real sensors)
-            const humValue = parseFloat(stateValue);
-            if (!isNaN(humValue) && stateValue !== 'unavailable' && stateValue !== 'unknown') {
-              amsHumidity = humValue; // Numeric value (e.g. 45)
-              PrismBambuCard.log('Found AMS humidity (numeric):', amsHumidity, 'from', entityId);
-            } 
-            // If not numeric, check for A-E levels (older AMS systems)
-            else if (/^[A-E]$/i.test(stateValue)) {
+            const unitOfMeasurement = state?.attributes?.unit_of_measurement;
+            
+            // Check for A-E letters first (some systems output letters directly)
+            if (/^[A-E]$/i.test(stateValue)) {
               amsHumidity = stateValue.toUpperCase(); // String: "A", "B", "C", "D", "E"
-              PrismBambuCard.log('Found AMS humidity (level):', amsHumidity, 'from', entityId);
+              PrismBambuCard.log('Found AMS humidity (letter):', amsHumidity, 'from', entityId);
+            }
+            // Try parsing as number
+            else {
+              const humValue = parseFloat(stateValue);
+              if (!isNaN(humValue) && stateValue !== 'unavailable' && stateValue !== 'unknown') {
+                // Check if this is a real percentage sensor (has % unit) or index sensor (no unit)
+                // Older AMS systems output 1-5 as humidity index WITHOUT unit
+                // Newer systems with real sensors have % as unit_of_measurement
+                if (unitOfMeasurement === '%' || unitOfMeasurement === 'percent') {
+                  // Real percentage value from newer systems (e.g. 45%)
+                  amsHumidity = humValue;
+                  PrismBambuCard.log('Found AMS humidity (percent):', amsHumidity, '% from', entityId);
+                } else if (humValue >= 1 && humValue <= 5 && Number.isInteger(humValue)) {
+                  // No unit and value 1-5 = index for A-E (older systems)
+                  const levels = ['A', 'B', 'C', 'D', 'E'];
+                  amsHumidity = levels[humValue - 1];
+                  PrismBambuCard.log('Found AMS humidity (index):', humValue, '→', amsHumidity, 'from', entityId);
+                } else {
+                  // Fallback: treat as percentage if > 5 or has decimals
+                  amsHumidity = humValue;
+                  PrismBambuCard.log('Found AMS humidity (fallback numeric):', amsHumidity, 'from', entityId);
+                }
+              }
             }
           }
         }
