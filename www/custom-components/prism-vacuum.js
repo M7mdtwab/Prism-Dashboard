@@ -3,6 +3,8 @@ class PrismVacuumCard extends HTMLElement {
       super();
       this.attachShadow({ mode: 'open' });
       this._mapRefreshInterval = null;
+      this._activeTab = 'fan'; // 'fan' or 'water'
+      this._activeScene = 1; // 1 or 2 - which scene is selected
     }
 
     static getStubConfig() {
@@ -31,6 +33,55 @@ class PrismVacuumCard extends HTMLElement {
           {
             name: "show_status",
             selector: { boolean: {} }
+          },
+          {
+            name: "",
+            type: "expandable",
+            title: "Wasser-Steuerung",
+            schema: [
+              {
+                name: "water_entity",
+                selector: { entity: { domain: ["select", "number"] } },
+                description: "Entity für Wasserstand/Mop-Modus (z.B. select.vacuum_water_box_mode oder number.vacuum_water_level)"
+              },
+              {
+                name: "water_levels",
+                selector: { text: {} },
+                description: "Wasser-Stufen kommagetrennt (z.B. 'Off,Low,Medium,High' oder '1,2,3'). Leer = automatisch aus Entity"
+              }
+            ]
+          },
+          {
+            name: "",
+            type: "expandable",
+            title: "Szenen-Modus",
+            schema: [
+              {
+                name: "use_scenes",
+                selector: { boolean: {} },
+                description: "Aktiviert die Szenen-Auswahl. Der Play-Button startet dann die ausgewählte Szene statt dem normalen Start-Befehl."
+              },
+              {
+                name: "scene_1",
+                selector: { entity: { domain: "scene" } },
+                description: "Erste Szene (z.B. 'Alle Räume reinigen')"
+              },
+              {
+                name: "scene_1_name",
+                selector: { text: {} },
+                description: "Anzeigename für Szene 1 (optional, z.B. 'Alles')"
+              },
+              {
+                name: "scene_2",
+                selector: { entity: { domain: "scene" } },
+                description: "Zweite Szene (z.B. 'Nur Küche reinigen')"
+              },
+              {
+                name: "scene_2_name",
+                selector: { text: {} },
+                description: "Anzeigename für Szene 2 (optional, z.B. 'Küche')"
+              }
+            ]
           }
         ]
       };
@@ -55,6 +106,11 @@ class PrismVacuumCard extends HTMLElement {
         // Get map camera entity if configured
         if (this.config.map_camera) {
           this._mapEntity = hass.states[this.config.map_camera] || null;
+        }
+        
+        // Get water entity if configured
+        if (this.config.water_entity) {
+          this._waterEntity = hass.states[this.config.water_entity] || null;
         }
         
         this.render();
@@ -105,12 +161,41 @@ class PrismVacuumCard extends HTMLElement {
             });
         }
 
+        // Tab Buttons
+        root.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tab = e.currentTarget.dataset.tab;
+                this._activeTab = tab;
+                this.render();
+            });
+        });
+        
+        // Scene Buttons
+        root.querySelectorAll('.scene-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const scene = parseInt(e.currentTarget.dataset.scene);
+                this._activeScene = scene;
+                this.render();
+            });
+        });
+
         // Fan Speed
         root.querySelectorAll('.speed-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const speed = e.currentTarget.dataset.speed;
                 this.handleAction('set_speed', speed);
+            });
+        });
+        
+        // Water Level
+        root.querySelectorAll('.water-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const level = e.currentTarget.dataset.level;
+                this.handleAction('set_water_level', level);
             });
         });
     }
@@ -123,13 +208,23 @@ class PrismVacuumCard extends HTMLElement {
   
       if (action === 'toggle') {
         const state = this._entity ? this._entity.state : 'idle';
-        if (state === 'cleaning') {
+        const cleaningStates = ['cleaning', 'on', 'running', 'auto', 'spot', 'edge', 'single_room', 'mop', 'sweeping', 'mopping', 'vacuuming'];
+        const isCleaning = cleaningStates.includes(state);
+        
+        if (isCleaning) {
           service = 'stop';
-        } else if (state === 'paused') {
-          service = 'start';
-        } else if (state === 'docked' || state === 'idle') {
-          service = 'start';
         } else {
+          // Check if scene mode is enabled
+          if (this.config.use_scenes) {
+            const sceneEntity = this._activeScene === 1 ? this.config.scene_1 : this.config.scene_2;
+            if (sceneEntity) {
+              this._hass.callService('scene', 'turn_on', { 
+                entity_id: sceneEntity 
+              });
+              return;
+            }
+          }
+          // Default: Start clean
           service = 'start';
         }
       } else if (action === 'home') {
@@ -139,6 +234,24 @@ class PrismVacuumCard extends HTMLElement {
       } else if (action === 'set_speed') {
         service = 'set_fan_speed';
         data.fan_speed = value;
+      } else if (action === 'set_water_level' && value && this.config.water_entity) {
+        // Handle water level - check if it's a select or number entity
+        const waterEntity = this._waterEntity;
+        if (waterEntity) {
+          const domain = this.config.water_entity.split('.')[0];
+          if (domain === 'select') {
+            this._hass.callService('select', 'select_option', {
+              entity_id: this.config.water_entity,
+              option: value
+            });
+          } else if (domain === 'number') {
+            this._hass.callService('number', 'set_value', {
+              entity_id: this.config.water_entity,
+              value: parseFloat(value)
+            });
+          }
+        }
+        return;
       }
   
       if (service && this._hass) {
@@ -172,6 +285,45 @@ class PrismVacuumCard extends HTMLElement {
       return defaultSpeeds;
     }
     
+    // Get water levels from config or entity
+    getWaterLevels() {
+      // If user provided custom levels in config
+      if (this.config.water_levels && this.config.water_levels.trim()) {
+        return this.config.water_levels.split(',').map(l => l.trim()).filter(l => l);
+      }
+      
+      // Try to get from entity attributes
+      if (this._waterEntity) {
+        const attr = this._waterEntity.attributes;
+        // For select entities, use options
+        if (attr.options && Array.isArray(attr.options)) {
+          return attr.options;
+        }
+        // For number entities, create range based on min/max/step
+        if (attr.min !== undefined && attr.max !== undefined) {
+          const min = attr.min;
+          const max = attr.max;
+          const step = attr.step || 1;
+          const levels = [];
+          for (let i = min; i <= max; i += step) {
+            levels.push(String(i));
+          }
+          return levels;
+        }
+      }
+      
+      // Default water levels
+      return ['Low', 'Medium', 'High'];
+    }
+    
+    // Get current water level
+    getCurrentWaterLevel() {
+      if (this._waterEntity) {
+        return this._waterEntity.state;
+      }
+      return null;
+    }
+    
     // Get display label for speed (shorter labels for UI)
     getSpeedLabel(speed) {
       const labels = {
@@ -186,7 +338,6 @@ class PrismVacuumCard extends HTMLElement {
         'max+': 'Max+',
         'off': 'Off',
         // Dreame
-        'quiet': 'Silent',
         'strong': 'Strong',
         // Valetudo
         'min': 'Min',
@@ -202,6 +353,28 @@ class PrismVacuumCard extends HTMLElement {
       
       const lowerSpeed = speed.toLowerCase();
       return labels[lowerSpeed] || speed.charAt(0).toUpperCase() + speed.slice(1).substring(0, 5);
+    }
+    
+    // Get display label for water level
+    getWaterLabel(level) {
+      const labels = {
+        'off': 'Aus',
+        'low': 'Wenig',
+        'medium': 'Mittel',
+        'med': 'Mittel',
+        'high': 'Viel',
+        'max': 'Max',
+        'mild': 'Mild',
+        'moderate': 'Mod',
+        'intense': 'Stark',
+        '1': 'Wenig',
+        '2': 'Mittel',
+        '3': 'Viel',
+        '4': 'Max'
+      };
+      
+      const lowerLevel = level.toLowerCase();
+      return labels[lowerLevel] || level.charAt(0).toUpperCase() + level.slice(1).substring(0, 6);
     }
     
     // Get battery icon based on level
@@ -245,6 +418,7 @@ class PrismVacuumCard extends HTMLElement {
         // UI labels
         'vacuum': isGerman ? 'Staubsauger' : 'Vacuum',
         'fan_speed': isGerman ? 'Saugstärke' : 'Fan Speed',
+        'water_level': isGerman ? 'Wasserstand' : 'Water Level',
         'home': isGerman ? 'Basis' : 'Home'
       };
       
@@ -319,6 +493,15 @@ class PrismVacuumCard extends HTMLElement {
       // Get fan speeds from entity or defaults
       const speeds = this.getFanSpeeds();
       const currentSpeedIndex = speeds.findIndex(s => s.toLowerCase() === fanSpeed.toLowerCase());
+      
+      // Get water levels if water entity is configured
+      const hasWaterControl = !!this.config.water_entity;
+      const waterLevels = hasWaterControl ? this.getWaterLevels() : [];
+      const currentWaterLevel = this.getCurrentWaterLevel();
+      const currentWaterIndex = waterLevels.findIndex(l => l.toLowerCase() === (currentWaterLevel || '').toLowerCase());
+      
+      // Check if scenes are configured
+      const hasScenes = this.config.use_scenes && (this.config.scene_1 || this.config.scene_2);
       
       // Map URL if configured
       const mapUrl = this.getMapUrl();
@@ -475,22 +658,6 @@ class PrismVacuumCard extends HTMLElement {
               flex-shrink: 0;
           }
           
-          .action-btn {
-              width: 36px; height: 36px; border-radius: 50%;
-              display: flex; align-items: center; justify-content: center;
-              transition: all 0.2s; cursor: pointer;
-              border: 1px solid rgba(255,255,255,0.05);
-              background: rgba(255,255,255,0.05);
-              color: rgba(255,255,255,0.4);
-          }
-          .action-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-          .action-btn ha-icon {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              line-height: 0;
-          }
-          
           .play-btn {
               width: 40px; height: 40px; border-radius: 50%;
               display: flex; align-items: center; justify-content: center;
@@ -631,6 +798,38 @@ class PrismVacuumCard extends HTMLElement {
           .controls-header {
               display: flex; justify-content: space-between; align-items: center; padding: 0 4px;
           }
+          
+          /* Tab Buttons */
+          .tab-container {
+              display: flex; align-items: center; gap: 4px;
+              background: rgba(20,20,20,0.4);
+              border-radius: 20px;
+              padding: 3px;
+          }
+          .tab-btn {
+              display: flex; align-items: center; justify-content: center;
+              width: 32px; height: 26px; border-radius: 16px;
+              cursor: pointer; transition: all 0.2s;
+              color: rgba(255,255,255,0.3);
+              background: transparent;
+          }
+          .tab-btn:hover {
+              color: rgba(255,255,255,0.6);
+          }
+          .tab-btn.active {
+              background: rgba(255,255,255,0.1);
+              color: #3b82f6;
+          }
+          .tab-btn.active.water {
+              color: #60a5fa;
+          }
+          .tab-btn ha-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+          }
+          
+          /* Controls Label (when no tabs) */
           .controls-label {
               display: flex; align-items: center; gap: 6px;
               font-size: 11px; color: #999;
@@ -643,59 +842,129 @@ class PrismVacuumCard extends HTMLElement {
           }
           .controls-label span { font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
           
+          /* Scene Selector */
+          .scene-selector {
+              display: flex; 
+              align-items: center; 
+              gap: 6px;
+              flex: 1;
+              justify-content: center;
+          }
+          .scene-btn {
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+              padding: 6px 10px; 
+              border-radius: 10px;
+              cursor: pointer; 
+              transition: all 0.2s;
+              font-size: 9px; 
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+              white-space: nowrap;
+              border: 1px solid rgba(255,255,255,0.05);
+              height: 26px;
+              box-sizing: border-box;
+          }
+          /* Inactive = raised/erhaben */
+          .scene-btn.inactive {
+              background: linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1));
+              color: rgba(255,255,255,0.4);
+              box-shadow: 
+                  4px 4px 10px rgba(0, 0, 0, 0.5),
+                  -2px -2px 6px rgba(255, 255, 255, 0.03),
+                  inset 0 1px 2px rgba(255, 255, 255, 0.05);
+          }
+          .scene-btn.inactive:hover {
+              background: linear-gradient(145deg, rgba(40, 43, 50, 1), rgba(32, 34, 40, 1));
+              color: rgba(255,255,255,0.6);
+          }
+          /* Active = pressed/eingedrückt */
+          .scene-btn.active {
+              background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
+              color: #4ade80;
+              box-shadow: inset 3px 3px 8px rgba(0,0,0,0.7), inset -2px -2px 4px rgba(255,255,255,0.03);
+          }
+          .scene-btn ha-icon {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.2s;
+          }
+          .scene-btn.active ha-icon {
+              filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));
+          }
+          
           .home-btn {
-              display: flex; align-items: center; gap: 6px;
-              padding: 4px 10px; border-radius: 20px;
-              border: 1px solid transparent;
+              width: 36px; height: 36px; border-radius: 50%;
+              display: flex; align-items: center; justify-content: center;
               cursor: pointer; transition: all 0.2s;
+              border: 1px solid rgba(255,255,255,0.05);
+              flex-shrink: 0;
           }
           .home-btn ha-icon {
               display: flex;
               align-items: center;
               justify-content: center;
-              flex-shrink: 0;
           }
           .home-btn.active {
-              background: #141414; color: #3b82f6;
-              box-shadow: inset 2px 2px 5px rgba(0,0,0,0.8), inset -1px -1px 2px rgba(255,255,255,0.05);
-              border: 1px solid rgba(255,255,255,0.05); border-top-color: rgba(0,0,0,0.2);
+              background: linear-gradient(145deg, rgba(25, 27, 30, 1), rgba(30, 32, 38, 1));
+              color: #3b82f6;
+              box-shadow: inset 3px 3px 8px rgba(0,0,0,0.7), inset -2px -2px 4px rgba(255,255,255,0.03);
+          }
+          .home-btn.active ha-icon {
+              filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.6));
           }
           .home-btn.inactive {
-              background: transparent; color: rgba(255,255,255,0.4);
+              background: linear-gradient(145deg, rgba(35, 38, 45, 1), rgba(28, 30, 35, 1));
+              color: rgba(255,255,255,0.4);
+              box-shadow: 
+                  4px 4px 10px rgba(0, 0, 0, 0.5),
+                  -2px -2px 6px rgba(255, 255, 255, 0.03),
+                  inset 0 1px 2px rgba(255, 255, 255, 0.05);
           }
-          .home-btn.inactive:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
-          .home-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+          .home-btn.inactive:hover { 
+              background: linear-gradient(145deg, rgba(40, 43, 50, 1), rgba(32, 34, 40, 1));
+              color: rgba(255,255,255,0.7); 
+          }
 
-          /* Fan Speed Bars */
+          /* Speed/Level Bars */
           .speed-controls {
               display: flex; gap: 8px; width: 100%;
           }
-          .speed-btn {
+          .speed-btn, .water-btn {
               flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
               min-width: 0;
           }
-          .speed-bar {
+          .level-bar {
               width: 100%; height: 40px; border-radius: 12px; position: relative; overflow: hidden;
               background: rgba(20,20,20,0.4);
               border: 1px solid rgba(255,255,255,0.05);
               transition: all 0.3s;
           }
-          .speed-bar.active {
+          .level-bar.active {
               background: #141414;
               box-shadow: inset 1px 1px 2px rgba(0,0,0,0.8), 0 0 10px rgba(59,130,246,0.15);
           }
-          .speed-fill {
+          .level-bar.active.water {
+              box-shadow: inset 1px 1px 2px rgba(0,0,0,0.8), 0 0 10px rgba(96,165,250,0.15);
+          }
+          .level-fill {
               position: absolute; bottom: 0; left: 0; right: 0;
               transition: height 0.3s ease-out;
               background: rgba(59, 130, 246, 0.2);
               height: 0;
           }
-          .speed-line {
+          .level-fill.water {
+              background: rgba(96, 165, 250, 0.2);
+          }
+          .level-line {
               position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
               transition: all 0.3s;
               background: transparent;
           }
-          .speed-text {
+          .level-text {
               font-size: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.3px;
               color: rgba(255,255,255,0.2); transition: color 0.3s;
               white-space: nowrap;
@@ -705,9 +974,283 @@ class PrismVacuumCard extends HTMLElement {
           }
           
           /* Active states for bars */
-          .speed-btn.active .speed-fill { height: 100%; }
-          .speed-btn.active .speed-line { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
-          .speed-btn.active .speed-text { color: rgba(255,255,255,0.8); }
+          .speed-btn.active .level-fill, .water-btn.active .level-fill { height: 100%; }
+          .speed-btn.active .level-line { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+          .water-btn.active .level-line { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
+          .speed-btn.active .level-text, .water-btn.active .level-text { color: rgba(255,255,255,0.8); }
+
+          /* Responsive: Tablet (768px - 1400px) */
+          @media (max-width: 1400px) {
+            .card {
+              padding: 16px;
+              gap: 16px;
+              border-radius: 20px;
+            }
+            .header {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 36px;
+              height: 36px;
+              min-width: 36px;
+              min-height: 36px;
+            }
+            .icon-box ha-icon {
+              width: 20px;
+              height: 20px;
+              --mdc-icon-size: 20px;
+            }
+            .title {
+              font-size: 1rem;
+            }
+            .subtitle {
+              font-size: 0.7rem;
+            }
+            .play-btn {
+              width: 36px;
+              height: 36px;
+            }
+            .play-btn ha-icon {
+              width: 18px;
+              height: 18px;
+            }
+            .vacuum-inlet {
+              height: 140px;
+              border-radius: 14px;
+            }
+            .vacuum-body {
+              width: 80px;
+              height: 80px;
+            }
+            .lidar {
+              width: 30px;
+              height: 30px;
+            }
+            .lidar-dot {
+              width: 6px;
+              height: 6px;
+            }
+            .led {
+              width: 16px;
+              height: 5px;
+              bottom: 16px;
+            }
+            .controls-row {
+              gap: 10px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 8px;
+            }
+            .tab-container {
+              padding: 2px;
+            }
+            .tab-btn {
+              width: 28px;
+              height: 24px;
+              border-radius: 14px;
+            }
+            .tab-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            /* Scene Selector auf Tablet */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+            .scene-btn {
+              padding: 4px 8px;
+              height: 24px;
+              border-radius: 8px;
+              font-size: 8px;
+            }
+            .scene-btn ha-icon {
+              width: 10px;
+              height: 10px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .home-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .speed-controls {
+              gap: 6px;
+            }
+            .level-bar {
+              height: 34px;
+              border-radius: 10px;
+            }
+            .level-text {
+              font-size: 7px;
+            }
+          }
+
+          /* Responsive: Mobile / Small Tablet (< 768px) */
+          @media (max-width: 768px) {
+            .card {
+              padding: 14px;
+              gap: 14px;
+              border-radius: 18px;
+            }
+            .header {
+              gap: 8px;
+            }
+            .header-left {
+              gap: 10px;
+            }
+            .icon-box {
+              width: 32px;
+              height: 32px;
+              min-width: 32px;
+              min-height: 32px;
+            }
+            .icon-box ha-icon {
+              width: 18px;
+              height: 18px;
+              --mdc-icon-size: 18px;
+            }
+            .title {
+              font-size: 0.9rem;
+            }
+            .subtitle {
+              font-size: 0.65rem;
+              gap: 6px;
+            }
+            .battery-info ha-icon {
+              width: 12px;
+              height: 12px;
+            }
+            .status-badge {
+              padding: 2px 4px;
+              font-size: 8px;
+            }
+            .status-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .play-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .play-btn ha-icon {
+              width: 16px;
+              height: 16px;
+            }
+            .vacuum-inlet {
+              height: 120px;
+              border-radius: 12px;
+            }
+            .vacuum-body {
+              width: 70px;
+              height: 70px;
+            }
+            .lidar {
+              width: 26px;
+              height: 26px;
+            }
+            .lidar-dot {
+              width: 5px;
+              height: 5px;
+            }
+            .led {
+              width: 14px;
+              height: 4px;
+              bottom: 14px;
+            }
+            .controls-row {
+              gap: 8px;
+            }
+            .controls-header {
+              flex-wrap: wrap;
+              gap: 6px;
+            }
+            .tab-container {
+              padding: 2px;
+              border-radius: 16px;
+            }
+            .tab-btn {
+              width: 26px;
+              height: 22px;
+              border-radius: 12px;
+            }
+            .tab-btn ha-icon {
+              width: 13px;
+              height: 13px;
+            }
+            /* Scene Selector auf Mobile */
+            .scene-selector {
+              gap: 4px;
+              flex-wrap: wrap;
+              justify-content: center;
+              order: 3;
+              width: 100%;
+              margin-top: 4px;
+            }
+            .scene-btn {
+              padding: 4px 6px;
+              height: 22px;
+              border-radius: 8px;
+              font-size: 7px;
+              flex: 1;
+              min-width: 0;
+              max-width: 120px;
+            }
+            .scene-btn ha-icon {
+              width: 9px;
+              height: 9px;
+              margin-right: 2px;
+            }
+            .home-btn {
+              width: 28px;
+              height: 28px;
+            }
+            .home-btn ha-icon {
+              width: 14px;
+              height: 14px;
+            }
+            .speed-controls {
+              gap: 5px;
+            }
+            .level-bar {
+              height: 30px;
+              border-radius: 8px;
+            }
+            .level-text {
+              font-size: 6px;
+            }
+          }
+
+          /* Sehr kleine Bildschirme */
+          @media (max-width: 480px) {
+            .card {
+              padding: 12px;
+              gap: 12px;
+              border-radius: 16px;
+            }
+            .vacuum-inlet {
+              height: 100px;
+            }
+            .vacuum-body {
+              width: 60px;
+              height: 60px;
+            }
+            .controls-header {
+              justify-content: space-between;
+            }
+            .scene-selector {
+              order: 3;
+              width: 100%;
+            }
+            .scene-btn {
+              flex: 1;
+            }
+          }
 
         </style>
         
@@ -764,28 +1307,69 @@ class PrismVacuumCard extends HTMLElement {
           
           <div class="controls-row">
              <div class="controls-header">
+                 ${hasWaterControl ? `
+                 <div class="tab-container">
+                     <div class="tab-btn ${this._activeTab === 'fan' ? 'active' : ''}" data-tab="fan">
+                         <ha-icon icon="mdi:fan" style="width: 16px; height: 16px;"></ha-icon>
+                     </div>
+                     <div class="tab-btn ${this._activeTab === 'water' ? 'active water' : ''}" data-tab="water">
+                         <ha-icon icon="mdi:water" style="width: 16px; height: 16px;"></ha-icon>
+                     </div>
+                 </div>
+                 ` : `
                  <div class="controls-label">
                      <ha-icon icon="mdi:fan" style="width: 14px; height: 14px; color: rgba(255,255,255,0.4);"></ha-icon>
                      <span>${this._t('fan_speed')}</span>
                  </div>
+                 `}
+                 
+                 ${hasScenes ? `
+                 <div class="scene-selector">
+                     ${this.config.scene_1 ? `
+                     <div class="scene-btn ${this._activeScene === 1 ? 'active' : 'inactive'}" data-scene="1">
+                         <ha-icon icon="mdi:play-circle-outline" style="width: 12px; height: 12px; margin-right: 4px;"></ha-icon>
+                         ${this.config.scene_1_name || 'Szene 1'}
+                     </div>
+                     ` : ''}
+                     ${this.config.scene_2 ? `
+                     <div class="scene-btn ${this._activeScene === 2 ? 'active' : 'inactive'}" data-scene="2">
+                         <ha-icon icon="mdi:play-circle-outline" style="width: 12px; height: 12px; margin-right: 4px;"></ha-icon>
+                         ${this.config.scene_2_name || 'Szene 2'}
+                     </div>
+                     ` : ''}
+                 </div>
+                 ` : '<div style="flex: 1;"></div>'}
                  
                  <div id="home-btn" class="home-btn ${isReturning || isDocked ? 'active' : 'inactive'}">
-                     <ha-icon icon="mdi:home" style="width: 14px; height: 14px;"></ha-icon>
-                     <span class="home-text">${this._t('home')}</span>
+                     <ha-icon icon="mdi:home" style="width: 18px; height: 18px;"></ha-icon>
                  </div>
              </div>
              
+             ${this._activeTab === 'fan' || !hasWaterControl ? `
              <div class="speed-controls">
                  ${speeds.map((s, idx) => `
                     <div class="speed-btn ${idx <= currentSpeedIndex ? 'active' : ''}" data-speed="${s}">
-                        <div class="speed-bar ${idx <= currentSpeedIndex ? 'active' : ''}">
-                            <div class="speed-fill"></div>
-                            <div class="speed-line"></div>
+                        <div class="level-bar ${idx <= currentSpeedIndex ? 'active' : ''}">
+                            <div class="level-fill"></div>
+                            <div class="level-line"></div>
                         </div>
-                        <span class="speed-text">${this.getSpeedLabel(s)}</span>
+                        <span class="level-text">${this.getSpeedLabel(s)}</span>
                     </div>
                  `).join('')}
              </div>
+             ` : `
+             <div class="speed-controls">
+                 ${waterLevels.map((w, idx) => `
+                    <div class="water-btn ${idx <= currentWaterIndex ? 'active' : ''}" data-level="${w}">
+                        <div class="level-bar ${idx <= currentWaterIndex ? 'active water' : ''}">
+                            <div class="level-fill water"></div>
+                            <div class="level-line"></div>
+                        </div>
+                        <span class="level-text">${this.getWaterLabel(w)}</span>
+                    </div>
+                 `).join('')}
+             </div>
+             `}
           </div>
   
         </div>
@@ -801,5 +1385,5 @@ class PrismVacuumCard extends HTMLElement {
     type: "prism-vacuum",
     name: "Prism Vacuum",
     preview: true,
-    description: "A robot vacuum card with inlet styling and animation"
+    description: "A robot vacuum card with inlet styling, animation, water control and scene support"
   });
